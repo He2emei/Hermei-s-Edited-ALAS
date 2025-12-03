@@ -409,7 +409,7 @@ class OperationSiren(OSMap):
             self.config.cross_set(keys='OpsiMeowfficerFarming.Scheduler.Enable', value=True)
         while True:
             # Limited action point preserve of hazard 1 to 200
-            self.config.OS_ACTION_POINT_PRESERVE = 200
+            self.config.OS_ACTION_POINT_PRESERVE = 5
             if self.config.is_task_enabled('OpsiAshBeacon') \
                     and not self._ash_fully_collected \
                     and self.config.OpsiAshBeacon_EnsureFullyCollected:
