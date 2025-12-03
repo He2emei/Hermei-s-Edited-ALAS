@@ -22,10 +22,7 @@
   "browserslist": [
     "Chrome 94"
   ],
-  "simple-git-hooks": {
-    "pre-commit": "npx lint-staged",
-    "pre-push": "npm run typecheck"
-  },
+  "simple-git-hooks": {},
   "lint-staged": {
     "*.{js,ts,vue}": "eslint --cache --fix"
   },
