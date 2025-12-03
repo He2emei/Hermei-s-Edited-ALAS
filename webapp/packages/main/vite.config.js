@@ -1,4 +1,4 @@
-import {node} from '../../electron-vendors.config.json';
+import {node} from '../../electron-vendors.config.json' assert {type: 'json'};
 import {join} from 'path';
 import {builtinModules} from 'module';
 
