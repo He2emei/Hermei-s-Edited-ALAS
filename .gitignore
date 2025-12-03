@@ -256,3 +256,5 @@ console.bat
 # Pylance configuration file
 pyrightconfig.json
 node_modules/.yarn-integrity
+
+start_alas_correct.bat
