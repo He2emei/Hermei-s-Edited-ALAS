@@ -448,7 +448,7 @@ class OperationSiren(OSMap):
             if self.zone.zone_id != zone or not self.is_zone_name_hidden:
                 self.globe_goto(self.name_to_zone(zone), types='SAFE', refresh=True)
             self.fleet_set(self.config.OpsiFleet_Fleet)
-            self.run_strategic_search()
+            self.run_strategic_search_hazard1()
 
             self.handle_after_auto_search()
             self.config.check_task_switch()
