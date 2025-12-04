@@ -787,6 +787,24 @@ class OSMap(OSFleet, Map, GlobeCamera, StrategicSearchHandler):
         self.clear_question()
         self.map_rescan()
 
+    def run_strategic_search_hazard1(self):
+        self.handle_ash_beacon_attack()
+
+        logger.hr('Run strategy search', level=2)
+        self.os_auto_search_run(strategic=True)
+
+        self.hp_reset()
+        self.hp_get()
+        self._solved_map_event = set()
+        self._solved_fleet_mechanism = False
+        self.clear_question()
+
+        # Move and rescan to solve covering issue
+        self.goto_column_extreme(mode='top')
+        self.map_rescan()
+        self.goto_column_extreme(mode='bottom')
+        self.map_rescan()
+
     def map_rescan_current(self, drop=None):
         """
 
@@ -983,3 +1001,38 @@ class OSMap(OSFleet, Map, GlobeCamera, StrategicSearchHandler):
         logger.warning('Too many trial on map rescan, stop')
         self.fleet_set(self.config.OpsiFleet_Fleet)
         return False
+
+    def goto_column_extreme(self, mode='top'):
+        """
+        Move to the highest or lowest accessible grid in the current column.
+
+        Args:
+            mode (str): 'top' to move to the highest point (min y),
+                        'bottom' to move to the lowest point (max y).
+        """
+        logger.hr(f'Move to {mode} of current column', level=2)
+        current_loc = self.fleet_current
+        if not current_loc:
+            logger.warning("Fleet location unknown, cannot execute goto_column_extreme.")
+            return
+
+        current_column_index = current_loc
+        column_grids = self.map.select(location=(current_column_index, None), is_accessible=True, is_sea=True)
+
+        if not column_grids:
+            logger.info(f"No accessible grids found in the current column: {current_column_index}")
+            return
+
+        target_grid = None
+        if mode == 'top':
+            target_grid = column_grids.sort('y', 'x')
+            logger.info(f'Moving to top-most grid: {target_grid}')
+        elif mode == 'bottom':
+            target_grid = column_grids.sort('-y', 'x')
+            logger.info(f'Moving to bottom-most grid: {target_grid}')
+        else:
+            logger.warning(f"Invalid mode '{mode}' for goto_column_extreme. Use 'top' or 'bottom'.")
+            return
+
+        if target_grid:
+            self.goto(target_grid)
