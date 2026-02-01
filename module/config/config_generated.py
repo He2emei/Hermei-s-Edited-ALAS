@@ -445,6 +445,8 @@ class GeneratedConfig:
 
     # Group `OpsiHazard1Leveling`
     OpsiHazard1Leveling_TargetZone = 0  # 0, 44, 22
+    OpsiHazard1Leveling_ActionPointPreserve = 5
+    OpsiHazard1Leveling_YellowCoinsPreserve = 10000
 
     # Group `IslandProduction`
     IslandProduction_HardFloorItems = '{}'
