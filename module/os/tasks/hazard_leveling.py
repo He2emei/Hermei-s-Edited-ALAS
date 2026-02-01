@@ -13,8 +13,8 @@ class OpsiHazard1Leveling(OSMap):
         if not self.config.is_task_enabled('OpsiMeowfficerFarming'):
             self.config.cross_set(keys='OpsiMeowfficerFarming.Scheduler.Enable', value=True)
         while True:
-            # Limited action point preserve of hazard 1 to 200
-            self.config.OS_ACTION_POINT_PRESERVE = 5
+            # Limited action point preserve of hazard 1, configurable via GUI
+            self.config.OS_ACTION_POINT_PRESERVE = self.config.OpsiHazard1Leveling_ActionPointPreserve
             if self.config.is_task_enabled('OpsiAshBeacon') \
                     and not self._ash_fully_collected \
                     and self.config.cross_get("OpsiAshBeacon.OpsiAshBeacon.EnsureFullyCollected", True):
@@ -22,8 +22,9 @@ class OpsiHazard1Leveling(OSMap):
                 self.config.OS_ACTION_POINT_PRESERVE = 0
             logger.attr('OS_ACTION_POINT_PRESERVE', self.config.OS_ACTION_POINT_PRESERVE)
 
-            if self.get_yellow_coins() < self.yellow_coins_preserve:
-                logger.info(f'Reach the limit of yellow coins, preserve={self.yellow_coins_preserve}')
+            yellow_coins_preserve = self.config.OpsiHazard1Leveling_YellowCoinsPreserve
+            if self.get_yellow_coins() < yellow_coins_preserve:
+                logger.info(f'Reach the limit of yellow coins, preserve={yellow_coins_preserve}')
                 with self.config.multi_set():
                     self.config.task_delay(server_update=True)
                     if not self.is_in_opsi_explore():
