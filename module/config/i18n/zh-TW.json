@@ -2540,6 +2540,14 @@
       "0": "不指定",
       "44": "44 | 西大陸棚D",
       "22": "22 | NA海域西南B"
+    },
+    "ActionPointPreserve": {
+      "name": "OpsiHazard1Leveling.ActionPointPreserve.name",
+      "help": "OpsiHazard1Leveling.ActionPointPreserve.help"
+    },
+    "YellowCoinsPreserve": {
+      "name": "OpsiHazard1Leveling.YellowCoinsPreserve.name",
+      "help": "OpsiHazard1Leveling.YellowCoinsPreserve.help"
     }
   },
   "Daemon": {

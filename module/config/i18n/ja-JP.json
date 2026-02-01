@@ -2540,6 +2540,14 @@
       "0": "0",
       "44": "44",
       "22": "22"
+    },
+    "ActionPointPreserve": {
+      "name": "OpsiHazard1Leveling.ActionPointPreserve.name",
+      "help": "OpsiHazard1Leveling.ActionPointPreserve.help"
+    },
+    "YellowCoinsPreserve": {
+      "name": "OpsiHazard1Leveling.YellowCoinsPreserve.name",
+      "help": "OpsiHazard1Leveling.YellowCoinsPreserve.help"
     }
   },
   "Daemon": {
