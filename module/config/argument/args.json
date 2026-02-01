@@ -9326,6 +9326,14 @@
           44,
           22
         ]
+      },
+      "ActionPointPreserve": {
+        "type": "input",
+        "value": 5
+      },
+      "YellowCoinsPreserve": {
+        "type": "input",
+        "value": 10000
       }
     },
     "OpsiFleet": {
