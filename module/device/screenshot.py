@@ -137,7 +137,8 @@ class Screenshot(Adb, WSA, DroidCast, AScreenCap, Scrcpy, NemuIpc, LDOpenGL):
 
         if now - self._last_save_time.get(genre, 0) > interval:
             fmt = 'png'
-            file = '%s.%s' % (int(now * 1000), fmt)
+            time_str = datetime.fromtimestamp(now).strftime('%Y-%m-%d_%H-%M-%S-%f')[:-3]
+            file = f'{time_str}.{fmt}'
 
             folder = self.config.SCREEN_SHOT_SAVE_FOLDER_BASE if to_base_folder else self.config.SCREEN_SHOT_SAVE_FOLDER
             folder = os.path.join(folder, genre)
@@ -199,7 +200,8 @@ class Screenshot(Adb, WSA, DroidCast, AScreenCap, Scrcpy, NemuIpc, LDOpenGL):
 
     def image_save(self, file=None):
         if file is None:
-            file = f'{int(time.time() * 1000)}.png'
+            time_str = datetime.now().strftime('%Y-%m-%d_%H-%M-%S-%f')[:-3]
+            file = f'{time_str}.png'
         save_image(self.image, file)
 
     def check_screen_size(self):
