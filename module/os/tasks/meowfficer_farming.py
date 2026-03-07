@@ -14,6 +14,16 @@ class OpsiMeowfficerFarming(OSMap):
         if self.is_cl1_enabled and self.config.OpsiMeowfficerFarming_ActionPointPreserve < 1000:
             logger.info('With CL1 leveling enabled, set action point preserve to 1000')
             self.config.OpsiMeowfficerFarming_ActionPointPreserve = 1000
+
+        if self.config.OpsiMeowfficerFarming_OperatingMode == 'hazard1_mode':
+            call_threshold = self.config.OpsiHazard1Leveling_MeowfficerCallThreshold
+            if self._action_point_total < call_threshold:
+                logger.info(f'Under hazard1_mode, current AP {self._action_point_total} is less than '
+                            f'MeowfficerCallThreshold {call_threshold}. Delay to next day.')
+                with self.config.multi_set():
+                    # Delay to 00:00 next day
+                    self.config.task_delay(server_update=True)
+                self.config.task_stop()
         preserve = min(self.get_action_point_limit(), self.config.OpsiMeowfficerFarming_ActionPointPreserve, 2000)
         if preserve == 0:
             self.config.override(OpsiFleet_Submarine=False)
