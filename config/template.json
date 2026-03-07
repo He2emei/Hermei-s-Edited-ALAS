@@ -1893,7 +1893,8 @@
     "OpsiMeowfficerFarming": {
       "ActionPointPreserve": 1000,
       "HazardLevel": 5,
-      "TargetZone": 0
+      "TargetZone": 0,
+      "OperatingMode": "normal"
     },
     "OpsiFleet": {
       "Fleet": 1,
@@ -1915,7 +1916,8 @@
     "OpsiHazard1Leveling": {
       "TargetZone": 0,
       "ActionPointPreserve": 5,
-      "YellowCoinsPreserve": 10000
+      "YellowCoinsPreserve": 10000,
+      "MeowfficerCallThreshold": 3000
     },
     "OpsiFleet": {
       "Fleet": 1,
