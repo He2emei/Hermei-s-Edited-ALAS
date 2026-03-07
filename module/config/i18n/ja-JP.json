@@ -2629,6 +2629,12 @@
     "TargetZone": {
       "name": "OpsiMeowfficerFarming.TargetZone.name",
       "help": "OpsiMeowfficerFarming.TargetZone.help"
+    },
+    "OperatingMode": {
+      "name": "OpsiMeowfficerFarming.OperatingMode.name",
+      "help": "OpsiMeowfficerFarming.OperatingMode.help",
+      "normal": "normal",
+      "hazard1_mode": "hazard1_mode"
     }
   },
   "OpsiHazard1Leveling": {
@@ -2650,6 +2656,10 @@
     "YellowCoinsPreserve": {
       "name": "OpsiHazard1Leveling.YellowCoinsPreserve.name",
       "help": "OpsiHazard1Leveling.YellowCoinsPreserve.help"
+    },
+    "MeowfficerCallThreshold": {
+      "name": "OpsiHazard1Leveling.MeowfficerCallThreshold.name",
+      "help": "OpsiHazard1Leveling.MeowfficerCallThreshold.help"
     }
   },
   "IslandProduction": {

@@ -9254,6 +9254,14 @@
       "TargetZone": {
         "type": "input",
         "value": 0
+      },
+      "OperatingMode": {
+        "type": "select",
+        "value": "normal",
+        "option": [
+          "normal",
+          "hazard1_mode"
+        ]
       }
     },
     "OpsiFleet": {
@@ -9334,6 +9342,10 @@
       "YellowCoinsPreserve": {
         "type": "input",
         "value": 10000
+      },
+      "MeowfficerCallThreshold": {
+        "type": "input",
+        "value": 3000
       }
     },
     "OpsiFleet": {
