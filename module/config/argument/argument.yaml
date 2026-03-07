@@ -760,12 +760,16 @@ OpsiMeowfficerFarming:
     option: [3, 4, 5, 6, 10]
   TargetZone:
     value: 0
+  OperatingMode:
+    value: normal
+    option: [normal, hazard1_mode]
 OpsiHazard1Leveling:
   TargetZone:
     value: 0
     option: [0, 44, 22]
   ActionPointPreserve: 5
   YellowCoinsPreserve: 10000
+  MeowfficerCallThreshold: 3000
 # ==================== Tools ====================
 
 Daemon:

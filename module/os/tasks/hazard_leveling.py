@@ -36,10 +36,9 @@ class OpsiHazard1Leveling(OSMap):
             # Preset action point to 70
             # When running CL1 oil is for running CL1, not meowfficer farming
             keep_current_ap = True
-            if self.config.OpsiGeneral_BuyActionPointLimit > 0:
-                keep_current_ap = False
             self.action_point_set(cost=5, keep_current_ap=keep_current_ap, check_rest_ap=True)
-            if self._action_point_total >= 3000:
+            call_threshold = self.config.OpsiHazard1Leveling_MeowfficerCallThreshold
+            if self._action_point_total >= call_threshold:
                 with self.config.multi_set():
                     self.config.task_delay(server_update=True)
                     if not self.is_in_opsi_explore():

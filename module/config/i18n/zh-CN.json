@@ -2527,6 +2527,12 @@
     "TargetZone": {
       "name": "指定海域",
       "help": "仅出击指定的海域，可以用来获取大世界成就星星\n支持海域ID、国服/国际服/日服/台服海域名称，例如 \"51\", \"NA海域东南E\", \"NA Ocean SE Sector E\"\n填入默认值0，或者删除数值即可取消指定"
+    },
+    "OperatingMode": {
+      "name": "运行模式",
+      "help": "决定短猫相接的触发逻辑",
+      "normal": "正常模式",
+      "hazard1_mode": "侵蚀1练级模式"
     }
   },
   "OpsiHazard1Leveling": {
@@ -2548,6 +2554,10 @@
     "YellowCoinsPreserve": {
       "name": "OpsiHazard1Leveling.YellowCoinsPreserve.name",
       "help": "OpsiHazard1Leveling.YellowCoinsPreserve.help"
+    },
+    "MeowfficerCallThreshold": {
+      "name": "呼叫短猫的行动力阈值",
+      "help": "当总行动力高于此值时，侵蚀1练级将会被暂停，转而呼叫短猫相接"
     }
   },
   "Daemon": {
