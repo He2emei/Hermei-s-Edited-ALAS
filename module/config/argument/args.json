@@ -129,13 +129,7 @@
       "ControlMethod": {
         "type": "select",
         "value": "MaaTouch",
-        "option": [
-          "ADB",
-          "uiautomator2",
-          "minitouch",
-          "Hermit",
-          "MaaTouch"
-        ]
+        "option": ["ADB", "uiautomator2", "minitouch", "Hermit", "MaaTouch"]
       },
       "ScreenshotDedithering": {
         "type": "checkbox",
@@ -211,11 +205,7 @@
       "WhenTaskQueueEmpty": {
         "type": "select",
         "value": "goto_main",
-        "option": [
-          "stay_there",
-          "goto_main",
-          "close_game"
-        ]
+        "option": ["stay_there", "goto_main", "close_game"]
       }
     },
     "DropRecord": {
@@ -230,66 +220,37 @@
       "API": {
         "type": "select",
         "value": "default",
-        "option": [
-          "default",
-          "cn_gz_reverse_proxy"
-        ]
+        "option": ["default", "cn_gz_reverse_proxy"]
       },
       "ResearchRecord": {
         "type": "select",
         "value": "do_not",
-        "option": [
-          "do_not",
-          "save",
-          "upload",
-          "save_and_upload"
-        ]
+        "option": ["do_not", "save", "upload", "save_and_upload"]
       },
       "CommissionRecord": {
         "type": "select",
         "value": "do_not",
-        "option": [
-          "do_not",
-          "save",
-          "upload",
-          "save_and_upload"
-        ]
+        "option": ["do_not", "save", "upload", "save_and_upload"]
       },
       "CombatRecord": {
         "type": "select",
         "value": "do_not",
-        "option": [
-          "do_not",
-          "save"
-        ]
+        "option": ["do_not", "save"]
       },
       "OpsiRecord": {
         "type": "select",
         "value": "do_not",
-        "option": [
-          "do_not",
-          "save",
-          "upload",
-          "save_and_upload"
-        ]
+        "option": ["do_not", "save", "upload", "save_and_upload"]
       },
       "MeowfficerBuy": {
         "type": "select",
         "value": "do_not",
-        "option": [
-          "do_not",
-          "save"
-        ]
+        "option": ["do_not", "save"]
       },
       "MeowfficerTalent": {
         "type": "select",
         "value": "do_not",
-        "option": [
-          "do_not",
-          "save",
-          "upload",
-          "save_and_upload"
-        ]
+        "option": ["do_not", "save", "upload", "save_and_upload"]
       }
     },
     "Storage": {
@@ -306,31 +267,21 @@
       "RetireMode": {
         "type": "select",
         "value": "one_click_retire",
-        "option": [
-          "one_click_retire",
-          "enhance",
-          "old_retire"
-        ]
+        "option": ["one_click_retire", "enhance", "old_retire"]
       }
     },
     "OneClickRetire": {
       "KeepLimitBreak": {
         "type": "select",
         "value": "keep_limit_break",
-        "option": [
-          "keep_limit_break",
-          "do_not_keep"
-        ]
+        "option": ["keep_limit_break", "do_not_keep"]
       }
     },
     "Enhance": {
       "ShipToEnhance": {
         "type": "select",
         "value": "all",
-        "option": [
-          "all",
-          "favourite"
-        ]
+        "option": ["all", "favourite"]
       },
       "Filter": {
         "type": "textarea",
@@ -361,10 +312,7 @@
       "RetireAmount": {
         "type": "select",
         "value": "retire_all",
-        "option": [
-          "retire_all",
-          "retire_10"
-        ]
+        "option": ["retire_all", "retire_10"]
       }
     },
     "Storage": {
@@ -381,12 +329,8 @@
       "Enable": {
         "type": "state",
         "value": true,
-        "option": [
-          true
-        ],
-        "option_bold": [
-          true
-        ]
+        "option": [true],
+        "option_bold": [true]
       },
       "NextRun": {
         "type": "datetime",
@@ -428,10 +372,7 @@
       "Enable": {
         "type": "checkbox",
         "value": false,
-        "option": [
-          true,
-          false
-        ]
+        "option": [true, false]
       },
       "NextRun": {
         "type": "datetime",
@@ -467,18 +408,13 @@
       "Event": {
         "type": "select",
         "value": "campaign_main",
-        "option": [
-          "campaign_main"
-        ],
+        "option": ["campaign_main"],
         "display": "hide"
       },
       "Mode": {
         "type": "select",
         "value": "normal",
-        "option": [
-          "normal",
-          "hard"
-        ]
+        "option": ["normal", "hard"]
       },
       "UseClearMode": {
         "type": "checkbox",
@@ -538,23 +474,12 @@
       "Fleet1": {
         "type": "select",
         "value": 1,
-        "option": [
-          1,
-          2,
-          3,
-          4,
-          5,
-          6
-        ]
+        "option": [1, 2, 3, 4, 5, 6]
       },
       "Fleet1Formation": {
         "type": "select",
         "value": "double_line",
-        "option": [
-          "line_ahead",
-          "double_line",
-          "diamond"
-        ]
+        "option": ["line_ahead", "double_line", "diamond"]
       },
       "Fleet1Mode": {
         "type": "select",
@@ -569,34 +494,17 @@
       "Fleet1Step": {
         "type": "select",
         "value": 3,
-        "option": [
-          2,
-          3,
-          4,
-          5
-        ]
+        "option": [2, 3, 4, 5]
       },
       "Fleet2": {
         "type": "select",
         "value": 2,
-        "option": [
-          0,
-          1,
-          2,
-          3,
-          4,
-          5,
-          6
-        ]
+        "option": [0, 1, 2, 3, 4, 5, 6]
       },
       "Fleet2Formation": {
         "type": "select",
         "value": "double_line",
-        "option": [
-          "line_ahead",
-          "double_line",
-          "diamond"
-        ]
+        "option": ["line_ahead", "double_line", "diamond"]
       },
       "Fleet2Mode": {
         "type": "select",
@@ -611,12 +519,7 @@
       "Fleet2Step": {
         "type": "select",
         "value": 2,
-        "option": [
-          2,
-          3,
-          4,
-          5
-        ]
+        "option": [2, 3, 4, 5]
       },
       "FleetOrder": {
         "type": "select",
@@ -633,11 +536,7 @@
       "Fleet": {
         "type": "select",
         "value": 0,
-        "option": [
-          0,
-          1,
-          2
-        ]
+        "option": [0, 1, 2]
       },
       "Mode": {
         "type": "select",
@@ -653,10 +552,7 @@
       "AutoSearchMode": {
         "type": "select",
         "value": "sub_standby",
-        "option": [
-          "sub_standby",
-          "sub_auto_call"
-        ]
+        "option": ["sub_standby", "sub_auto_call"]
       },
       "DistanceToBoss": {
         "type": "select",
@@ -673,11 +569,7 @@
       "Mode": {
         "type": "select",
         "value": "calculate",
-        "option": [
-          "calculate",
-          "ignore",
-          "calculate_ignore"
-        ]
+        "option": ["calculate", "ignore", "calculate_ignore"]
       },
       "Fleet1Value": {
         "type": "input",
@@ -702,11 +594,7 @@
       "Fleet1Recover": {
         "type": "select",
         "value": "not_in_dormitory",
-        "option": [
-          "not_in_dormitory",
-          "dormitory_floor_1",
-          "dormitory_floor_2"
-        ]
+        "option": ["not_in_dormitory", "dormitory_floor_1", "dormitory_floor_2"]
       },
       "Fleet1Oath": {
         "type": "checkbox",
@@ -735,11 +623,7 @@
       "Fleet2Recover": {
         "type": "select",
         "value": "not_in_dormitory",
-        "option": [
-          "not_in_dormitory",
-          "dormitory_floor_1",
-          "dormitory_floor_2"
-        ]
+        "option": ["not_in_dormitory", "dormitory_floor_1", "dormitory_floor_2"]
       },
       "Fleet2Oath": {
         "type": "checkbox",
@@ -784,11 +668,7 @@
       "EnemyScaleBalanceWeight": {
         "type": "select",
         "value": "default_mode",
-        "option": [
-          "default_mode",
-          "S3_enemy_first",
-          "S1_enemy_first"
-        ]
+        "option": ["default_mode", "S3_enemy_first", "S1_enemy_first"]
       }
     },
     "Storage": {
@@ -805,10 +685,7 @@
       "Enable": {
         "type": "checkbox",
         "value": false,
-        "option": [
-          true,
-          false
-        ]
+        "option": [true, false]
       },
       "NextRun": {
         "type": "datetime",
@@ -844,18 +721,13 @@
       "Event": {
         "type": "select",
         "value": "campaign_main",
-        "option": [
-          "campaign_main"
-        ],
+        "option": ["campaign_main"],
         "display": "hide"
       },
       "Mode": {
         "type": "select",
         "value": "normal",
-        "option": [
-          "normal",
-          "hard"
-        ]
+        "option": ["normal", "hard"]
       },
       "UseClearMode": {
         "type": "checkbox",
@@ -915,23 +787,12 @@
       "Fleet1": {
         "type": "select",
         "value": 1,
-        "option": [
-          1,
-          2,
-          3,
-          4,
-          5,
-          6
-        ]
+        "option": [1, 2, 3, 4, 5, 6]
       },
       "Fleet1Formation": {
         "type": "select",
         "value": "double_line",
-        "option": [
-          "line_ahead",
-          "double_line",
-          "diamond"
-        ]
+        "option": ["line_ahead", "double_line", "diamond"]
       },
       "Fleet1Mode": {
         "type": "select",
@@ -946,34 +807,17 @@
       "Fleet1Step": {
         "type": "select",
         "value": 3,
-        "option": [
-          2,
-          3,
-          4,
-          5
-        ]
+        "option": [2, 3, 4, 5]
       },
       "Fleet2": {
         "type": "select",
         "value": 2,
-        "option": [
-          0,
-          1,
-          2,
-          3,
-          4,
-          5,
-          6
-        ]
+        "option": [0, 1, 2, 3, 4, 5, 6]
       },
       "Fleet2Formation": {
         "type": "select",
         "value": "double_line",
-        "option": [
-          "line_ahead",
-          "double_line",
-          "diamond"
-        ]
+        "option": ["line_ahead", "double_line", "diamond"]
       },
       "Fleet2Mode": {
         "type": "select",
@@ -988,12 +832,7 @@
       "Fleet2Step": {
         "type": "select",
         "value": 2,
-        "option": [
-          2,
-          3,
-          4,
-          5
-        ]
+        "option": [2, 3, 4, 5]
       },
       "FleetOrder": {
         "type": "select",
@@ -1010,11 +849,7 @@
       "Fleet": {
         "type": "select",
         "value": 0,
-        "option": [
-          0,
-          1,
-          2
-        ]
+        "option": [0, 1, 2]
       },
       "Mode": {
         "type": "select",
@@ -1030,10 +865,7 @@
       "AutoSearchMode": {
         "type": "select",
         "value": "sub_standby",
-        "option": [
-          "sub_standby",
-          "sub_auto_call"
-        ]
+        "option": ["sub_standby", "sub_auto_call"]
       },
       "DistanceToBoss": {
         "type": "select",
@@ -1050,11 +882,7 @@
       "Mode": {
         "type": "select",
         "value": "calculate",
-        "option": [
-          "calculate",
-          "ignore",
-          "calculate_ignore"
-        ]
+        "option": ["calculate", "ignore", "calculate_ignore"]
       },
       "Fleet1Value": {
         "type": "input",
@@ -1079,11 +907,7 @@
       "Fleet1Recover": {
         "type": "select",
         "value": "not_in_dormitory",
-        "option": [
-          "not_in_dormitory",
-          "dormitory_floor_1",
-          "dormitory_floor_2"
-        ]
+        "option": ["not_in_dormitory", "dormitory_floor_1", "dormitory_floor_2"]
       },
       "Fleet1Oath": {
         "type": "checkbox",
@@ -1112,11 +936,7 @@
       "Fleet2Recover": {
         "type": "select",
         "value": "not_in_dormitory",
-        "option": [
-          "not_in_dormitory",
-          "dormitory_floor_1",
-          "dormitory_floor_2"
-        ]
+        "option": ["not_in_dormitory", "dormitory_floor_1", "dormitory_floor_2"]
       },
       "Fleet2Oath": {
         "type": "checkbox",
@@ -1161,11 +981,7 @@
       "EnemyScaleBalanceWeight": {
         "type": "select",
         "value": "default_mode",
-        "option": [
-          "default_mode",
-          "S3_enemy_first",
-          "S1_enemy_first"
-        ]
+        "option": ["default_mode", "S3_enemy_first", "S1_enemy_first"]
       }
     },
     "Storage": {
@@ -1182,10 +998,7 @@
       "Enable": {
         "type": "checkbox",
         "value": false,
-        "option": [
-          true,
-          false
-        ]
+        "option": [true, false]
       },
       "NextRun": {
         "type": "datetime",
@@ -1221,18 +1034,13 @@
       "Event": {
         "type": "select",
         "value": "campaign_main",
-        "option": [
-          "campaign_main"
-        ],
+        "option": ["campaign_main"],
         "display": "hide"
       },
       "Mode": {
         "type": "select",
         "value": "normal",
-        "option": [
-          "normal",
-          "hard"
-        ]
+        "option": ["normal", "hard"]
       },
       "UseClearMode": {
         "type": "checkbox",
@@ -1292,23 +1100,12 @@
       "Fleet1": {
         "type": "select",
         "value": 1,
-        "option": [
-          1,
-          2,
-          3,
-          4,
-          5,
-          6
-        ]
+        "option": [1, 2, 3, 4, 5, 6]
       },
       "Fleet1Formation": {
         "type": "select",
         "value": "double_line",
-        "option": [
-          "line_ahead",
-          "double_line",
-          "diamond"
-        ]
+        "option": ["line_ahead", "double_line", "diamond"]
       },
       "Fleet1Mode": {
         "type": "select",
@@ -1323,34 +1120,17 @@
       "Fleet1Step": {
         "type": "select",
         "value": 3,
-        "option": [
-          2,
-          3,
-          4,
-          5
-        ]
+        "option": [2, 3, 4, 5]
       },
       "Fleet2": {
         "type": "select",
         "value": 2,
-        "option": [
-          0,
-          1,
-          2,
-          3,
-          4,
-          5,
-          6
-        ]
+        "option": [0, 1, 2, 3, 4, 5, 6]
       },
       "Fleet2Formation": {
         "type": "select",
         "value": "double_line",
-        "option": [
-          "line_ahead",
-          "double_line",
-          "diamond"
-        ]
+        "option": ["line_ahead", "double_line", "diamond"]
       },
       "Fleet2Mode": {
         "type": "select",
@@ -1365,12 +1145,7 @@
       "Fleet2Step": {
         "type": "select",
         "value": 2,
-        "option": [
-          2,
-          3,
-          4,
-          5
-        ]
+        "option": [2, 3, 4, 5]
       },
       "FleetOrder": {
         "type": "select",
@@ -1387,11 +1162,7 @@
       "Fleet": {
         "type": "select",
         "value": 0,
-        "option": [
-          0,
-          1,
-          2
-        ]
+        "option": [0, 1, 2]
       },
       "Mode": {
         "type": "select",
@@ -1407,10 +1178,7 @@
       "AutoSearchMode": {
         "type": "select",
         "value": "sub_standby",
-        "option": [
-          "sub_standby",
-          "sub_auto_call"
-        ]
+        "option": ["sub_standby", "sub_auto_call"]
       },
       "DistanceToBoss": {
         "type": "select",
@@ -1427,11 +1195,7 @@
       "Mode": {
         "type": "select",
         "value": "calculate",
-        "option": [
-          "calculate",
-          "ignore",
-          "calculate_ignore"
-        ]
+        "option": ["calculate", "ignore", "calculate_ignore"]
       },
       "Fleet1Value": {
         "type": "input",
@@ -1456,11 +1220,7 @@
       "Fleet1Recover": {
         "type": "select",
         "value": "not_in_dormitory",
-        "option": [
-          "not_in_dormitory",
-          "dormitory_floor_1",
-          "dormitory_floor_2"
-        ]
+        "option": ["not_in_dormitory", "dormitory_floor_1", "dormitory_floor_2"]
       },
       "Fleet1Oath": {
         "type": "checkbox",
@@ -1489,11 +1249,7 @@
       "Fleet2Recover": {
         "type": "select",
         "value": "not_in_dormitory",
-        "option": [
-          "not_in_dormitory",
-          "dormitory_floor_1",
-          "dormitory_floor_2"
-        ]
+        "option": ["not_in_dormitory", "dormitory_floor_1", "dormitory_floor_2"]
       },
       "Fleet2Oath": {
         "type": "checkbox",
@@ -1538,11 +1294,7 @@
       "EnemyScaleBalanceWeight": {
         "type": "select",
         "value": "default_mode",
-        "option": [
-          "default_mode",
-          "S3_enemy_first",
-          "S1_enemy_first"
-        ]
+        "option": ["default_mode", "S3_enemy_first", "S1_enemy_first"]
       }
     },
     "Storage": {
@@ -1559,10 +1311,7 @@
       "Enable": {
         "type": "checkbox",
         "value": false,
-        "option": [
-          true,
-          false
-        ]
+        "option": [true, false]
       },
       "NextRun": {
         "type": "datetime",
@@ -1594,21 +1343,12 @@
       "CommonCV": {
         "type": "select",
         "value": "any",
-        "option": [
-          "any",
-          "langley",
-          "bogue",
-          "ranger",
-          "hermes"
-        ]
+        "option": ["any", "langley", "bogue", "ranger", "hermes"]
       },
       "ChangeVanguard": {
         "type": "select",
         "value": "ship",
-        "option": [
-          "disabled",
-          "ship"
-        ]
+        "option": ["disabled", "ship"]
       },
       "CommonDD": {
         "type": "select",
@@ -1634,35 +1374,18 @@
       "Event": {
         "type": "select",
         "value": "campaign_main",
-        "option": [
-          "event_20220526_cn",
-          "event_20260226_cn"
-        ],
+        "option": ["event_20220526_cn", "event_20260226_cn"],
         "display": "hide",
-        "option_cn": [
-          "event_20260226_cn"
-        ],
-        "option_en": [
-          "event_20260226_cn"
-        ],
-        "option_jp": [
-          "event_20260226_cn"
-        ],
-        "option_tw": [
-          "event_20220526_cn"
-        ],
-        "option_bold": [
-          "event_20220526_cn",
-          "event_20260226_cn"
-        ]
+        "option_cn": ["event_20260226_cn"],
+        "option_en": ["event_20260226_cn"],
+        "option_jp": ["event_20260226_cn"],
+        "option_tw": ["event_20220526_cn"],
+        "option_bold": ["event_20220526_cn", "event_20260226_cn"]
       },
       "Mode": {
         "type": "select",
         "value": "normal",
-        "option": [
-          "normal",
-          "hard"
-        ],
+        "option": ["normal", "hard"],
         "display": "hide"
       },
       "UseClearMode": {
@@ -1732,23 +1455,12 @@
       "Fleet1": {
         "type": "select",
         "value": 1,
-        "option": [
-          1,
-          2,
-          3,
-          4,
-          5,
-          6
-        ]
+        "option": [1, 2, 3, 4, 5, 6]
       },
       "Fleet1Formation": {
         "type": "select",
         "value": "double_line",
-        "option": [
-          "line_ahead",
-          "double_line",
-          "diamond"
-        ]
+        "option": ["line_ahead", "double_line", "diamond"]
       },
       "Fleet1Mode": {
         "type": "select",
@@ -1763,34 +1475,17 @@
       "Fleet1Step": {
         "type": "select",
         "value": 3,
-        "option": [
-          2,
-          3,
-          4,
-          5
-        ]
+        "option": [2, 3, 4, 5]
       },
       "Fleet2": {
         "type": "select",
         "value": 2,
-        "option": [
-          0,
-          1,
-          2,
-          3,
-          4,
-          5,
-          6
-        ]
+        "option": [0, 1, 2, 3, 4, 5, 6]
       },
       "Fleet2Formation": {
         "type": "select",
         "value": "double_line",
-        "option": [
-          "line_ahead",
-          "double_line",
-          "diamond"
-        ]
+        "option": ["line_ahead", "double_line", "diamond"]
       },
       "Fleet2Mode": {
         "type": "select",
@@ -1805,20 +1500,12 @@
       "Fleet2Step": {
         "type": "select",
         "value": 2,
-        "option": [
-          2,
-          3,
-          4,
-          5
-        ]
+        "option": [2, 3, 4, 5]
       },
       "FleetOrder": {
         "type": "select",
         "value": "fleet1_all_fleet2_standby",
-        "option": [
-          "fleet1_all_fleet2_standby",
-          "fleet1_standby_fleet2_all"
-        ],
+        "option": ["fleet1_all_fleet2_standby", "fleet1_standby_fleet2_all"],
         "display": "display"
       }
     },
@@ -1855,11 +1542,7 @@
       "TaskCall": {
         "type": "select",
         "value": "Main",
-        "option": [
-          "Main",
-          "Main2",
-          "Main3"
-        ]
+        "option": ["Main", "Main2", "Main3"]
       }
     },
     "Storage": {
@@ -1876,10 +1559,7 @@
       "Enable": {
         "type": "checkbox",
         "value": false,
-        "option": [
-          true,
-          false
-        ]
+        "option": [true, false]
       },
       "NextRun": {
         "type": "datetime",
@@ -1915,34 +1595,17 @@
       "Event": {
         "type": "state",
         "value": "campaign_main",
-        "option": [
-          "event_20220526_cn",
-          "event_20260226_cn"
-        ],
-        "option_cn": [
-          "event_20260226_cn"
-        ],
-        "option_en": [
-          "event_20260226_cn"
-        ],
-        "option_jp": [
-          "event_20260226_cn"
-        ],
-        "option_tw": [
-          "event_20220526_cn"
-        ],
-        "option_bold": [
-          "event_20220526_cn",
-          "event_20260226_cn"
-        ]
+        "option": ["event_20220526_cn", "event_20260226_cn"],
+        "option_cn": ["event_20260226_cn"],
+        "option_en": ["event_20260226_cn"],
+        "option_jp": ["event_20260226_cn"],
+        "option_tw": ["event_20220526_cn"],
+        "option_bold": ["event_20220526_cn", "event_20260226_cn"]
       },
       "Mode": {
         "type": "select",
         "value": "normal",
-        "option": [
-          "normal",
-          "hard"
-        ],
+        "option": ["normal", "hard"],
         "display": "hide"
       },
       "UseClearMode": {
@@ -2004,23 +1667,12 @@
       "Fleet1": {
         "type": "select",
         "value": 1,
-        "option": [
-          1,
-          2,
-          3,
-          4,
-          5,
-          6
-        ]
+        "option": [1, 2, 3, 4, 5, 6]
       },
       "Fleet1Formation": {
         "type": "select",
         "value": "double_line",
-        "option": [
-          "line_ahead",
-          "double_line",
-          "diamond"
-        ]
+        "option": ["line_ahead", "double_line", "diamond"]
       },
       "Fleet1Mode": {
         "type": "select",
@@ -2035,34 +1687,17 @@
       "Fleet1Step": {
         "type": "select",
         "value": 3,
-        "option": [
-          2,
-          3,
-          4,
-          5
-        ]
+        "option": [2, 3, 4, 5]
       },
       "Fleet2": {
         "type": "select",
         "value": 2,
-        "option": [
-          0,
-          1,
-          2,
-          3,
-          4,
-          5,
-          6
-        ]
+        "option": [0, 1, 2, 3, 4, 5, 6]
       },
       "Fleet2Formation": {
         "type": "select",
         "value": "double_line",
-        "option": [
-          "line_ahead",
-          "double_line",
-          "diamond"
-        ]
+        "option": ["line_ahead", "double_line", "diamond"]
       },
       "Fleet2Mode": {
         "type": "select",
@@ -2077,12 +1712,7 @@
       "Fleet2Step": {
         "type": "select",
         "value": 2,
-        "option": [
-          2,
-          3,
-          4,
-          5
-        ]
+        "option": [2, 3, 4, 5]
       },
       "FleetOrder": {
         "type": "select",
@@ -2099,11 +1729,7 @@
       "Fleet": {
         "type": "select",
         "value": 0,
-        "option": [
-          0,
-          1,
-          2
-        ]
+        "option": [0, 1, 2]
       },
       "Mode": {
         "type": "select",
@@ -2119,10 +1745,7 @@
       "AutoSearchMode": {
         "type": "select",
         "value": "sub_standby",
-        "option": [
-          "sub_standby",
-          "sub_auto_call"
-        ]
+        "option": ["sub_standby", "sub_auto_call"]
       },
       "DistanceToBoss": {
         "type": "select",
@@ -2139,11 +1762,7 @@
       "Mode": {
         "type": "select",
         "value": "calculate",
-        "option": [
-          "calculate",
-          "ignore",
-          "calculate_ignore"
-        ]
+        "option": ["calculate", "ignore", "calculate_ignore"]
       },
       "Fleet1Value": {
         "type": "input",
@@ -2168,11 +1787,7 @@
       "Fleet1Recover": {
         "type": "select",
         "value": "not_in_dormitory",
-        "option": [
-          "not_in_dormitory",
-          "dormitory_floor_1",
-          "dormitory_floor_2"
-        ]
+        "option": ["not_in_dormitory", "dormitory_floor_1", "dormitory_floor_2"]
       },
       "Fleet1Oath": {
         "type": "checkbox",
@@ -2201,11 +1816,7 @@
       "Fleet2Recover": {
         "type": "select",
         "value": "not_in_dormitory",
-        "option": [
-          "not_in_dormitory",
-          "dormitory_floor_1",
-          "dormitory_floor_2"
-        ]
+        "option": ["not_in_dormitory", "dormitory_floor_1", "dormitory_floor_2"]
       },
       "Fleet2Oath": {
         "type": "checkbox",
@@ -2250,11 +1861,7 @@
       "EnemyScaleBalanceWeight": {
         "type": "select",
         "value": "default_mode",
-        "option": [
-          "default_mode",
-          "S3_enemy_first",
-          "S1_enemy_first"
-        ]
+        "option": ["default_mode", "S3_enemy_first", "S1_enemy_first"]
       }
     },
     "Storage": {
@@ -2271,10 +1878,7 @@
       "Enable": {
         "type": "checkbox",
         "value": false,
-        "option": [
-          true,
-          false
-        ]
+        "option": [true, false]
       },
       "NextRun": {
         "type": "datetime",
@@ -2310,34 +1914,17 @@
       "Event": {
         "type": "state",
         "value": "campaign_main",
-        "option": [
-          "event_20220526_cn",
-          "event_20260226_cn"
-        ],
-        "option_cn": [
-          "event_20260226_cn"
-        ],
-        "option_en": [
-          "event_20260226_cn"
-        ],
-        "option_jp": [
-          "event_20260226_cn"
-        ],
-        "option_tw": [
-          "event_20220526_cn"
-        ],
-        "option_bold": [
-          "event_20220526_cn",
-          "event_20260226_cn"
-        ]
+        "option": ["event_20220526_cn", "event_20260226_cn"],
+        "option_cn": ["event_20260226_cn"],
+        "option_en": ["event_20260226_cn"],
+        "option_jp": ["event_20260226_cn"],
+        "option_tw": ["event_20220526_cn"],
+        "option_bold": ["event_20220526_cn", "event_20260226_cn"]
       },
       "Mode": {
         "type": "select",
         "value": "normal",
-        "option": [
-          "normal",
-          "hard"
-        ],
+        "option": ["normal", "hard"],
         "display": "hide"
       },
       "UseClearMode": {
@@ -2399,23 +1986,12 @@
       "Fleet1": {
         "type": "select",
         "value": 1,
-        "option": [
-          1,
-          2,
-          3,
-          4,
-          5,
-          6
-        ]
+        "option": [1, 2, 3, 4, 5, 6]
       },
       "Fleet1Formation": {
         "type": "select",
         "value": "double_line",
-        "option": [
-          "line_ahead",
-          "double_line",
-          "diamond"
-        ]
+        "option": ["line_ahead", "double_line", "diamond"]
       },
       "Fleet1Mode": {
         "type": "select",
@@ -2430,34 +2006,17 @@
       "Fleet1Step": {
         "type": "select",
         "value": 3,
-        "option": [
-          2,
-          3,
-          4,
-          5
-        ]
+        "option": [2, 3, 4, 5]
       },
       "Fleet2": {
         "type": "select",
         "value": 2,
-        "option": [
-          0,
-          1,
-          2,
-          3,
-          4,
-          5,
-          6
-        ]
+        "option": [0, 1, 2, 3, 4, 5, 6]
       },
       "Fleet2Formation": {
         "type": "select",
         "value": "double_line",
-        "option": [
-          "line_ahead",
-          "double_line",
-          "diamond"
-        ]
+        "option": ["line_ahead", "double_line", "diamond"]
       },
       "Fleet2Mode": {
         "type": "select",
@@ -2472,12 +2031,7 @@
       "Fleet2Step": {
         "type": "select",
         "value": 2,
-        "option": [
-          2,
-          3,
-          4,
-          5
-        ]
+        "option": [2, 3, 4, 5]
       },
       "FleetOrder": {
         "type": "select",
@@ -2494,11 +2048,7 @@
       "Fleet": {
         "type": "select",
         "value": 0,
-        "option": [
-          0,
-          1,
-          2
-        ]
+        "option": [0, 1, 2]
       },
       "Mode": {
         "type": "select",
@@ -2514,10 +2064,7 @@
       "AutoSearchMode": {
         "type": "select",
         "value": "sub_standby",
-        "option": [
-          "sub_standby",
-          "sub_auto_call"
-        ]
+        "option": ["sub_standby", "sub_auto_call"]
       },
       "DistanceToBoss": {
         "type": "select",
@@ -2534,11 +2081,7 @@
       "Mode": {
         "type": "select",
         "value": "calculate",
-        "option": [
-          "calculate",
-          "ignore",
-          "calculate_ignore"
-        ]
+        "option": ["calculate", "ignore", "calculate_ignore"]
       },
       "Fleet1Value": {
         "type": "input",
@@ -2563,11 +2106,7 @@
       "Fleet1Recover": {
         "type": "select",
         "value": "not_in_dormitory",
-        "option": [
-          "not_in_dormitory",
-          "dormitory_floor_1",
-          "dormitory_floor_2"
-        ]
+        "option": ["not_in_dormitory", "dormitory_floor_1", "dormitory_floor_2"]
       },
       "Fleet1Oath": {
         "type": "checkbox",
@@ -2596,11 +2135,7 @@
       "Fleet2Recover": {
         "type": "select",
         "value": "not_in_dormitory",
-        "option": [
-          "not_in_dormitory",
-          "dormitory_floor_1",
-          "dormitory_floor_2"
-        ]
+        "option": ["not_in_dormitory", "dormitory_floor_1", "dormitory_floor_2"]
       },
       "Fleet2Oath": {
         "type": "checkbox",
@@ -2645,11 +2180,7 @@
       "EnemyScaleBalanceWeight": {
         "type": "select",
         "value": "default_mode",
-        "option": [
-          "default_mode",
-          "S3_enemy_first",
-          "S1_enemy_first"
-        ]
+        "option": ["default_mode", "S3_enemy_first", "S1_enemy_first"]
       }
     },
     "Storage": {
@@ -2666,10 +2197,7 @@
       "Enable": {
         "type": "checkbox",
         "value": false,
-        "option": [
-          true,
-          false
-        ]
+        "option": [true, false]
       },
       "NextRun": {
         "type": "datetime",
@@ -2701,12 +2229,7 @@
       "Mode": {
         "type": "select",
         "value": "hard",
-        "option": [
-          "easy",
-          "normal",
-          "hard",
-          "ex"
-        ]
+        "option": ["easy", "normal", "hard", "ex"]
       },
       "UseTicket": {
         "type": "checkbox",
@@ -2722,32 +2245,17 @@
       "Event": {
         "type": "state",
         "value": "campaign_main",
-        "option": [
-          "raid_20260212"
-        ],
-        "option_cn": [
-          "raid_20260212"
-        ],
-        "option_en": [
-          "raid_20260212"
-        ],
-        "option_jp": [
-          "raid_20260212"
-        ],
-        "option_tw": [
-          "raid_20260212"
-        ],
-        "option_bold": [
-          "raid_20260212"
-        ]
+        "option": ["raid_20260212"],
+        "option_cn": ["raid_20260212"],
+        "option_en": ["raid_20260212"],
+        "option_jp": ["raid_20260212"],
+        "option_tw": ["raid_20260212"],
+        "option_bold": ["raid_20260212"]
       },
       "Mode": {
         "type": "select",
         "value": "normal",
-        "option": [
-          "normal",
-          "hard"
-        ],
+        "option": ["normal", "hard"],
         "display": "hide"
       },
       "UseClearMode": {
@@ -2817,11 +2325,7 @@
       "Mode": {
         "type": "select",
         "value": "calculate",
-        "option": [
-          "calculate",
-          "ignore",
-          "calculate_ignore"
-        ]
+        "option": ["calculate", "ignore", "calculate_ignore"]
       },
       "Fleet1Value": {
         "type": "input",
@@ -2846,11 +2350,7 @@
       "Fleet1Recover": {
         "type": "select",
         "value": "not_in_dormitory",
-        "option": [
-          "not_in_dormitory",
-          "dormitory_floor_1",
-          "dormitory_floor_2"
-        ]
+        "option": ["not_in_dormitory", "dormitory_floor_1", "dormitory_floor_2"]
       },
       "Fleet1Oath": {
         "type": "checkbox",
@@ -2908,10 +2408,7 @@
       "Enable": {
         "type": "checkbox",
         "value": false,
-        "option": [
-          true,
-          false
-        ]
+        "option": [true, false]
       },
       "NextRun": {
         "type": "datetime",
@@ -2987,11 +2484,7 @@
       "Mode": {
         "type": "select",
         "value": "calculate",
-        "option": [
-          "calculate",
-          "ignore",
-          "calculate_ignore"
-        ]
+        "option": ["calculate", "ignore", "calculate_ignore"]
       },
       "Fleet1Value": {
         "type": "input",
@@ -3081,10 +2574,7 @@
       "Enable": {
         "type": "checkbox",
         "value": false,
-        "option": [
-          true,
-          false
-        ]
+        "option": [true, false]
       },
       "NextRun": {
         "type": "datetime",
@@ -3121,32 +2611,17 @@
       "Event": {
         "type": "state",
         "value": "campaign_main",
-        "option": [
-          "coalition_20260122"
-        ],
-        "option_cn": [
-          "coalition_20260122"
-        ],
-        "option_en": [
-          "coalition_20260122"
-        ],
-        "option_jp": [
-          "coalition_20260122"
-        ],
-        "option_tw": [
-          "coalition_20260122"
-        ],
-        "option_bold": [
-          "coalition_20260122"
-        ]
+        "option": ["coalition_20260122"],
+        "option_cn": ["coalition_20260122"],
+        "option_en": ["coalition_20260122"],
+        "option_jp": ["coalition_20260122"],
+        "option_tw": ["coalition_20260122"],
+        "option_bold": ["coalition_20260122"]
       },
       "Mode": {
         "type": "select",
         "value": "normal",
-        "option": [
-          "normal",
-          "hard"
-        ],
+        "option": ["normal", "hard"],
         "display": "hide"
       },
       "UseClearMode": {
@@ -3179,20 +2654,12 @@
       "Mode": {
         "type": "select",
         "value": "hard",
-        "option": [
-          "easy",
-          "normal",
-          "hard",
-          "sp"
-        ]
+        "option": ["easy", "normal", "hard", "sp"]
       },
       "Fleet": {
         "type": "select",
         "value": "single",
-        "option": [
-          "single",
-          "multi"
-        ]
+        "option": ["single", "multi"]
       }
     },
     "StopCondition": {
@@ -3236,11 +2703,7 @@
       "Mode": {
         "type": "select",
         "value": "calculate",
-        "option": [
-          "calculate",
-          "ignore",
-          "calculate_ignore"
-        ]
+        "option": ["calculate", "ignore", "calculate_ignore"]
       },
       "Fleet1Value": {
         "type": "input",
@@ -3265,11 +2728,7 @@
       "Fleet1Recover": {
         "type": "select",
         "value": "not_in_dormitory",
-        "option": [
-          "not_in_dormitory",
-          "dormitory_floor_1",
-          "dormitory_floor_2"
-        ]
+        "option": ["not_in_dormitory", "dormitory_floor_1", "dormitory_floor_2"]
       },
       "Fleet1Oath": {
         "type": "checkbox",
@@ -3327,10 +2786,7 @@
       "Enable": {
         "type": "checkbox",
         "value": false,
-        "option": [
-          true,
-          false
-        ]
+        "option": [true, false]
       },
       "NextRun": {
         "type": "datetime",
@@ -3378,10 +2834,7 @@
       "Enable": {
         "type": "checkbox",
         "value": false,
-        "option": [
-          true,
-          false
-        ]
+        "option": [true, false]
       },
       "NextRun": {
         "type": "datetime",
@@ -3651,10 +3104,7 @@
       "Mode": {
         "type": "select",
         "value": "normal",
-        "option": [
-          "normal",
-          "hard"
-        ],
+        "option": ["normal", "hard"],
         "display": "hide"
       },
       "UseClearMode": {
@@ -3716,23 +3166,12 @@
       "Fleet1": {
         "type": "select",
         "value": 1,
-        "option": [
-          1,
-          2,
-          3,
-          4,
-          5,
-          6
-        ]
+        "option": [1, 2, 3, 4, 5, 6]
       },
       "Fleet1Formation": {
         "type": "select",
         "value": "double_line",
-        "option": [
-          "line_ahead",
-          "double_line",
-          "diamond"
-        ]
+        "option": ["line_ahead", "double_line", "diamond"]
       },
       "Fleet1Mode": {
         "type": "select",
@@ -3747,34 +3186,17 @@
       "Fleet1Step": {
         "type": "select",
         "value": 3,
-        "option": [
-          2,
-          3,
-          4,
-          5
-        ]
+        "option": [2, 3, 4, 5]
       },
       "Fleet2": {
         "type": "select",
         "value": 2,
-        "option": [
-          0,
-          1,
-          2,
-          3,
-          4,
-          5,
-          6
-        ]
+        "option": [0, 1, 2, 3, 4, 5, 6]
       },
       "Fleet2Formation": {
         "type": "select",
         "value": "double_line",
-        "option": [
-          "line_ahead",
-          "double_line",
-          "diamond"
-        ]
+        "option": ["line_ahead", "double_line", "diamond"]
       },
       "Fleet2Mode": {
         "type": "select",
@@ -3789,12 +3211,7 @@
       "Fleet2Step": {
         "type": "select",
         "value": 2,
-        "option": [
-          2,
-          3,
-          4,
-          5
-        ]
+        "option": [2, 3, 4, 5]
       },
       "FleetOrder": {
         "type": "select",
@@ -3811,11 +3228,7 @@
       "Fleet": {
         "type": "select",
         "value": 0,
-        "option": [
-          0,
-          1,
-          2
-        ]
+        "option": [0, 1, 2]
       },
       "Mode": {
         "type": "select",
@@ -3831,10 +3244,7 @@
       "AutoSearchMode": {
         "type": "select",
         "value": "sub_standby",
-        "option": [
-          "sub_standby",
-          "sub_auto_call"
-        ]
+        "option": ["sub_standby", "sub_auto_call"]
       },
       "DistanceToBoss": {
         "type": "select",
@@ -3851,11 +3261,7 @@
       "Mode": {
         "type": "select",
         "value": "calculate",
-        "option": [
-          "calculate",
-          "ignore",
-          "calculate_ignore"
-        ]
+        "option": ["calculate", "ignore", "calculate_ignore"]
       },
       "Fleet1Value": {
         "type": "input",
@@ -3880,11 +3286,7 @@
       "Fleet1Recover": {
         "type": "select",
         "value": "not_in_dormitory",
-        "option": [
-          "not_in_dormitory",
-          "dormitory_floor_1",
-          "dormitory_floor_2"
-        ]
+        "option": ["not_in_dormitory", "dormitory_floor_1", "dormitory_floor_2"]
       },
       "Fleet1Oath": {
         "type": "checkbox",
@@ -3913,11 +3315,7 @@
       "Fleet2Recover": {
         "type": "select",
         "value": "not_in_dormitory",
-        "option": [
-          "not_in_dormitory",
-          "dormitory_floor_1",
-          "dormitory_floor_2"
-        ]
+        "option": ["not_in_dormitory", "dormitory_floor_1", "dormitory_floor_2"]
       },
       "Fleet2Oath": {
         "type": "checkbox",
@@ -3962,11 +3360,7 @@
       "EnemyScaleBalanceWeight": {
         "type": "select",
         "value": "default_mode",
-        "option": [
-          "default_mode",
-          "S3_enemy_first",
-          "S1_enemy_first"
-        ]
+        "option": ["default_mode", "S3_enemy_first", "S1_enemy_first"]
       }
     },
     "Storage": {
@@ -3983,10 +3377,7 @@
       "Enable": {
         "type": "checkbox",
         "value": false,
-        "option": [
-          true,
-          false
-        ]
+        "option": [true, false]
       },
       "NextRun": {
         "type": "datetime",
@@ -4033,34 +3424,17 @@
       "Event": {
         "type": "state",
         "value": "campaign_main",
-        "option": [
-          "event_20220526_cn",
-          "event_20260226_cn"
-        ],
-        "option_cn": [
-          "event_20260226_cn"
-        ],
-        "option_en": [
-          "event_20260226_cn"
-        ],
-        "option_jp": [
-          "event_20260226_cn"
-        ],
-        "option_tw": [
-          "event_20220526_cn"
-        ],
-        "option_bold": [
-          "event_20220526_cn",
-          "event_20260226_cn"
-        ]
+        "option": ["event_20220526_cn", "event_20260226_cn"],
+        "option_cn": ["event_20260226_cn"],
+        "option_en": ["event_20260226_cn"],
+        "option_jp": ["event_20260226_cn"],
+        "option_tw": ["event_20220526_cn"],
+        "option_bold": ["event_20220526_cn", "event_20260226_cn"]
       },
       "Mode": {
         "type": "select",
         "value": "normal",
-        "option": [
-          "normal",
-          "hard"
-        ],
+        "option": ["normal", "hard"],
         "display": "hide"
       },
       "UseClearMode": {
@@ -4128,23 +3502,12 @@
       "Fleet1": {
         "type": "select",
         "value": 1,
-        "option": [
-          1,
-          2,
-          3,
-          4,
-          5,
-          6
-        ]
+        "option": [1, 2, 3, 4, 5, 6]
       },
       "Fleet1Formation": {
         "type": "select",
         "value": "double_line",
-        "option": [
-          "line_ahead",
-          "double_line",
-          "diamond"
-        ]
+        "option": ["line_ahead", "double_line", "diamond"]
       },
       "Fleet1Mode": {
         "type": "select",
@@ -4159,34 +3522,17 @@
       "Fleet1Step": {
         "type": "select",
         "value": 3,
-        "option": [
-          2,
-          3,
-          4,
-          5
-        ]
+        "option": [2, 3, 4, 5]
       },
       "Fleet2": {
         "type": "select",
         "value": 2,
-        "option": [
-          0,
-          1,
-          2,
-          3,
-          4,
-          5,
-          6
-        ]
+        "option": [0, 1, 2, 3, 4, 5, 6]
       },
       "Fleet2Formation": {
         "type": "select",
         "value": "double_line",
-        "option": [
-          "line_ahead",
-          "double_line",
-          "diamond"
-        ]
+        "option": ["line_ahead", "double_line", "diamond"]
       },
       "Fleet2Mode": {
         "type": "select",
@@ -4201,12 +3547,7 @@
       "Fleet2Step": {
         "type": "select",
         "value": 2,
-        "option": [
-          2,
-          3,
-          4,
-          5
-        ]
+        "option": [2, 3, 4, 5]
       },
       "FleetOrder": {
         "type": "select",
@@ -4223,11 +3564,7 @@
       "Fleet": {
         "type": "select",
         "value": 0,
-        "option": [
-          0,
-          1,
-          2
-        ]
+        "option": [0, 1, 2]
       },
       "Mode": {
         "type": "select",
@@ -4243,10 +3580,7 @@
       "AutoSearchMode": {
         "type": "select",
         "value": "sub_standby",
-        "option": [
-          "sub_standby",
-          "sub_auto_call"
-        ]
+        "option": ["sub_standby", "sub_auto_call"]
       },
       "DistanceToBoss": {
         "type": "select",
@@ -4263,11 +3597,7 @@
       "Mode": {
         "type": "select",
         "value": "calculate",
-        "option": [
-          "calculate",
-          "ignore",
-          "calculate_ignore"
-        ]
+        "option": ["calculate", "ignore", "calculate_ignore"]
       },
       "Fleet1Value": {
         "type": "input",
@@ -4292,11 +3622,7 @@
       "Fleet1Recover": {
         "type": "select",
         "value": "not_in_dormitory",
-        "option": [
-          "not_in_dormitory",
-          "dormitory_floor_1",
-          "dormitory_floor_2"
-        ]
+        "option": ["not_in_dormitory", "dormitory_floor_1", "dormitory_floor_2"]
       },
       "Fleet1Oath": {
         "type": "checkbox",
@@ -4325,11 +3651,7 @@
       "Fleet2Recover": {
         "type": "select",
         "value": "not_in_dormitory",
-        "option": [
-          "not_in_dormitory",
-          "dormitory_floor_1",
-          "dormitory_floor_2"
-        ]
+        "option": ["not_in_dormitory", "dormitory_floor_1", "dormitory_floor_2"]
       },
       "Fleet2Oath": {
         "type": "checkbox",
@@ -4374,11 +3696,7 @@
       "EnemyScaleBalanceWeight": {
         "type": "select",
         "value": "default_mode",
-        "option": [
-          "default_mode",
-          "S3_enemy_first",
-          "S1_enemy_first"
-        ]
+        "option": ["default_mode", "S3_enemy_first", "S1_enemy_first"]
       }
     },
     "Storage": {
@@ -4395,10 +3713,7 @@
       "Enable": {
         "type": "checkbox",
         "value": false,
-        "option": [
-          true,
-          false
-        ]
+        "option": [true, false]
       },
       "NextRun": {
         "type": "datetime",
@@ -4445,34 +3760,17 @@
       "Event": {
         "type": "state",
         "value": "campaign_main",
-        "option": [
-          "event_20220526_cn",
-          "event_20260226_cn"
-        ],
-        "option_cn": [
-          "event_20260226_cn"
-        ],
-        "option_en": [
-          "event_20260226_cn"
-        ],
-        "option_jp": [
-          "event_20260226_cn"
-        ],
-        "option_tw": [
-          "event_20220526_cn"
-        ],
-        "option_bold": [
-          "event_20220526_cn",
-          "event_20260226_cn"
-        ]
+        "option": ["event_20220526_cn", "event_20260226_cn"],
+        "option_cn": ["event_20260226_cn"],
+        "option_en": ["event_20260226_cn"],
+        "option_jp": ["event_20260226_cn"],
+        "option_tw": ["event_20220526_cn"],
+        "option_bold": ["event_20220526_cn", "event_20260226_cn"]
       },
       "Mode": {
         "type": "select",
         "value": "normal",
-        "option": [
-          "normal",
-          "hard"
-        ],
+        "option": ["normal", "hard"],
         "display": "hide"
       },
       "UseClearMode": {
@@ -4540,23 +3838,12 @@
       "Fleet1": {
         "type": "select",
         "value": 1,
-        "option": [
-          1,
-          2,
-          3,
-          4,
-          5,
-          6
-        ]
+        "option": [1, 2, 3, 4, 5, 6]
       },
       "Fleet1Formation": {
         "type": "select",
         "value": "double_line",
-        "option": [
-          "line_ahead",
-          "double_line",
-          "diamond"
-        ]
+        "option": ["line_ahead", "double_line", "diamond"]
       },
       "Fleet1Mode": {
         "type": "select",
@@ -4571,34 +3858,17 @@
       "Fleet1Step": {
         "type": "select",
         "value": 3,
-        "option": [
-          2,
-          3,
-          4,
-          5
-        ]
+        "option": [2, 3, 4, 5]
       },
       "Fleet2": {
         "type": "select",
         "value": 2,
-        "option": [
-          0,
-          1,
-          2,
-          3,
-          4,
-          5,
-          6
-        ]
+        "option": [0, 1, 2, 3, 4, 5, 6]
       },
       "Fleet2Formation": {
         "type": "select",
         "value": "double_line",
-        "option": [
-          "line_ahead",
-          "double_line",
-          "diamond"
-        ]
+        "option": ["line_ahead", "double_line", "diamond"]
       },
       "Fleet2Mode": {
         "type": "select",
@@ -4613,12 +3883,7 @@
       "Fleet2Step": {
         "type": "select",
         "value": 2,
-        "option": [
-          2,
-          3,
-          4,
-          5
-        ]
+        "option": [2, 3, 4, 5]
       },
       "FleetOrder": {
         "type": "select",
@@ -4635,11 +3900,7 @@
       "Fleet": {
         "type": "select",
         "value": 0,
-        "option": [
-          0,
-          1,
-          2
-        ]
+        "option": [0, 1, 2]
       },
       "Mode": {
         "type": "select",
@@ -4655,10 +3916,7 @@
       "AutoSearchMode": {
         "type": "select",
         "value": "sub_standby",
-        "option": [
-          "sub_standby",
-          "sub_auto_call"
-        ]
+        "option": ["sub_standby", "sub_auto_call"]
       },
       "DistanceToBoss": {
         "type": "select",
@@ -4675,11 +3933,7 @@
       "Mode": {
         "type": "select",
         "value": "calculate",
-        "option": [
-          "calculate",
-          "ignore",
-          "calculate_ignore"
-        ]
+        "option": ["calculate", "ignore", "calculate_ignore"]
       },
       "Fleet1Value": {
         "type": "input",
@@ -4704,11 +3958,7 @@
       "Fleet1Recover": {
         "type": "select",
         "value": "not_in_dormitory",
-        "option": [
-          "not_in_dormitory",
-          "dormitory_floor_1",
-          "dormitory_floor_2"
-        ]
+        "option": ["not_in_dormitory", "dormitory_floor_1", "dormitory_floor_2"]
       },
       "Fleet1Oath": {
         "type": "checkbox",
@@ -4737,11 +3987,7 @@
       "Fleet2Recover": {
         "type": "select",
         "value": "not_in_dormitory",
-        "option": [
-          "not_in_dormitory",
-          "dormitory_floor_1",
-          "dormitory_floor_2"
-        ]
+        "option": ["not_in_dormitory", "dormitory_floor_1", "dormitory_floor_2"]
       },
       "Fleet2Oath": {
         "type": "checkbox",
@@ -4786,11 +4032,7 @@
       "EnemyScaleBalanceWeight": {
         "type": "select",
         "value": "default_mode",
-        "option": [
-          "default_mode",
-          "S3_enemy_first",
-          "S1_enemy_first"
-        ]
+        "option": ["default_mode", "S3_enemy_first", "S1_enemy_first"]
       }
     },
     "Storage": {
@@ -4807,10 +4049,7 @@
       "Enable": {
         "type": "checkbox",
         "value": false,
-        "option": [
-          true,
-          false
-        ]
+        "option": [true, false]
       },
       "NextRun": {
         "type": "datetime",
@@ -4857,34 +4096,17 @@
       "Event": {
         "type": "state",
         "value": "campaign_main",
-        "option": [
-          "event_20220526_cn",
-          "event_20260226_cn"
-        ],
-        "option_cn": [
-          "event_20260226_cn"
-        ],
-        "option_en": [
-          "event_20260226_cn"
-        ],
-        "option_jp": [
-          "event_20260226_cn"
-        ],
-        "option_tw": [
-          "event_20220526_cn"
-        ],
-        "option_bold": [
-          "event_20220526_cn",
-          "event_20260226_cn"
-        ]
+        "option": ["event_20220526_cn", "event_20260226_cn"],
+        "option_cn": ["event_20260226_cn"],
+        "option_en": ["event_20260226_cn"],
+        "option_jp": ["event_20260226_cn"],
+        "option_tw": ["event_20220526_cn"],
+        "option_bold": ["event_20220526_cn", "event_20260226_cn"]
       },
       "Mode": {
         "type": "select",
         "value": "normal",
-        "option": [
-          "normal",
-          "hard"
-        ],
+        "option": ["normal", "hard"],
         "display": "hide"
       },
       "UseClearMode": {
@@ -4952,23 +4174,12 @@
       "Fleet1": {
         "type": "select",
         "value": 1,
-        "option": [
-          1,
-          2,
-          3,
-          4,
-          5,
-          6
-        ]
+        "option": [1, 2, 3, 4, 5, 6]
       },
       "Fleet1Formation": {
         "type": "select",
         "value": "double_line",
-        "option": [
-          "line_ahead",
-          "double_line",
-          "diamond"
-        ]
+        "option": ["line_ahead", "double_line", "diamond"]
       },
       "Fleet1Mode": {
         "type": "select",
@@ -4983,34 +4194,17 @@
       "Fleet1Step": {
         "type": "select",
         "value": 3,
-        "option": [
-          2,
-          3,
-          4,
-          5
-        ]
+        "option": [2, 3, 4, 5]
       },
       "Fleet2": {
         "type": "select",
         "value": 2,
-        "option": [
-          0,
-          1,
-          2,
-          3,
-          4,
-          5,
-          6
-        ]
+        "option": [0, 1, 2, 3, 4, 5, 6]
       },
       "Fleet2Formation": {
         "type": "select",
         "value": "double_line",
-        "option": [
-          "line_ahead",
-          "double_line",
-          "diamond"
-        ]
+        "option": ["line_ahead", "double_line", "diamond"]
       },
       "Fleet2Mode": {
         "type": "select",
@@ -5025,12 +4219,7 @@
       "Fleet2Step": {
         "type": "select",
         "value": 2,
-        "option": [
-          2,
-          3,
-          4,
-          5
-        ]
+        "option": [2, 3, 4, 5]
       },
       "FleetOrder": {
         "type": "select",
@@ -5047,11 +4236,7 @@
       "Fleet": {
         "type": "select",
         "value": 0,
-        "option": [
-          0,
-          1,
-          2
-        ]
+        "option": [0, 1, 2]
       },
       "Mode": {
         "type": "select",
@@ -5067,10 +4252,7 @@
       "AutoSearchMode": {
         "type": "select",
         "value": "sub_standby",
-        "option": [
-          "sub_standby",
-          "sub_auto_call"
-        ]
+        "option": ["sub_standby", "sub_auto_call"]
       },
       "DistanceToBoss": {
         "type": "select",
@@ -5087,11 +4269,7 @@
       "Mode": {
         "type": "select",
         "value": "calculate",
-        "option": [
-          "calculate",
-          "ignore",
-          "calculate_ignore"
-        ]
+        "option": ["calculate", "ignore", "calculate_ignore"]
       },
       "Fleet1Value": {
         "type": "input",
@@ -5116,11 +4294,7 @@
       "Fleet1Recover": {
         "type": "select",
         "value": "not_in_dormitory",
-        "option": [
-          "not_in_dormitory",
-          "dormitory_floor_1",
-          "dormitory_floor_2"
-        ]
+        "option": ["not_in_dormitory", "dormitory_floor_1", "dormitory_floor_2"]
       },
       "Fleet1Oath": {
         "type": "checkbox",
@@ -5149,11 +4323,7 @@
       "Fleet2Recover": {
         "type": "select",
         "value": "not_in_dormitory",
-        "option": [
-          "not_in_dormitory",
-          "dormitory_floor_1",
-          "dormitory_floor_2"
-        ]
+        "option": ["not_in_dormitory", "dormitory_floor_1", "dormitory_floor_2"]
       },
       "Fleet2Oath": {
         "type": "checkbox",
@@ -5198,11 +4368,7 @@
       "EnemyScaleBalanceWeight": {
         "type": "select",
         "value": "default_mode",
-        "option": [
-          "default_mode",
-          "S3_enemy_first",
-          "S1_enemy_first"
-        ]
+        "option": ["default_mode", "S3_enemy_first", "S1_enemy_first"]
       }
     },
     "Storage": {
@@ -5219,10 +4385,7 @@
       "Enable": {
         "type": "checkbox",
         "value": false,
-        "option": [
-          true,
-          false
-        ]
+        "option": [true, false]
       },
       "NextRun": {
         "type": "datetime",
@@ -5269,34 +4432,17 @@
       "Event": {
         "type": "state",
         "value": "campaign_main",
-        "option": [
-          "event_20220526_cn",
-          "event_20260226_cn"
-        ],
-        "option_cn": [
-          "event_20260226_cn"
-        ],
-        "option_en": [
-          "event_20260226_cn"
-        ],
-        "option_jp": [
-          "event_20260226_cn"
-        ],
-        "option_tw": [
-          "event_20220526_cn"
-        ],
-        "option_bold": [
-          "event_20220526_cn",
-          "event_20260226_cn"
-        ]
+        "option": ["event_20220526_cn", "event_20260226_cn"],
+        "option_cn": ["event_20260226_cn"],
+        "option_en": ["event_20260226_cn"],
+        "option_jp": ["event_20260226_cn"],
+        "option_tw": ["event_20220526_cn"],
+        "option_bold": ["event_20220526_cn", "event_20260226_cn"]
       },
       "Mode": {
         "type": "select",
         "value": "normal",
-        "option": [
-          "normal",
-          "hard"
-        ],
+        "option": ["normal", "hard"],
         "display": "hide"
       },
       "UseClearMode": {
@@ -5364,23 +4510,12 @@
       "Fleet1": {
         "type": "select",
         "value": 1,
-        "option": [
-          1,
-          2,
-          3,
-          4,
-          5,
-          6
-        ]
+        "option": [1, 2, 3, 4, 5, 6]
       },
       "Fleet1Formation": {
         "type": "select",
         "value": "double_line",
-        "option": [
-          "line_ahead",
-          "double_line",
-          "diamond"
-        ]
+        "option": ["line_ahead", "double_line", "diamond"]
       },
       "Fleet1Mode": {
         "type": "select",
@@ -5395,34 +4530,17 @@
       "Fleet1Step": {
         "type": "select",
         "value": 3,
-        "option": [
-          2,
-          3,
-          4,
-          5
-        ]
+        "option": [2, 3, 4, 5]
       },
       "Fleet2": {
         "type": "select",
         "value": 2,
-        "option": [
-          0,
-          1,
-          2,
-          3,
-          4,
-          5,
-          6
-        ]
+        "option": [0, 1, 2, 3, 4, 5, 6]
       },
       "Fleet2Formation": {
         "type": "select",
         "value": "double_line",
-        "option": [
-          "line_ahead",
-          "double_line",
-          "diamond"
-        ]
+        "option": ["line_ahead", "double_line", "diamond"]
       },
       "Fleet2Mode": {
         "type": "select",
@@ -5437,12 +4555,7 @@
       "Fleet2Step": {
         "type": "select",
         "value": 2,
-        "option": [
-          2,
-          3,
-          4,
-          5
-        ]
+        "option": [2, 3, 4, 5]
       },
       "FleetOrder": {
         "type": "select",
@@ -5459,11 +4572,7 @@
       "Fleet": {
         "type": "select",
         "value": 0,
-        "option": [
-          0,
-          1,
-          2
-        ]
+        "option": [0, 1, 2]
       },
       "Mode": {
         "type": "select",
@@ -5479,10 +4588,7 @@
       "AutoSearchMode": {
         "type": "select",
         "value": "sub_standby",
-        "option": [
-          "sub_standby",
-          "sub_auto_call"
-        ]
+        "option": ["sub_standby", "sub_auto_call"]
       },
       "DistanceToBoss": {
         "type": "select",
@@ -5499,11 +4605,7 @@
       "Mode": {
         "type": "select",
         "value": "calculate",
-        "option": [
-          "calculate",
-          "ignore",
-          "calculate_ignore"
-        ]
+        "option": ["calculate", "ignore", "calculate_ignore"]
       },
       "Fleet1Value": {
         "type": "input",
@@ -5528,11 +4630,7 @@
       "Fleet1Recover": {
         "type": "select",
         "value": "not_in_dormitory",
-        "option": [
-          "not_in_dormitory",
-          "dormitory_floor_1",
-          "dormitory_floor_2"
-        ]
+        "option": ["not_in_dormitory", "dormitory_floor_1", "dormitory_floor_2"]
       },
       "Fleet1Oath": {
         "type": "checkbox",
@@ -5561,11 +4659,7 @@
       "Fleet2Recover": {
         "type": "select",
         "value": "not_in_dormitory",
-        "option": [
-          "not_in_dormitory",
-          "dormitory_floor_1",
-          "dormitory_floor_2"
-        ]
+        "option": ["not_in_dormitory", "dormitory_floor_1", "dormitory_floor_2"]
       },
       "Fleet2Oath": {
         "type": "checkbox",
@@ -5610,11 +4704,7 @@
       "EnemyScaleBalanceWeight": {
         "type": "select",
         "value": "default_mode",
-        "option": [
-          "default_mode",
-          "S3_enemy_first",
-          "S1_enemy_first"
-        ]
+        "option": ["default_mode", "S3_enemy_first", "S1_enemy_first"]
       }
     },
     "Storage": {
@@ -5631,10 +4721,7 @@
       "Enable": {
         "type": "checkbox",
         "value": false,
-        "option": [
-          true,
-          false
-        ]
+        "option": [true, false]
       },
       "NextRun": {
         "type": "datetime",
@@ -5671,34 +4758,17 @@
       "Event": {
         "type": "state",
         "value": "campaign_main",
-        "option": [
-          "event_20220526_cn",
-          "event_20260226_cn"
-        ],
-        "option_cn": [
-          "event_20260226_cn"
-        ],
-        "option_en": [
-          "event_20260226_cn"
-        ],
-        "option_jp": [
-          "event_20260226_cn"
-        ],
-        "option_tw": [
-          "event_20220526_cn"
-        ],
-        "option_bold": [
-          "event_20220526_cn",
-          "event_20260226_cn"
-        ]
+        "option": ["event_20220526_cn", "event_20260226_cn"],
+        "option_cn": ["event_20260226_cn"],
+        "option_en": ["event_20260226_cn"],
+        "option_jp": ["event_20260226_cn"],
+        "option_tw": ["event_20220526_cn"],
+        "option_bold": ["event_20220526_cn", "event_20260226_cn"]
       },
       "Mode": {
         "type": "select",
         "value": "normal",
-        "option": [
-          "normal",
-          "hard"
-        ],
+        "option": ["normal", "hard"],
         "display": "hide"
       },
       "UseClearMode": {
@@ -5766,23 +4836,12 @@
       "Fleet1": {
         "type": "select",
         "value": 1,
-        "option": [
-          1,
-          2,
-          3,
-          4,
-          5,
-          6
-        ]
+        "option": [1, 2, 3, 4, 5, 6]
       },
       "Fleet1Formation": {
         "type": "select",
         "value": "double_line",
-        "option": [
-          "line_ahead",
-          "double_line",
-          "diamond"
-        ]
+        "option": ["line_ahead", "double_line", "diamond"]
       },
       "Fleet1Mode": {
         "type": "select",
@@ -5797,34 +4856,17 @@
       "Fleet1Step": {
         "type": "select",
         "value": 3,
-        "option": [
-          2,
-          3,
-          4,
-          5
-        ]
+        "option": [2, 3, 4, 5]
       },
       "Fleet2": {
         "type": "select",
         "value": 2,
-        "option": [
-          0,
-          1,
-          2,
-          3,
-          4,
-          5,
-          6
-        ]
+        "option": [0, 1, 2, 3, 4, 5, 6]
       },
       "Fleet2Formation": {
         "type": "select",
         "value": "double_line",
-        "option": [
-          "line_ahead",
-          "double_line",
-          "diamond"
-        ]
+        "option": ["line_ahead", "double_line", "diamond"]
       },
       "Fleet2Mode": {
         "type": "select",
@@ -5839,12 +4881,7 @@
       "Fleet2Step": {
         "type": "select",
         "value": 2,
-        "option": [
-          2,
-          3,
-          4,
-          5
-        ]
+        "option": [2, 3, 4, 5]
       },
       "FleetOrder": {
         "type": "select",
@@ -5861,11 +4898,7 @@
       "Fleet": {
         "type": "select",
         "value": 0,
-        "option": [
-          0,
-          1,
-          2
-        ]
+        "option": [0, 1, 2]
       },
       "Mode": {
         "type": "select",
@@ -5881,10 +4914,7 @@
       "AutoSearchMode": {
         "type": "select",
         "value": "sub_standby",
-        "option": [
-          "sub_standby",
-          "sub_auto_call"
-        ],
+        "option": ["sub_standby", "sub_auto_call"],
         "display": "hide"
       },
       "DistanceToBoss": {
@@ -5902,11 +4932,7 @@
       "Mode": {
         "type": "select",
         "value": "calculate",
-        "option": [
-          "calculate",
-          "ignore",
-          "calculate_ignore"
-        ]
+        "option": ["calculate", "ignore", "calculate_ignore"]
       },
       "Fleet1Value": {
         "type": "input",
@@ -5931,11 +4957,7 @@
       "Fleet1Recover": {
         "type": "select",
         "value": "not_in_dormitory",
-        "option": [
-          "not_in_dormitory",
-          "dormitory_floor_1",
-          "dormitory_floor_2"
-        ]
+        "option": ["not_in_dormitory", "dormitory_floor_1", "dormitory_floor_2"]
       },
       "Fleet1Oath": {
         "type": "checkbox",
@@ -5964,11 +4986,7 @@
       "Fleet2Recover": {
         "type": "select",
         "value": "not_in_dormitory",
-        "option": [
-          "not_in_dormitory",
-          "dormitory_floor_1",
-          "dormitory_floor_2"
-        ]
+        "option": ["not_in_dormitory", "dormitory_floor_1", "dormitory_floor_2"]
       },
       "Fleet2Oath": {
         "type": "checkbox",
@@ -6013,11 +5031,7 @@
       "EnemyScaleBalanceWeight": {
         "type": "select",
         "value": "default_mode",
-        "option": [
-          "default_mode",
-          "S3_enemy_first",
-          "S1_enemy_first"
-        ]
+        "option": ["default_mode", "S3_enemy_first", "S1_enemy_first"]
       }
     },
     "Storage": {
@@ -6034,10 +5048,7 @@
       "Enable": {
         "type": "checkbox",
         "value": false,
-        "option": [
-          true,
-          false
-        ]
+        "option": [true, false]
       },
       "NextRun": {
         "type": "datetime",
@@ -6080,32 +5091,17 @@
       "Event": {
         "type": "state",
         "value": "campaign_main",
-        "option": [
-          "raid_20260212"
-        ],
-        "option_cn": [
-          "raid_20260212"
-        ],
-        "option_en": [
-          "raid_20260212"
-        ],
-        "option_jp": [
-          "raid_20260212"
-        ],
-        "option_tw": [
-          "raid_20260212"
-        ],
-        "option_bold": [
-          "raid_20260212"
-        ]
+        "option": ["raid_20260212"],
+        "option_cn": ["raid_20260212"],
+        "option_en": ["raid_20260212"],
+        "option_jp": ["raid_20260212"],
+        "option_tw": ["raid_20260212"],
+        "option_bold": ["raid_20260212"]
       },
       "Mode": {
         "type": "select",
         "value": "normal",
-        "option": [
-          "normal",
-          "hard"
-        ],
+        "option": ["normal", "hard"],
         "display": "hide"
       },
       "UseClearMode": {
@@ -6176,11 +5172,7 @@
       "Mode": {
         "type": "select",
         "value": "calculate",
-        "option": [
-          "calculate",
-          "ignore",
-          "calculate_ignore"
-        ]
+        "option": ["calculate", "ignore", "calculate_ignore"]
       },
       "Fleet1Value": {
         "type": "input",
@@ -6205,11 +5197,7 @@
       "Fleet1Recover": {
         "type": "select",
         "value": "not_in_dormitory",
-        "option": [
-          "not_in_dormitory",
-          "dormitory_floor_1",
-          "dormitory_floor_2"
-        ]
+        "option": ["not_in_dormitory", "dormitory_floor_1", "dormitory_floor_2"]
       },
       "Fleet1Oath": {
         "type": "checkbox",
@@ -6267,10 +5255,7 @@
       "Enable": {
         "type": "checkbox",
         "value": false,
-        "option": [
-          true,
-          false
-        ]
+        "option": [true, false]
       },
       "NextRun": {
         "type": "datetime",
@@ -6307,32 +5292,17 @@
       "Event": {
         "type": "state",
         "value": "campaign_main",
-        "option": [
-          "coalition_20260122"
-        ],
-        "option_cn": [
-          "coalition_20260122"
-        ],
-        "option_en": [
-          "coalition_20260122"
-        ],
-        "option_jp": [
-          "coalition_20260122"
-        ],
-        "option_tw": [
-          "coalition_20260122"
-        ],
-        "option_bold": [
-          "coalition_20260122"
-        ]
+        "option": ["coalition_20260122"],
+        "option_cn": ["coalition_20260122"],
+        "option_en": ["coalition_20260122"],
+        "option_jp": ["coalition_20260122"],
+        "option_tw": ["coalition_20260122"],
+        "option_bold": ["coalition_20260122"]
       },
       "Mode": {
         "type": "select",
         "value": "normal",
-        "option": [
-          "normal",
-          "hard"
-        ],
+        "option": ["normal", "hard"],
         "display": "hide"
       },
       "UseClearMode": {
@@ -6365,21 +5335,13 @@
       "Mode": {
         "type": "select",
         "value": "sp",
-        "option": [
-          "easy",
-          "normal",
-          "hard",
-          "sp"
-        ],
+        "option": ["easy", "normal", "hard", "sp"],
         "display": "hide"
       },
       "Fleet": {
         "type": "select",
         "value": "single",
-        "option": [
-          "single",
-          "multi"
-        ]
+        "option": ["single", "multi"]
       }
     },
     "StopCondition": {
@@ -6423,11 +5385,7 @@
       "Mode": {
         "type": "select",
         "value": "calculate",
-        "option": [
-          "calculate",
-          "ignore",
-          "calculate_ignore"
-        ]
+        "option": ["calculate", "ignore", "calculate_ignore"]
       },
       "Fleet1Value": {
         "type": "input",
@@ -6452,11 +5410,7 @@
       "Fleet1Recover": {
         "type": "select",
         "value": "not_in_dormitory",
-        "option": [
-          "not_in_dormitory",
-          "dormitory_floor_1",
-          "dormitory_floor_2"
-        ]
+        "option": ["not_in_dormitory", "dormitory_floor_1", "dormitory_floor_2"]
       },
       "Fleet1Oath": {
         "type": "checkbox",
@@ -6514,12 +5468,8 @@
       "Enable": {
         "type": "lock",
         "value": true,
-        "option": [
-          true
-        ],
-        "option_bold": [
-          true
-        ]
+        "option": [true],
+        "option_bold": [true]
       },
       "NextRun": {
         "type": "datetime",
@@ -6551,14 +5501,7 @@
       "PresetFilter": {
         "type": "select",
         "value": "cube",
-        "option": [
-          "cube",
-          "cube_24h",
-          "chip",
-          "chip_24h",
-          "oil",
-          "custom"
-        ]
+        "option": ["cube", "cube_24h", "chip", "chip_24h", "oil", "custom"]
       },
       "CustomFilter": {
         "type": "textarea",
@@ -6583,10 +5526,7 @@
       "Enable": {
         "type": "checkbox",
         "value": true,
-        "option": [
-          true,
-          false
-        ]
+        "option": [true, false]
       },
       "NextRun": {
         "type": "datetime",
@@ -6622,13 +5562,7 @@
       "RapidTrainingSlot": {
         "type": "select",
         "value": "do_not_use",
-        "option": [
-          "do_not_use",
-          "slot_1",
-          "slot_2",
-          "slot_3",
-          "slot_4"
-        ]
+        "option": ["do_not_use", "slot_1", "slot_2", "slot_3", "slot_4"]
       }
     },
     "ControlExpOverflow": {
@@ -6677,12 +5611,8 @@
       "Enable": {
         "type": "lock",
         "value": true,
-        "option": [
-          true
-        ],
-        "option_bold": [
-          true
-        ]
+        "option": [true],
+        "option_bold": [true]
       },
       "NextRun": {
         "type": "datetime",
@@ -6793,10 +5723,7 @@
       "Enable": {
         "type": "checkbox",
         "value": true,
-        "option": [
-          true,
-          false
-        ]
+        "option": [true, false]
       },
       "NextRun": {
         "type": "datetime",
@@ -6846,10 +5773,7 @@
       "BuyOption": {
         "type": "select",
         "value": "all",
-        "option": [
-          "set",
-          "all"
-        ]
+        "option": ["set", "all"]
       },
       "LastRun": {
         "type": "datetime",
@@ -6871,10 +5795,7 @@
       "Enable": {
         "type": "checkbox",
         "value": true,
-        "option": [
-          true,
-          false
-        ]
+        "option": [true, false]
       },
       "NextRun": {
         "type": "datetime",
@@ -6920,10 +5841,7 @@
       "Mode": {
         "type": "select",
         "value": "seamlessly",
-        "option": [
-          "seamlessly",
-          "once_a_day"
-        ]
+        "option": ["seamlessly", "once_a_day"]
       },
       "RetainTalentedGold": {
         "type": "checkbox",
@@ -6956,10 +5874,7 @@
       "Enable": {
         "type": "checkbox",
         "value": true,
-        "option": [
-          true,
-          false
-        ]
+        "option": [true, false]
       },
       "NextRun": {
         "type": "datetime",
@@ -7041,12 +5956,8 @@
       "Enable": {
         "type": "lock",
         "value": true,
-        "option": [
-          true
-        ],
-        "option_bold": [
-          true
-        ]
+        "option": [true],
+        "option_bold": [true]
       },
       "NextRun": {
         "type": "datetime",
@@ -7110,10 +6021,7 @@
       "Enable": {
         "type": "checkbox",
         "value": false,
-        "option": [
-          true,
-          false
-        ]
+        "option": [true, false]
       },
       "NextRun": {
         "type": "datetime",
@@ -7145,10 +6053,7 @@
       "LevelCap": {
         "type": "select",
         "value": "level120",
-        "option": [
-          "level120",
-          "level125"
-        ]
+        "option": ["level120", "level125"]
       },
       "Favourite": {
         "type": "checkbox",
@@ -7169,10 +6074,7 @@
       "Enable": {
         "type": "checkbox",
         "value": false,
-        "option": [
-          true,
-          false
-        ]
+        "option": [true, false]
       },
       "NextRun": {
         "type": "datetime",
@@ -7208,142 +6110,67 @@
       "EscortMission": {
         "type": "select",
         "value": "first",
-        "option": [
-          "skip",
-          "first",
-          "second",
-          "third"
-        ]
+        "option": ["skip", "first", "second", "third"]
       },
       "EscortMissionFleet": {
         "type": "select",
         "value": 1,
-        "option": [
-          1,
-          2,
-          3,
-          4,
-          5,
-          6
-        ]
+        "option": [1, 2, 3, 4, 5, 6]
       },
       "AdvanceMission": {
         "type": "select",
         "value": "first",
-        "option": [
-          "skip",
-          "first",
-          "second",
-          "third"
-        ]
+        "option": ["skip", "first", "second", "third"]
       },
       "AdvanceMissionFleet": {
         "type": "select",
         "value": 1,
-        "option": [
-          1,
-          2,
-          3,
-          4,
-          5,
-          6
-        ]
+        "option": [1, 2, 3, 4, 5, 6]
       },
       "FierceAssault": {
         "type": "select",
         "value": "first",
-        "option": [
-          "skip",
-          "first",
-          "second",
-          "third"
-        ]
+        "option": ["skip", "first", "second", "third"]
       },
       "FierceAssaultFleet": {
         "type": "select",
         "value": 1,
-        "option": [
-          1,
-          2,
-          3,
-          4,
-          5,
-          6
-        ]
+        "option": [1, 2, 3, 4, 5, 6]
       },
       "TacticalTraining": {
         "type": "select",
         "value": "second",
-        "option": [
-          "skip",
-          "first",
-          "second",
-          "third"
-        ]
+        "option": ["skip", "first", "second", "third"]
       },
       "TacticalTrainingFleet": {
         "type": "select",
         "value": 1,
-        "option": [
-          1,
-          2,
-          3,
-          4,
-          5,
-          6
-        ]
+        "option": [1, 2, 3, 4, 5, 6]
       },
       "SupplyLineDisruption": {
         "type": "select",
         "value": "second",
-        "option": [
-          "skip",
-          "first",
-          "second",
-          "third"
-        ]
+        "option": ["skip", "first", "second", "third"]
       },
       "ModuleDevelopment": {
         "type": "select",
         "value": "first",
-        "option": [
-          "skip",
-          "first",
-          "second"
-        ]
+        "option": ["skip", "first", "second"]
       },
       "ModuleDevelopmentFleet": {
         "type": "select",
         "value": 1,
-        "option": [
-          1,
-          2,
-          3,
-          4,
-          5,
-          6
-        ]
+        "option": [1, 2, 3, 4, 5, 6]
       },
       "EmergencyModuleDevelopment": {
         "type": "select",
         "value": "first",
-        "option": [
-          "skip",
-          "first",
-          "second"
-        ]
+        "option": ["skip", "first", "second"]
       },
       "EmergencyModuleDevelopmentFleet": {
         "type": "select",
         "value": 1,
-        "option": [
-          1,
-          2,
-          3,
-          4,
-          5,
-          6
-        ]
+        "option": [1, 2, 3, 4, 5, 6]
       }
     },
     "Storage": {
@@ -7360,10 +6187,7 @@
       "Enable": {
         "type": "checkbox",
         "value": false,
-        "option": [
-          true,
-          false
-        ]
+        "option": [true, false]
       },
       "NextRun": {
         "type": "datetime",
@@ -7399,10 +6223,7 @@
       "HardFleet": {
         "type": "select",
         "value": 1,
-        "option": [
-          1,
-          2
-        ]
+        "option": [1, 2]
       }
     },
     "Storage": {
@@ -7419,10 +6240,7 @@
       "Enable": {
         "type": "checkbox",
         "value": false,
-        "option": [
-          true,
-          false
-        ]
+        "option": [true, false]
       },
       "NextRun": {
         "type": "datetime",
@@ -7454,12 +6272,7 @@
       "OpponentChooseMode": {
         "type": "select",
         "value": "max_exp",
-        "option": [
-          "max_exp",
-          "easiest",
-          "leftmost",
-          "easiest_else_exp"
-        ]
+        "option": ["max_exp", "easiest", "leftmost", "easiest_else_exp"]
       },
       "OpponentTrial": {
         "type": "input",
@@ -7511,10 +6324,7 @@
       "Enable": {
         "type": "checkbox",
         "value": false,
-        "option": [
-          true,
-          false
-        ]
+        "option": [true, false]
       },
       "NextRun": {
         "type": "datetime",
@@ -7578,10 +6388,7 @@
       "Enable": {
         "type": "checkbox",
         "value": false,
-        "option": [
-          true,
-          false
-        ]
+        "option": [true, false]
       },
       "NextRun": {
         "type": "datetime",
@@ -7621,125 +6428,62 @@
       "BOX_T3": {
         "type": "select",
         "value": "ironblood",
-        "option": [
-          "eagle",
-          "royal",
-          "sakura",
-          "ironblood"
-        ]
+        "option": ["eagle", "royal", "sakura", "ironblood"]
       },
       "BOX_T4": {
         "type": "select",
         "value": "ironblood",
-        "option": [
-          "eagle",
-          "royal",
-          "sakura",
-          "ironblood"
-        ]
+        "option": ["eagle", "royal", "sakura", "ironblood"]
       },
       "BOOK_T2": {
         "type": "select",
         "value": "red",
-        "option": [
-          "red",
-          "blue",
-          "yellow"
-        ]
+        "option": ["red", "blue", "yellow"]
       },
       "BOOK_T3": {
         "type": "select",
         "value": "red",
-        "option": [
-          "red",
-          "blue",
-          "yellow"
-        ]
+        "option": ["red", "blue", "yellow"]
       },
       "RETROFIT_T2": {
         "type": "select",
         "value": "cl",
-        "option": [
-          "dd",
-          "cl",
-          "bb",
-          "cv"
-        ]
+        "option": ["dd", "cl", "bb", "cv"]
       },
       "RETROFIT_T3": {
         "type": "select",
         "value": "cl",
-        "option": [
-          "dd",
-          "cl",
-          "bb",
-          "cv"
-        ]
+        "option": ["dd", "cl", "bb", "cv"]
       },
       "PLATE_T2": {
         "type": "select",
         "value": "general",
-        "option": [
-          "general",
-          "gun",
-          "torpedo",
-          "antiair",
-          "plane"
-        ]
+        "option": ["general", "gun", "torpedo", "antiair", "plane"]
       },
       "PLATE_T3": {
         "type": "select",
         "value": "general",
-        "option": [
-          "general",
-          "gun",
-          "torpedo",
-          "antiair",
-          "plane"
-        ]
+        "option": ["general", "gun", "torpedo", "antiair", "plane"]
       },
       "PLATE_T4": {
         "type": "select",
         "value": "gun",
-        "option": [
-          "general",
-          "gun",
-          "torpedo",
-          "antiair",
-          "plane"
-        ]
+        "option": ["general", "gun", "torpedo", "antiair", "plane"]
       },
       "PR1": {
         "type": "select",
         "value": "neptune",
-        "option": [
-          "neptune",
-          "monarch",
-          "ibuki",
-          "izumo",
-          "roon",
-          "saintlouis"
-        ]
+        "option": ["neptune", "monarch", "ibuki", "izumo", "roon", "saintlouis"]
       },
       "PR2": {
         "type": "select",
         "value": "seattle",
-        "option": [
-          "seattle",
-          "georgia",
-          "kitakaze",
-          "gascogne"
-        ]
+        "option": ["seattle", "georgia", "kitakaze", "gascogne"]
       },
       "PR3": {
         "type": "select",
         "value": "cheshire",
-        "option": [
-          "cheshire",
-          "mainz",
-          "odin",
-          "champagne"
-        ]
+        "option": ["cheshire", "mainz", "odin", "champagne"]
       }
     },
     "MedalShop2": {
@@ -7750,65 +6494,32 @@
       "RETROFIT_T1": {
         "type": "select",
         "value": "cl",
-        "option": [
-          "dd",
-          "cl",
-          "bb",
-          "cv"
-        ]
+        "option": ["dd", "cl", "bb", "cv"]
       },
       "RETROFIT_T2": {
         "type": "select",
         "value": "cl",
-        "option": [
-          "dd",
-          "cl",
-          "bb",
-          "cv"
-        ]
+        "option": ["dd", "cl", "bb", "cv"]
       },
       "RETROFIT_T3": {
         "type": "select",
         "value": "cl",
-        "option": [
-          "dd",
-          "cl",
-          "bb",
-          "cv"
-        ]
+        "option": ["dd", "cl", "bb", "cv"]
       },
       "PLATE_T1": {
         "type": "select",
         "value": "general",
-        "option": [
-          "general",
-          "gun",
-          "torpedo",
-          "antiair",
-          "plane"
-        ]
+        "option": ["general", "gun", "torpedo", "antiair", "plane"]
       },
       "PLATE_T2": {
         "type": "select",
         "value": "general",
-        "option": [
-          "general",
-          "gun",
-          "torpedo",
-          "antiair",
-          "plane"
-        ]
+        "option": ["general", "gun", "torpedo", "antiair", "plane"]
       },
       "PLATE_T3": {
         "type": "select",
         "value": "general",
-        "option": [
-          "general",
-          "gun",
-          "torpedo",
-          "antiair",
-          "plane"
-        ]
+        "option": ["general", "gun", "torpedo", "antiair", "plane"]
       }
     },
     "MeritShop": {
@@ -7841,10 +6552,7 @@
       "Enable": {
         "type": "checkbox",
         "value": false,
-        "option": [
-          true,
-          false
-        ]
+        "option": [true, false]
       },
       "NextRun": {
         "type": "datetime",
@@ -7876,25 +6584,12 @@
       "ResearchSeries": {
         "type": "select",
         "value": 2,
-        "option": [
-          2,
-          3,
-          4,
-          5
-        ]
+        "option": [2, 3, 4, 5]
       },
       "ShipIndex": {
         "type": "select",
         "value": 0,
-        "option": [
-          0,
-          1,
-          2,
-          3,
-          4,
-          5,
-          6
-        ]
+        "option": [0, 1, 2, 3, 4, 5, 6]
       },
       "BuyAmount": {
         "type": "input",
@@ -7910,27 +6605,12 @@
       "ResearchSeries": {
         "type": "select",
         "value": 1,
-        "option": [
-          1,
-          2,
-          3,
-          4,
-          5,
-          6
-        ]
+        "option": [1, 2, 3, 4, 5, 6]
       },
       "ShipIndex": {
         "type": "select",
         "value": 0,
-        "option": [
-          0,
-          1,
-          2,
-          3,
-          4,
-          5,
-          6
-        ]
+        "option": [0, 1, 2, 3, 4, 5, 6]
       },
       "BuyAmount": {
         "type": "input",
@@ -7956,10 +6636,7 @@
       "Enable": {
         "type": "checkbox",
         "value": false,
-        "option": [
-          true,
-          false
-        ]
+        "option": [true, false]
       },
       "NextRun": {
         "type": "datetime",
@@ -7991,29 +6668,12 @@
       "Pool": {
         "type": "select",
         "value": "light",
-        "option": [
-          "light",
-          "heavy",
-          "special",
-          "event",
-          "wishing_well"
-        ]
+        "option": ["light", "heavy", "special", "event", "wishing_well"]
       },
       "Amount": {
         "type": "select",
         "value": 1,
-        "option": [
-          1,
-          2,
-          3,
-          4,
-          5,
-          6,
-          7,
-          8,
-          9,
-          10
-        ]
+        "option": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
       },
       "UseTicket": {
         "type": "checkbox",
@@ -8038,10 +6698,7 @@
       "Enable": {
         "type": "checkbox",
         "value": true,
-        "option": [
-          true,
-          false
-        ]
+        "option": [true, false]
       },
       "NextRun": {
         "type": "datetime",
@@ -8111,15 +6768,7 @@
       "DayOfWeek": {
         "type": "select",
         "value": 0,
-        "option": [
-          0,
-          1,
-          2,
-          3,
-          4,
-          5,
-          6
-        ]
+        "option": [0, 1, 2, 3, 4, 5, 6]
       }
     },
     "Storage": {
@@ -8136,10 +6785,7 @@
       "Enable": {
         "type": "checkbox",
         "value": false,
-        "option": [
-          true,
-          false
-        ]
+        "option": [true, false]
       },
       "NextRun": {
         "type": "datetime",
@@ -8181,10 +6827,7 @@
       "Enable": {
         "type": "checkbox",
         "value": false,
-        "option": [
-          true,
-          false
-        ]
+        "option": [true, false]
       },
       "NextRun": {
         "type": "datetime",
@@ -8256,14 +6899,7 @@
       "BuyActionPointLimit": {
         "type": "select",
         "value": 0,
-        "option": [
-          0,
-          1,
-          2,
-          3,
-          4,
-          5
-        ]
+        "option": [0, 1, 2, 3, 4, 5]
       },
       "OilLimit": {
         "type": "input",
@@ -8296,10 +6932,7 @@
       "Enable": {
         "type": "checkbox",
         "value": false,
-        "option": [
-          true,
-          false
-        ]
+        "option": [true, false]
       },
       "NextRun": {
         "type": "datetime",
@@ -8331,10 +6964,7 @@
       "AttackMode": {
         "type": "select",
         "value": "current",
-        "option": [
-          "current",
-          "current_dossier"
-        ]
+        "option": ["current", "current_dossier"]
       },
       "OneHitMode": {
         "type": "checkbox",
@@ -8367,10 +6997,7 @@
       "Enable": {
         "type": "checkbox",
         "value": false,
-        "option": [
-          true,
-          false
-        ]
+        "option": [true, false]
       },
       "NextRun": {
         "type": "datetime",
@@ -8418,10 +7045,7 @@
       "Enable": {
         "type": "checkbox",
         "value": false,
-        "option": [
-          true,
-          false
-        ]
+        "option": [true, false]
       },
       "NextRun": {
         "type": "datetime",
@@ -8467,12 +7091,7 @@
       "Fleet": {
         "type": "select",
         "value": 1,
-        "option": [
-          1,
-          2,
-          3,
-          4
-        ]
+        "option": [1, 2, 3, 4]
       },
       "Submarine": {
         "type": "checkbox",
@@ -8493,10 +7112,7 @@
       "Enable": {
         "type": "checkbox",
         "value": false,
-        "option": [
-          true,
-          false
-        ]
+        "option": [true, false]
       },
       "NextRun": {
         "type": "datetime",
@@ -8555,10 +7171,7 @@
       "Enable": {
         "type": "checkbox",
         "value": false,
-        "option": [
-          true,
-          false
-        ]
+        "option": [true, false]
       },
       "NextRun": {
         "type": "datetime",
@@ -8606,10 +7219,7 @@
       "Enable": {
         "type": "checkbox",
         "value": false,
-        "option": [
-          true,
-          false
-        ]
+        "option": [true, false]
       },
       "NextRun": {
         "type": "datetime",
@@ -8651,12 +7261,7 @@
       "Fleet": {
         "type": "select",
         "value": 1,
-        "option": [
-          1,
-          2,
-          3,
-          4
-        ]
+        "option": [1, 2, 3, 4]
       },
       "Submarine": {
         "type": "checkbox",
@@ -8677,10 +7282,7 @@
       "Enable": {
         "type": "checkbox",
         "value": false,
-        "option": [
-          true,
-          false
-        ]
+        "option": [true, false]
       },
       "NextRun": {
         "type": "datetime",
@@ -8718,12 +7320,7 @@
       "Fleet": {
         "type": "select",
         "value": 1,
-        "option": [
-          1,
-          2,
-          3,
-          4
-        ]
+        "option": [1, 2, 3, 4]
       },
       "Submarine": {
         "type": "checkbox",
@@ -8744,10 +7341,7 @@
       "Enable": {
         "type": "checkbox",
         "value": false,
-        "option": [
-          true,
-          false
-        ]
+        "option": [true, false]
       },
       "NextRun": {
         "type": "datetime",
@@ -8801,10 +7395,7 @@
       "Enable": {
         "type": "checkbox",
         "value": false,
-        "option": [
-          true,
-          false
-        ]
+        "option": [true, false]
       },
       "NextRun": {
         "type": "datetime",
@@ -8836,12 +7427,7 @@
       "Fleet": {
         "type": "select",
         "value": 1,
-        "option": [
-          1,
-          2,
-          3,
-          4
-        ]
+        "option": [1, 2, 3, 4]
       },
       "Submarine": {
         "type": "checkbox",
@@ -8862,10 +7448,7 @@
       "Enable": {
         "type": "checkbox",
         "value": false,
-        "option": [
-          true,
-          false
-        ]
+        "option": [true, false]
       },
       "NextRun": {
         "type": "datetime",
@@ -8919,10 +7502,7 @@
       "Enable": {
         "type": "checkbox",
         "value": false,
-        "option": [
-          true,
-          false
-        ]
+        "option": [true, false]
       },
       "NextRun": {
         "type": "datetime",
@@ -8954,10 +7534,7 @@
       "Mode": {
         "type": "select",
         "value": "normal",
-        "option": [
-          "normal",
-          "normal_hard"
-        ]
+        "option": ["normal", "normal_hard"]
       },
       "CheckAdaptability": {
         "type": "checkbox",
@@ -8988,10 +7565,7 @@
       "Enable": {
         "type": "checkbox",
         "value": false,
-        "option": [
-          true,
-          false
-        ]
+        "option": [true, false]
       },
       "NextRun": {
         "type": "datetime",
@@ -9027,13 +7601,7 @@
       "HazardLevel": {
         "type": "select",
         "value": 5,
-        "option": [
-          3,
-          4,
-          5,
-          6,
-          10
-        ]
+        "option": [3, 4, 5, 6, 10]
       },
       "TargetZone": {
         "type": "input",
@@ -9042,22 +7610,14 @@
       "OperatingMode": {
         "type": "select",
         "value": "normal",
-        "option": [
-          "normal",
-          "hazard1_mode"
-        ]
+        "option": ["normal", "hazard1_mode"]
       }
     },
     "OpsiFleet": {
       "Fleet": {
         "type": "select",
         "value": 1,
-        "option": [
-          1,
-          2,
-          3,
-          4
-        ]
+        "option": [1, 2, 3, 4]
       },
       "Submarine": {
         "type": "checkbox",
@@ -9078,10 +7638,7 @@
       "Enable": {
         "type": "checkbox",
         "value": false,
-        "option": [
-          true,
-          false
-        ]
+        "option": [true, false]
       },
       "NextRun": {
         "type": "datetime",
@@ -9113,11 +7670,7 @@
       "TargetZone": {
         "type": "select",
         "value": 0,
-        "option": [
-          0,
-          44,
-          22
-        ]
+        "option": [0, 44, 22]
       },
       "ActionPointPreserve": {
         "type": "input",
@@ -9132,16 +7685,30 @@
         "value": 3000
       }
     },
+    "OpsiSirenBug": {
+      "SirenResearch_Enable": {
+        "type": "checkbox",
+        "value": false
+      },
+      "SirenBug_Enable": {
+        "type": "checkbox",
+        "value": false
+      },
+      "SirenBug_Zone": {
+        "type": "input",
+        "value": 0
+      },
+      "SirenBug_Type": {
+        "type": "select",
+        "value": "dangerous",
+        "option": ["dangerous", "safe"]
+      }
+    },
     "OpsiFleet": {
       "Fleet": {
         "type": "select",
         "value": 1,
-        "option": [
-          1,
-          2,
-          3,
-          4
-        ]
+        "option": [1, 2, 3, 4]
       },
       "Submarine": {
         "type": "checkbox",
@@ -9163,10 +7730,7 @@
       "Enable": {
         "type": "checkbox",
         "value": false,
-        "option": [
-          true,
-          false
-        ]
+        "option": [true, false]
       },
       "NextRun": {
         "type": "datetime",
@@ -9244,12 +7808,8 @@
       "SkipBattle": {
         "type": "lock",
         "value": true,
-        "option": [
-          true
-        ],
-        "option_bold": [
-          true
-        ]
+        "option": [true],
+        "option_bold": [true]
       }
     },
     "Storage": {
@@ -9277,11 +7837,7 @@
       "TestScene": {
         "type": "select",
         "value": "screenshot_click",
-        "option": [
-          "screenshot_click",
-          "screenshot",
-          "click"
-        ]
+        "option": ["screenshot_click", "screenshot", "click"]
       }
     },
     "Storage": {

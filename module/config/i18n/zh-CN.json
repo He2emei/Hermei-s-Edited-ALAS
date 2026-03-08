@@ -2548,16 +2548,40 @@
       "22": "22 | NA海域西南B"
     },
     "ActionPointPreserve": {
-      "name": "OpsiHazard1Leveling.ActionPointPreserve.name",
-      "help": "OpsiHazard1Leveling.ActionPointPreserve.help"
+      "name": "保留行动力",
+      "help": "保留一定数值的行动力以供其他任务使用"
     },
     "YellowCoinsPreserve": {
-      "name": "OpsiHazard1Leveling.YellowCoinsPreserve.name",
-      "help": "OpsiHazard1Leveling.YellowCoinsPreserve.help"
+      "name": "保留紫色代币(黄币)",
+      "help": "保留一定数量的作战补给凭证(黄币)以购买商店物品"
     },
     "MeowfficerCallThreshold": {
       "name": "呼叫短猫的行动力阈值",
       "help": "当总行动力高于此值时，侵蚀1练级将会被暂停，转而呼叫短猫相接"
+    }
+  },
+  "OpsiSirenBug": {
+    "_info": {
+      "name": "卡装置",
+      "help": "利用塞壬探测装置(吊机)和高级海域机制刷取资源"
+    },
+    "SirenResearch_Enable": {
+      "name": "启用塞壬探测装置(吊机)交互",
+      "help": "在侵蚀1海域遇到塞壬探测装置时，自动选择消耗紫币选项并保留装置，如果不启用则直接跳过"
+    },
+    "SirenBug_Enable": {
+      "name": "启用高级海域卡装置(卡Bug)",
+      "help": "在侵蚀1遇到吊机后，跳转至指定的高级海域使用探测装置2次，然后返回侵蚀1"
+    },
+    "SirenBug_Zone": {
+      "name": "卡Bug目标海域ID",
+      "help": "跳转的目标高级海域的zone_id，例如使用72（隐秘海域）等"
+    },
+    "SirenBug_Type": {
+      "name": "卡Bug海域类型",
+      "help": "目标海域的安全或危险级别状态",
+      "dangerous": "危险海域 (Dangerous)",
+      "safe": "安全海域 (Safe)"
     }
   },
   "Daemon": {

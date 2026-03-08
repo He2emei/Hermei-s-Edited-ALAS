@@ -770,6 +770,15 @@ OpsiHazard1Leveling:
   ActionPointPreserve: 5
   YellowCoinsPreserve: 10000
   MeowfficerCallThreshold: 3000
+# ===== [heremei] ScanningDevice config =====
+OpsiSirenBug:
+  SirenResearch_Enable: false
+  SirenBug_Enable: false
+  SirenBug_Zone: 0
+  SirenBug_Type:
+    value: dangerous
+    option: [dangerous, safe]
+# ===== [heremei] END =====
 # ==================== Tools ====================
 
 Daemon:

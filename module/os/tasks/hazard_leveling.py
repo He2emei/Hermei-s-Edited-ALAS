@@ -55,5 +55,9 @@ class OpsiHazard1Leveling(OSMap):
             self.fleet_set(self.config.OpsiFleet_Fleet)
             self.run_strategic_search()
 
+            # ===== [heremei] ScanningDevice post-search rescan =====
+            self._after_strategic_search_rescan()
+            # ===== [heremei] END =====
+
             self.handle_after_auto_search()
             self.config.check_task_switch()

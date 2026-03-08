@@ -14,12 +14,13 @@ from module.os.globe_camera import GlobeCamera
 from module.os.globe_operation import RewardUncollectedError
 from module.os_handler.assets import AUTO_SEARCH_OS_MAP_OPTION_OFF, AUTO_SEARCH_OS_MAP_OPTION_OFF_DISABLED, \
     AUTO_SEARCH_OS_MAP_OPTION_ON, AUTO_SEARCH_REWARD
+from module.os.siren_device import SirenDeviceHandler
 from module.os_handler.strategic import StrategicSearchHandler
 from module.ui.assets import GOTO_MAIN
 from module.ui.page import page_os
 
 
-class OSMap(OSFleet, Map, GlobeCamera, StrategicSearchHandler):
+class OSMap(OSFleet, Map, GlobeCamera, StrategicSearchHandler, SirenDeviceHandler):
     def os_init(self):
         """
         Call this method before doing any Operation functions.
@@ -820,9 +821,9 @@ class OSMap(OSFleet, Map, GlobeCamera, StrategicSearchHandler):
             grid = grids[0]
             logger.info(f'Found scanning device on {grid}')
             if self.is_in_task_cl1_leveling:
-                logger.info('In CL1 leveling, mark scanning device as solved')
-                self._solved_map_event.add('is_scanning_device')
-                return True
+                # ===== [heremei] ScanningDevice hook =====
+                return self._on_scanning_device_in_cl1(grid, drop)
+                # ===== [heremei] END =====
 
             self.device.click(grid)
             with self.config.temporary(STORY_ALLOW_SKIP=False):

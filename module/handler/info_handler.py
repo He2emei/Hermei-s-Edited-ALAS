@@ -413,10 +413,9 @@ class InfoHandler(ModuleBase):
                 self._story_option_confirm.reset()
             elif options_count == self._story_option_record:
                 if self._story_option_confirm.reached():
-                    try:
-                        select = options[self.config.STORY_OPTION]
-                    except IndexError:
-                        select = options[0]
+                    # ===== [heremei] ScanningDevice option hook =====
+                    select = self._select_siren_device_option(options)
+                    # ===== [heremei] END =====
                     self.device.click(select)
                     self._story_option_timer.reset()
                     self.story_popup_timeout.reset()

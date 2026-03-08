@@ -2548,16 +2548,40 @@
       "22": "22 | NA海域西南B"
     },
     "ActionPointPreserve": {
-      "name": "OpsiHazard1Leveling.ActionPointPreserve.name",
-      "help": "OpsiHazard1Leveling.ActionPointPreserve.help"
+      "name": "保留行動力",
+      "help": "保留一定數值的行動力供其他任務使用"
     },
     "YellowCoinsPreserve": {
-      "name": "OpsiHazard1Leveling.YellowCoinsPreserve.name",
-      "help": "OpsiHazard1Leveling.YellowCoinsPreserve.help"
+      "name": "保留紫色代幣(黃幣)",
+      "help": "保留一定數量的作戰補給憑證(黃幣)以購買商店物品"
     },
     "MeowfficerCallThreshold": {
       "name": "呼叫短貓的行動力閾值",
       "help": "當總行動力高於此值時，侵蝕1練級將會被暫停，轉而呼叫短貓相接"
+    }
+  },
+  "OpsiSirenBug": {
+    "_info": {
+      "name": "卡裝置",
+      "help": "利用塞壬探測裝置(吊機)和高級海域機制刷取資源"
+    },
+    "SirenResearch_Enable": {
+      "name": "啟用塞壬探測裝置(吊機)交互",
+      "help": "在侵蝕1海域遇到塞壬探測裝置時，自動選擇消耗紫幣選項並保留裝置，如果不啟用則直接跳過"
+    },
+    "SirenBug_Enable": {
+      "name": "啟用高級海域卡裝置(卡Bug)",
+      "help": "在侵蝕1遇到吊機後，跳轉至指定的高級海域使用探測裝置2次，然後返回侵蝕1"
+    },
+    "SirenBug_Zone": {
+      "name": "卡Bug目標海域ID",
+      "help": "跳轉的目標高級海域的zone_id，例如使用72（隱秘海域）等"
+    },
+    "SirenBug_Type": {
+      "name": "卡Bug海域類型",
+      "help": "目標海域的安全或危險級別狀態",
+      "dangerous": "危險海域 (Dangerous)",
+      "safe": "安全海域 (Safe)"
     }
   },
   "Daemon": {
