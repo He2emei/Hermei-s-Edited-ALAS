@@ -17,11 +17,11 @@ class OpsiMeowfficerFarming(OSMap):
 
         if self.config.OpsiMeowfficerFarming_OperatingMode == 'hazard1_mode':
             call_threshold = self.config.OpsiHazard1Leveling_MeowfficerCallThreshold
-            if self._action_point_total < call_threshold:
+            # Must read AP from screen since _action_point_total is 0 at task startup
+            if not self.action_point_check(call_threshold):
                 logger.info(f'Under hazard1_mode, current AP {self._action_point_total} is less than '
-                            f'MeowfficerCallThreshold {call_threshold}. Delay to next day.')
+                            f'MeowfficerCallThreshold {call_threshold}. Delay to next period.')
                 with self.config.multi_set():
-                    # Delay to 00:00 next day
                     self.config.task_delay(server_update=True)
                 self.config.task_stop()
         preserve = min(self.get_action_point_limit(), self.config.OpsiMeowfficerFarming_ActionPointPreserve, 2000)
