@@ -429,10 +429,14 @@ class OSMap(OSFleet, Map, GlobeCamera, StrategicSearchHandler):
         In hazard1_mode this single value controls both when CL1 calls
         OpsiMeowfficerFarming and how far OpsiMeowfficerFarming drains AP.
         """
-        threshold = self.config.OpsiHazard1Leveling_MeowfficerCallThreshold
+        threshold = self.config.cross_get(
+            'OpsiHazard1Leveling.OpsiHazard1Leveling.MeowfficerCallThreshold',
+            self.config.OpsiHazard1Leveling_MeowfficerCallThreshold)
         mode = 'regular'
 
-        month_end_mode = getattr(self.config, 'OpsiHazard1Leveling_MonthEndMode', 'enabled')
+        month_end_mode = self.config.cross_get(
+            'OpsiHazard1Leveling.OpsiHazard1Leveling.MonthEndMode',
+            getattr(self.config, 'OpsiHazard1Leveling_MonthEndMode', 'enabled'))
         if month_end_mode == 'enabled':
             now = datetime.now()
             next_reset = get_os_next_reset()
@@ -442,7 +446,9 @@ class OSMap(OSFleet, Map, GlobeCamera, StrategicSearchHandler):
                 threshold = 0
                 mode = 'last_day'
             elif now.date() >= month_end_start:
-                threshold = getattr(self.config, 'OpsiHazard1Leveling_MeowfficerMonthEndThreshold', 200)
+                threshold = self.config.cross_get(
+                    'OpsiHazard1Leveling.OpsiHazard1Leveling.MeowfficerMonthEndThreshold',
+                    getattr(self.config, 'OpsiHazard1Leveling_MeowfficerMonthEndThreshold', 200))
                 mode = 'month_end'
         else:
             mode = 'regular_month_end_disabled'
