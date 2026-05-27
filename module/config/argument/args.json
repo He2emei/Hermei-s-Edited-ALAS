@@ -9343,9 +9343,21 @@
         "type": "input",
         "value": 10000
       },
+      "MonthEndMode": {
+        "type": "select",
+        "value": "enabled",
+        "option": [
+          "disabled",
+          "enabled"
+        ]
+      },
       "MeowfficerCallThreshold": {
         "type": "input",
         "value": 3000
+      },
+      "MeowfficerMonthEndThreshold": {
+        "type": "input",
+        "value": 200
       }
     },
     "OpsiFleet": {

@@ -2615,7 +2615,7 @@
     },
     "ActionPointPreserve": {
       "name": "保留 X 點行動力",
-      "help": "行動力低於 X 後停止，自動打開行動力箱子，X 包含箱子中的行動力，建議保留 1000 點行動力给侵蝕1練級\n這個值將在大世界重置前3天自動減少至300點，如果啟用侵蝕1練級則改為1000點，並在最後一天自動減少至0點"
+      "help": "正常模式下，短貓相接會在行動力低於 X 後停止，X 包含箱子中的行動力\n侵蝕1練級模式下，將改用侵蝕1練級中的行動力閾值"
     },
     "HazardLevel": {
       "name": "侵蝕等級",
@@ -2632,7 +2632,7 @@
     },
     "OperatingMode": {
       "name": "運行模式",
-      "help": "決定短貓相接的觸發邏輯",
+      "help": "決定短貓相接的觸發邏輯。侵蝕1練級模式下，短貓啟動和停止都使用侵蝕1練級中的行動力閾值",
       "normal": "正常模式",
       "hazard1_mode": "侵蝕1練級模式"
     }
@@ -2657,9 +2657,19 @@
       "name": "OpsiHazard1Leveling.YellowCoinsPreserve.name",
       "help": "OpsiHazard1Leveling.YellowCoinsPreserve.help"
     },
+    "MonthEndMode": {
+      "name": "月末模式",
+      "help": "開啟後，從每月倒數第三天開始自動使用月末行動力閾值；最後一天閾值自動歸零",
+      "disabled": "關閉",
+      "enabled": "開啟"
+    },
     "MeowfficerCallThreshold": {
-      "name": "呼叫短貓的行動力閾值",
-      "help": "當總行動力高於此值時，侵蝕1練級將會被暫停，轉而呼叫短貓相接"
+      "name": "運行時行動力閾值",
+      "help": "侵蝕1練級模式下的常規閾值。總行動力高於此值時暫停侵蝕1並呼叫短貓，短貓會消耗到不高於此值後停止"
+    },
+    "MeowfficerMonthEndThreshold": {
+      "name": "月末行動力閾值",
+      "help": "月末模式開啟後，每月倒數第三天和倒數第二天使用此閾值；最後一天自動使用 0"
     }
   },
   "IslandProduction": {

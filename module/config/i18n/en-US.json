@@ -2615,7 +2615,7 @@
     },
     "ActionPointPreserve": {
       "name": "Keep X Amount of AP",
-      "help": "Stops task if total AP (including AP boxes in inventory) is below this number, 1000 is recommended\nThis value will be auto reduced to 300 at 3 days before OpSi reset, or 1000 if CL1 leveling enabled, and to 0 at day before reset"
+      "help": "In Normal mode, Meowfficer Farming stops when total AP, including AP boxes, is below this value\nIn Hazard 1 Leveling Mode, the AP threshold from CL1 leveling is used instead"
     },
     "HazardLevel": {
       "name": "Target Zone Hazard Level",
@@ -2632,7 +2632,7 @@
     },
     "OperatingMode": {
       "name": "Operating Mode",
-      "help": "Determines the trigger logic for Meowfficer Farming",
+      "help": "Determines the trigger logic for Meowfficer Farming. In Hazard 1 Leveling Mode, starting and stopping both use the AP threshold from CL1 leveling",
       "normal": "Normal",
       "hazard1_mode": "Hazard 1 Leveling Mode"
     }
@@ -2657,9 +2657,19 @@
       "name": "OpsiHazard1Leveling.YellowCoinsPreserve.name",
       "help": "OpsiHazard1Leveling.YellowCoinsPreserve.help"
     },
+    "MonthEndMode": {
+      "name": "Month-End Mode",
+      "help": "When enabled, use the month-end AP threshold from the third-to-last day of each month; the threshold becomes 0 on the last day",
+      "disabled": "Disabled",
+      "enabled": "Enabled"
+    },
     "MeowfficerCallThreshold": {
-      "name": "AP Threshold for Meowfficer Call",
-      "help": "When the total AP exceeds this value, Hazard 1 Leveling will be suspended and call Meowfficer Farming"
+      "name": "Regular AP Threshold",
+      "help": "Regular threshold for Hazard 1 Leveling Mode. When total AP is above this value, CL1 leveling calls Meowfficer Farming; Meowfficer Farming stops after AP is no longer above this value"
+    },
+    "MeowfficerMonthEndThreshold": {
+      "name": "Month-End AP Threshold",
+      "help": "Used on the third-to-last and second-to-last day of each month when Month-End Mode is enabled; the last day uses 0 automatically"
     }
   },
   "IslandProduction": {
