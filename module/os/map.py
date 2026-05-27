@@ -1,9 +1,10 @@
 import time
+from datetime import datetime, timedelta
 
 import inflection
 
 from module.base.timer import Timer
-from module.config.utils import get_os_reset_remain
+from module.config.utils import get_os_next_reset, get_os_reset_remain
 from module.exception import CampaignEnd, GameTooManyClickError, MapWalkError, RequestHumanTakeover, ScriptError
 from module.handler.login import LoginHandler, MAINTENANCE_ANNOUNCE
 from module.logger import logger
@@ -420,6 +421,36 @@ class OSMap(OSFleet, Map, GlobeCamera, StrategicSearchHandler):
         else:
             logger.info('Not close to OpSi reset')
             return 2000
+
+    def get_cl1_meowfficer_threshold(self):
+        """
+        Effective AP threshold for CL1 leveling and meowfficer farming handoff.
+
+        In hazard1_mode this single value controls both when CL1 calls
+        OpsiMeowfficerFarming and how far OpsiMeowfficerFarming drains AP.
+        """
+        threshold = self.config.OpsiHazard1Leveling_MeowfficerCallThreshold
+        mode = 'regular'
+
+        month_end_mode = getattr(self.config, 'OpsiHazard1Leveling_MonthEndMode', 'enabled')
+        if month_end_mode == 'enabled':
+            now = datetime.now()
+            next_reset = get_os_next_reset()
+            month_end_start = (next_reset - timedelta(days=3)).date()
+            last_day = (next_reset - timedelta(days=1)).date()
+            if now.date() >= last_day:
+                threshold = 0
+                mode = 'last_day'
+            elif now.date() >= month_end_start:
+                threshold = getattr(self.config, 'OpsiHazard1Leveling_MeowfficerMonthEndThreshold', 200)
+                mode = 'month_end'
+        else:
+            mode = 'regular_month_end_disabled'
+
+        threshold = max(0, int(threshold))
+        logger.attr('CL1MeowfficerThresholdMode', mode)
+        logger.attr('CL1MeowfficerThreshold', threshold)
+        return threshold
 
     def handle_after_auto_search(self):
         logger.hr('After auto search', level=2)
