@@ -11,20 +11,23 @@ class OpsiMeowfficerFarming(OSMap):
         Recommend 3 or 5 for higher meowfficer searching point per action points ratio.
         """
         logger.hr(f'OS meowfficer farming, hazard_level={self.config.OpsiMeowfficerFarming_HazardLevel}', level=1)
-        if self.is_cl1_enabled and self.config.OpsiMeowfficerFarming_ActionPointPreserve < 1000:
+        hazard1_mode = self.config.OpsiMeowfficerFarming_OperatingMode == 'hazard1_mode'
+        if self.is_cl1_enabled and not hazard1_mode and self.config.OpsiMeowfficerFarming_ActionPointPreserve < 1000:
             logger.info('With CL1 leveling enabled, set action point preserve to 1000')
             self.config.OpsiMeowfficerFarming_ActionPointPreserve = 1000
 
-        if self.config.OpsiMeowfficerFarming_OperatingMode == 'hazard1_mode':
-            call_threshold = self.config.OpsiHazard1Leveling_MeowfficerCallThreshold
+        if hazard1_mode:
+            call_threshold = self.get_cl1_meowfficer_threshold()
             # Must read AP from screen since _action_point_total is 0 at task startup
             if not self.action_point_check(call_threshold):
                 logger.info(f'Under hazard1_mode, current AP {self._action_point_total} is less than '
-                            f'MeowfficerCallThreshold {call_threshold}. Delay to next period.')
+                            f'CL1 meowfficer threshold {call_threshold}. Delay to next period.')
                 with self.config.multi_set():
                     self.config.task_delay(server_update=True)
                 self.config.task_stop()
-        preserve = min(self.get_action_point_limit(), self.config.OpsiMeowfficerFarming_ActionPointPreserve, 2000)
+            preserve = call_threshold
+        else:
+            preserve = min(self.get_action_point_limit(), self.config.OpsiMeowfficerFarming_ActionPointPreserve, 2000)
         if preserve == 0:
             self.config.override(OpsiFleet_Submarine=False)
         if self.is_cl1_enabled:

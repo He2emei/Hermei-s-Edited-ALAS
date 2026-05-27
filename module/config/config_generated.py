@@ -448,7 +448,9 @@ class GeneratedConfig:
     OpsiHazard1Leveling_TargetZone = 0  # 0, 44, 22
     OpsiHazard1Leveling_ActionPointPreserve = 5
     OpsiHazard1Leveling_YellowCoinsPreserve = 10000
+    OpsiHazard1Leveling_MonthEndMode = 'enabled'  # disabled, enabled
     OpsiHazard1Leveling_MeowfficerCallThreshold = 3000
+    OpsiHazard1Leveling_MeowfficerMonthEndThreshold = 200
 
     # Group `IslandProduction`
     IslandProduction_HardFloorItems = '{}'
