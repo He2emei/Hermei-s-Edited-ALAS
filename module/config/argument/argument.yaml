@@ -767,7 +767,11 @@ OpsiHazard1Leveling:
     option: [ 0, 44, 22 ]
   ActionPointPreserve: 5
   YellowCoinsPreserve: 10000
+  MonthEndMode:
+    value: enabled
+    option: [ disabled, enabled ]
   MeowfficerCallThreshold: 3000
+  MeowfficerMonthEndThreshold: 200
 
 # =================== Island ====================
 
