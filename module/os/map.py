@@ -434,24 +434,18 @@ class OSMap(OSFleet, Map, GlobeCamera, StrategicSearchHandler):
             self.config.OpsiHazard1Leveling_MeowfficerCallThreshold)
         mode = 'regular'
 
-        month_end_mode = self.config.cross_get(
-            'OpsiHazard1Leveling.OpsiHazard1Leveling.MonthEndMode',
-            getattr(self.config, 'OpsiHazard1Leveling_MonthEndMode', 'enabled'))
-        if month_end_mode == 'enabled':
-            now = datetime.now()
-            next_reset = get_os_next_reset()
-            month_end_start = (next_reset - timedelta(days=3)).date()
-            last_day = (next_reset - timedelta(days=1)).date()
-            if now.date() >= last_day:
-                threshold = 0
-                mode = 'last_day'
-            elif now.date() >= month_end_start:
-                threshold = self.config.cross_get(
-                    'OpsiHazard1Leveling.OpsiHazard1Leveling.MeowfficerMonthEndThreshold',
-                    getattr(self.config, 'OpsiHazard1Leveling_MeowfficerMonthEndThreshold', 200))
-                mode = 'month_end'
-        else:
-            mode = 'regular_month_end_disabled'
+        now = datetime.now()
+        next_reset = get_os_next_reset()
+        month_end_start = (next_reset - timedelta(days=3)).date()
+        last_day = (next_reset - timedelta(days=1)).date()
+        if now.date() >= last_day:
+            threshold = 0
+            mode = 'last_day'
+        elif now.date() >= month_end_start:
+            threshold = self.config.cross_get(
+                'OpsiHazard1Leveling.OpsiHazard1Leveling.MeowfficerMonthEndThreshold',
+                getattr(self.config, 'OpsiHazard1Leveling_MeowfficerMonthEndThreshold', 200))
+            mode = 'month_end'
 
         threshold = max(0, int(threshold))
         logger.attr('CL1MeowfficerThresholdMode', mode)
