@@ -2657,12 +2657,6 @@
       "name": "OpsiHazard1Leveling.YellowCoinsPreserve.name",
       "help": "OpsiHazard1Leveling.YellowCoinsPreserve.help"
     },
-    "MonthEndMode": {
-      "name": "Month-End Mode",
-      "help": "When enabled, use the month-end AP threshold from the third-to-last day of each month; the threshold becomes 0 on the last day",
-      "disabled": "Disabled",
-      "enabled": "Enabled"
-    },
     "MeowfficerCallThreshold": {
       "name": "Regular AP Threshold",
       "help": "Regular threshold for Hazard 1 Leveling Mode. When total AP is above this value, CL1 leveling calls Meowfficer Farming; Meowfficer Farming stops after AP is no longer above this value"

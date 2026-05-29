@@ -2657,12 +2657,6 @@
       "name": "OpsiHazard1Leveling.YellowCoinsPreserve.name",
       "help": "OpsiHazard1Leveling.YellowCoinsPreserve.help"
     },
-    "MonthEndMode": {
-      "name": "月末模式",
-      "help": "開啟後，從每月倒數第三天開始自動使用月末行動力閾值；最後一天閾值自動歸零",
-      "disabled": "關閉",
-      "enabled": "開啟"
-    },
     "MeowfficerCallThreshold": {
       "name": "運行時行動力閾值",
       "help": "侵蝕1練級模式下的常規閾值。總行動力高於此值時暫停侵蝕1並呼叫短貓，短貓會消耗到不高於此值後停止"

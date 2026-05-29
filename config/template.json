@@ -1917,7 +1917,6 @@
       "TargetZone": 0,
       "ActionPointPreserve": 5,
       "YellowCoinsPreserve": 10000,
-      "MonthEndMode": "enabled",
       "MeowfficerCallThreshold": 3000,
       "MeowfficerMonthEndThreshold": 200
     },
