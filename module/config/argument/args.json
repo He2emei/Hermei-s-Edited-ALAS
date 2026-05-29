@@ -9359,14 +9359,6 @@
         "type": "input",
         "value": 10000
       },
-      "MonthEndMode": {
-        "type": "select",
-        "value": "enabled",
-        "option": [
-          "disabled",
-          "enabled"
-        ]
-      },
       "MeowfficerCallThreshold": {
         "type": "input",
         "value": 3000
