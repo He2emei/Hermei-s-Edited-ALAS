@@ -77,7 +77,7 @@ class OpsiMeowfficerFarming(OSMap):
                 check_rest_ap = True
                 if self.is_cl1_enabled and self.get_yellow_coins() >= self.yellow_coins_preserve:
                     check_rest_ap = False
-                if not self.is_cl1_enabled and self.config.OpsiGeneral_BuyActionPointLimit > 0:
+                if not self.is_cl1_enabled and self.get_buy_action_point_limit() > 0:
                     keep_current_ap = False
                 self.action_point_set(cost=0, keep_current_ap=keep_current_ap, check_rest_ap=check_rest_ap)
                 ap_checked = True
