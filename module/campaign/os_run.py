@@ -49,9 +49,14 @@ class OSCampaignRun(OSMapOperation):
             if get_os_reset_remain() > 0:
                 self.config.task_delay(server_update=True)
                 self.config.task_call('Reward')
-                if self.config.is_task_enabled('OpsiHazard1Leveling') \
-                        and self.get_yellow_coins() > self.yellow_coins_preserve:
-                    self.config.task_call('OpsiHazard1Leveling')
+                if self.config.is_task_enabled('OpsiHazard1Leveling'):
+                    yellow_coins = self.get_yellow_coins()
+                    if yellow_coins > self.config.OS_CL1_YELLOW_COINS_PRESERVE:
+                        logger.info('OpsiMeowfficerFarming reached AP preserve, call OpsiHazard1Leveling back')
+                        self.config.task_call('OpsiHazard1Leveling')
+                    else:
+                        logger.info(f'OpsiHazard1Leveling not called back because yellow coins {yellow_coins} '
+                                    f'<= preserve {self.config.OS_CL1_YELLOW_COINS_PRESERVE}')
             else:
                 logger.info('Just less than 1 day to OpSi reset, delay 2.5 hours')
                 self.config.task_delay(minute=150, server_update=True)
