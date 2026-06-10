@@ -22,8 +22,18 @@ class OpsiMeowfficerFarming(OSMap):
             if not self.action_point_check(call_threshold):
                 logger.info(f'Under hazard1_mode, current AP {self._action_point_total} is less than '
                             f'CL1 meowfficer threshold {call_threshold}. Delay to next period.')
+                call_hazard1_back = False
+                if self.config.is_task_enabled('OpsiHazard1Leveling'):
+                    yellow_coins = self.get_yellow_coins()
+                    call_hazard1_back = yellow_coins > self.config.OS_CL1_YELLOW_COINS_PRESERVE
+                    if not call_hazard1_back:
+                        logger.info(f'OpsiHazard1Leveling not called back because yellow coins {yellow_coins} '
+                                    f'<= preserve {self.config.OS_CL1_YELLOW_COINS_PRESERVE}')
                 with self.config.multi_set():
                     self.config.task_delay(server_update=True)
+                    if call_hazard1_back:
+                        logger.info('AP is below CL1 meowfficer threshold, call OpsiHazard1Leveling back')
+                        self.config.task_call('OpsiHazard1Leveling')
                 self.config.task_stop()
             preserve = call_threshold
         else:
