@@ -102,6 +102,22 @@ class ActionPointHandler(UI, MapEventHandler):
     _action_point_current = 0
     _action_point_total = 0
 
+    def get_buy_action_point_limit(self):
+        """
+        Effective weekly AP purchase limit.
+
+        During the first two calendar weeks of each month, buy up to 5 AP
+        packs with oil. The week containing the 1st is always the first week,
+        even when the 1st is Sunday.
+        """
+        today = datetime.now().date()
+        month_start = today.replace(day=1)
+        first_week_end = 1 + (6 - month_start.weekday())
+        second_week_end = first_week_end + 7
+        buy_limit = 5 if today.day <= second_week_end else 0
+        logger.attr('BuyActionPointLimit', buy_limit)
+        return buy_limit
+
     def _is_in_action_point(self):
         return self.appear(ACTION_POINT_USE, offset=(20, 20))
 
@@ -298,7 +314,7 @@ class ActionPointHandler(UI, MapEventHandler):
         current = self.action_point_get_buy_remain()
         buy_max = 5  # In current version of AL, players can buy 5 times of AP in a week.
         buy_count = buy_max - current
-        buy_limit = self.config.OpsiGeneral_BuyActionPointLimit
+        buy_limit = self.get_buy_action_point_limit()
         if buy_count >= buy_limit:
             logger.info('Reach the limit to buy action points this week')
             return False
@@ -378,6 +394,7 @@ class ActionPointHandler(UI, MapEventHandler):
                 self.action_point_quit()
                 raise ActionPointLimit
 
+        buy_limit = self.get_buy_action_point_limit()
         for _ in range(12):
             # Having enough action points
             if self._action_point_current >= cost:
@@ -386,7 +403,7 @@ class ActionPointHandler(UI, MapEventHandler):
                 return True
 
             # Buy action points
-            if self.config.OpsiGeneral_BuyActionPointLimit > 0 and not buy_checked:
+            if buy_limit > 0 and not buy_checked:
                 if self.action_point_buy(preserve=self.config.OpsiGeneral_OilLimit):
                     self.action_point_safe_get()
                     continue
