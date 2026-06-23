@@ -1,4 +1,5 @@
 from module.logger import logger
+from module.os.cl1 import get_cl1_yellow_coins_preserve
 from module.os.map import OSMap
 
 
@@ -22,7 +23,7 @@ class OpsiHazard1Leveling(OSMap):
                 self.config.OS_ACTION_POINT_PRESERVE = 0
             logger.attr('OS_ACTION_POINT_PRESERVE', self.config.OS_ACTION_POINT_PRESERVE)
 
-            yellow_coins_preserve = self.config.OpsiHazard1Leveling_YellowCoinsPreserve
+            yellow_coins_preserve = get_cl1_yellow_coins_preserve(self.config)
             if self.get_yellow_coins() < yellow_coins_preserve:
                 logger.info(f'Reach the limit of yellow coins, preserve={yellow_coins_preserve}')
                 with self.config.multi_set():
