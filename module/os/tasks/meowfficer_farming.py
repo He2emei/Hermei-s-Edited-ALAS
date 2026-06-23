@@ -2,6 +2,7 @@ from module.config.utils import get_os_reset_remain
 from module.exception import RequestHumanTakeover, ScriptError
 from module.logger import logger
 from module.map.map_grids import SelectedGrids
+from module.os.cl1 import get_cl1_yellow_coins_preserve
 from module.os.map import OSMap
 
 
@@ -25,10 +26,11 @@ class OpsiMeowfficerFarming(OSMap):
                 call_hazard1_back = False
                 if self.config.is_task_enabled('OpsiHazard1Leveling'):
                     yellow_coins = self.get_yellow_coins()
-                    call_hazard1_back = yellow_coins > self.config.OS_CL1_YELLOW_COINS_PRESERVE
+                    yellow_coins_preserve = get_cl1_yellow_coins_preserve(self.config)
+                    call_hazard1_back = yellow_coins > yellow_coins_preserve
                     if not call_hazard1_back:
                         logger.info(f'OpsiHazard1Leveling not called back because yellow coins {yellow_coins} '
-                                    f'<= preserve {self.config.OS_CL1_YELLOW_COINS_PRESERVE}')
+                                    f'<= preserve {yellow_coins_preserve}')
                 with self.config.multi_set():
                     self.config.task_delay(server_update=True)
                     if call_hazard1_back:
@@ -75,7 +77,7 @@ class OpsiMeowfficerFarming(OSMap):
                 # When not running CL1 and use oil
                 keep_current_ap = True
                 check_rest_ap = True
-                if self.is_cl1_enabled and self.get_yellow_coins() >= self.yellow_coins_preserve:
+                if self.is_cl1_enabled and self.get_yellow_coins() >= get_cl1_yellow_coins_preserve(self.config):
                     check_rest_ap = False
                 if not self.is_cl1_enabled and self.get_buy_action_point_limit() > 0:
                     keep_current_ap = False

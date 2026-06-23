@@ -1,5 +1,6 @@
 from module.config.utils import get_os_reset_remain
 from module.logger import logger
+from module.os.cl1 import get_cl1_yellow_coins_preserve
 from module.os.config import OSConfig
 from module.os.map_operation import OSMapOperation
 from module.os.operation_siren import OperationSiren
@@ -51,12 +52,13 @@ class OSCampaignRun(OSMapOperation):
                 self.config.task_call('Reward')
                 if self.config.is_task_enabled('OpsiHazard1Leveling'):
                     yellow_coins = self.get_yellow_coins()
-                    if yellow_coins > self.config.OS_CL1_YELLOW_COINS_PRESERVE:
+                    yellow_coins_preserve = get_cl1_yellow_coins_preserve(self.config)
+                    if yellow_coins > yellow_coins_preserve:
                         logger.info('OpsiMeowfficerFarming reached AP preserve, call OpsiHazard1Leveling back')
                         self.config.task_call('OpsiHazard1Leveling')
                     else:
                         logger.info(f'OpsiHazard1Leveling not called back because yellow coins {yellow_coins} '
-                                    f'<= preserve {self.config.OS_CL1_YELLOW_COINS_PRESERVE}')
+                                    f'<= preserve {yellow_coins_preserve}')
             else:
                 logger.info('Just less than 1 day to OpSi reset, delay 2.5 hours')
                 self.config.task_delay(minute=150, server_update=True)
