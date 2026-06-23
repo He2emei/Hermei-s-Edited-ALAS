@@ -8,6 +8,7 @@ from module.config.utils import get_os_next_reset, get_os_reset_remain
 from module.exception import CampaignEnd, GameTooManyClickError, MapWalkError, RequestHumanTakeover, ScriptError
 from module.handler.login import LoginHandler, MAINTENANCE_ANNOUNCE
 from module.logger import logger
+from module.os.cl1 import get_cl1_yellow_coins_preserve
 from module.map.map import Map
 from module.os.assets import FLEET_EMP_DEBUFF, MAP_GOTO_GLOBE_FOG
 from module.os.fleet import OSFleet
@@ -465,7 +466,7 @@ class OSMap(OSFleet, Map, GlobeCamera, StrategicSearchHandler):
         Keeping enough startup AP to run CL1.
         """
         if self.is_cl1_enabled and get_os_reset_remain() > 2 \
-                and self.get_yellow_coins() > self.yellow_coins_preserve:
+                and self.get_yellow_coins() > get_cl1_yellow_coins_preserve(self.config):
             logger.info('Keep 1000 AP when CL1 available')
             if not self.action_point_check(1000):
                 self.config.opsi_task_delay(cl1_preserve=True)
