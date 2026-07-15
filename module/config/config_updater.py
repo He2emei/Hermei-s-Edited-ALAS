@@ -8,6 +8,7 @@ from deploy.utils import DEPLOY_TEMPLATE, poor_yaml_read, poor_yaml_write
 from module.base.timer import timer
 from module.config.deep import deep_default, deep_get, deep_iter, deep_pop, deep_set
 from module.config.env import IS_ON_PHONE_CLOUD
+from module.config.opsi_constants import OPSI_BUY_ACTION_POINT_MANUAL_AT
 from module.config.server import VALID_CHANNEL_PACKAGE, VALID_PACKAGE, VALID_SERVER_LIST, to_package, to_server
 from module.config.utils import *
 from module.config.redirect_utils.utils import *
@@ -764,6 +765,11 @@ class ConfigUpdater:
             key = key.split(".")
             key[-1] = key[-1].replace("Value", "Record")
             yield ".".join(key), datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        if key == 'OpsiGeneral.OpsiGeneral.BuyActionPointLimit':
+            yield (
+                OPSI_BUY_ACTION_POINT_MANUAL_AT,
+                datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
+            )
         # Oh no, dynamic dropdown update can only be used on pywebio > 1.8.0
         # elif key == 'Alas.Emulator.ScreenshotMethod' and value == 'nemu_ipc':
         #     yield 'Alas.Emulator.ControlMethod', 'nemu_ipc'
