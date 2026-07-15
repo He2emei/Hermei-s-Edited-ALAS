@@ -8,6 +8,7 @@ from module.config.utils import get_server_next_update
 from module.logger import logger
 from module.ocr.ocr import Digit, DigitCounter
 from module.os_handler.assets import *
+from module.os_handler.action_point_limit import ActionPointLimitPolicy
 from module.os_handler.map_event import MapEventHandler
 from module.statistics.item import Item, ItemGrid
 from module.ui.assets import OS_CHECK
@@ -97,26 +98,19 @@ class ActionPointLimit(Exception):
     pass
 
 
-class ActionPointHandler(UI, MapEventHandler):
+class ActionPointHandler(ActionPointLimitPolicy, UI, MapEventHandler):
     _action_point_box = [0, 0, 0, 0]
     _action_point_current = 0
     _action_point_total = 0
 
-    def get_buy_action_point_limit(self):
-        """
-        Effective weekly AP purchase limit.
-
-        During the first two calendar weeks of each month, buy up to 5 AP
-        packs with oil. The week containing the 1st is always the first week,
-        even when the 1st is Sunday.
-        """
-        today = datetime.now().date()
-        month_start = today.replace(day=1)
-        first_week_end = 1 + (6 - month_start.weekday())
-        second_week_end = first_week_end + 7
-        buy_limit = 5 if today.day <= second_week_end else 0
+    def _log_action_point_limit(self, buy_limit, source):
+        if source == 'migration':
+            logger.info('Use current GUI AP purchase limit for the migration week')
+        elif source == 'manual':
+            logger.info('Use manually configured AP purchase limit for this week')
+        else:
+            logger.info('Use automatic AP purchase limit for this week')
         logger.attr('BuyActionPointLimit', buy_limit)
-        return buy_limit
 
     def _is_in_action_point(self):
         return self.appear(ACTION_POINT_USE, offset=(20, 20))
