@@ -258,3 +258,6 @@ pyrightconfig.json
 node_modules/.yarn-integrity
 
 start_alas_correct.bat
+
+# Local startup automation logs
+automation/logs/
