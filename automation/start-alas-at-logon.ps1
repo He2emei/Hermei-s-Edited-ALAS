@@ -9,6 +9,8 @@ param(
     [ValidateRange(10, 600)]
     [int]$AlasTimeoutSeconds = 180,
 
+    [switch]$EnvironmentCheckOnly,
+
     [switch]$DryRun
 )
 
@@ -24,6 +26,7 @@ $LogFile = Join-Path $LogDirectory 'startup.log'
 $MumuRoot = $null
 $MumuManager = $null
 $MumuCli = $null
+$AlasProcessStartedByScript = $null
 
 function Write-StartupLog {
     param([Parameter(Mandatory = $true)][string]$Message)
@@ -43,6 +46,80 @@ function Assert-RequiredFile {
 
     if (-not (Test-Path -LiteralPath $Path -PathType Leaf)) {
         throw "Required file not found: $Path"
+    }
+}
+
+function Get-DeployScalar {
+    param([Parameter(Mandatory = $true)][string]$Name)
+
+    $line = Get-Content -LiteralPath $DeployConfig |
+        Where-Object { $_ -match ('^\s*{0}\s*:' -f [regex]::Escape($Name)) } |
+        Select-Object -First 1
+    if ($null -eq $line) {
+        throw "$Name is missing from: $DeployConfig"
+    }
+    return ($line -split ':', 2)[1].Trim().Trim("'").Trim('"')
+}
+
+function Initialize-AlasPythonEnvironment {
+    Assert-RequiredFile $DeployConfig
+
+    $pythonExecutable = [Environment]::ExpandEnvironmentVariables((Get-DeployScalar 'PythonExecutable'))
+    if (-not [IO.Path]::IsPathRooted($pythonExecutable)) {
+        $pythonExecutable = Join-Path $AlasRoot $pythonExecutable
+    }
+    $pythonExecutable = [IO.Path]::GetFullPath($pythonExecutable)
+    Assert-RequiredFile $pythonExecutable
+
+    $pythonRoot = Split-Path -Parent $pythonExecutable
+    $requiredPaths = @(
+        $pythonRoot
+        (Join-Path $pythonRoot 'Scripts')
+        (Join-Path $pythonRoot 'Library\bin')
+    ) | Where-Object { Test-Path -LiteralPath $_ -PathType Container }
+
+    $currentPaths = @($env:PATH -split ';' | Where-Object { $_ })
+    $prependPaths = @($requiredPaths | Where-Object { $candidate = $_; -not ($currentPaths | Where-Object { $_ -ieq $candidate }) })
+    $env:PATH = (@($prependPaths) + $currentPaths) -join ';'
+
+    return $pythonExecutable
+}
+
+function Assert-AlasPythonEnvironment {
+    param([Parameter(Mandatory = $true)][string]$PythonExecutable)
+
+    $startInfo = New-Object System.Diagnostics.ProcessStartInfo
+    $startInfo.FileName = $PythonExecutable
+    $startInfo.WorkingDirectory = $AlasRoot
+    $startInfo.Arguments = '-c "import ssl; import uvicorn; import pywebio"'
+    $startInfo.UseShellExecute = $false
+    $startInfo.RedirectStandardOutput = $true
+    $startInfo.RedirectStandardError = $true
+
+    $process = [System.Diagnostics.Process]::Start($startInfo)
+    $stdout = $process.StandardOutput.ReadToEnd()
+    $stderr = $process.StandardError.ReadToEnd()
+    $process.WaitForExit()
+    if ($process.ExitCode -ne 0) {
+        throw "ALAS Python environment check failed with exit code $($process.ExitCode): $stdout $stderr"
+    }
+}
+
+function Stop-StartedAlasProcess {
+    param([Parameter(Mandatory = $true)]$Process)
+
+    try {
+        Write-StartupLog "Stopping ALAS process tree started by this run (PID $($Process.Id))."
+        $taskkill = Join-Path $env:SystemRoot 'System32\taskkill.exe'
+        $cleanup = Start-Process -FilePath $taskkill `
+            -ArgumentList @('/PID', $Process.Id, '/T', '/F') `
+            -Wait -PassThru -WindowStyle Hidden
+        if ($cleanup.ExitCode -ne 0) {
+            Write-StartupLog "WARNING: taskkill exited with code $($cleanup.ExitCode) for ALAS PID $($Process.Id)."
+        }
+    }
+    catch {
+        Write-StartupLog "WARNING: Failed to stop ALAS PID $($Process.Id): $($_.Exception.Message)"
     }
 }
 
@@ -218,6 +295,14 @@ function Wait-AlasReady {
 try {
     Write-StartupLog "Startup sequence begins. DryRun=$DryRun"
     Assert-RequiredFile $AlasExecutable
+    $pythonExecutable = Initialize-AlasPythonEnvironment
+    Assert-AlasPythonEnvironment -PythonExecutable $pythonExecutable
+    Write-StartupLog "ALAS Python environment check passed: $pythonExecutable"
+
+    if ($EnvironmentCheckOnly) {
+        exit 0
+    }
+
     Assert-SchedulerConfiguration
 
     $mumu = Resolve-MumuInstallation
@@ -292,7 +377,8 @@ try {
     else {
         Write-StartupLog "Starting ALAS with configured schedulers: $($SchedulerConfigs -join ',')."
         $alasStartedAt = (Get-Date).AddSeconds(-2)
-        Start-Process -FilePath $AlasExecutable -WorkingDirectory $AlasRoot
+        $AlasProcessStartedByScript = Start-Process -FilePath $AlasExecutable -WorkingDirectory $AlasRoot -PassThru
+        Write-StartupLog "Started ALAS process with PID $($AlasProcessStartedByScript.Id)."
         Wait-AlasReady -StartedAfter $alasStartedAt
         Write-StartupLog "ALAS WebUI and schedulers $($SchedulerConfigs -join ',') are ready."
     }
@@ -302,5 +388,8 @@ try {
 }
 catch {
     Write-StartupLog "ERROR: $($_.Exception.Message)"
+    if ($null -ne $AlasProcessStartedByScript) {
+        Stop-StartedAlasProcess -Process $AlasProcessStartedByScript
+    }
     exit 1
 }
