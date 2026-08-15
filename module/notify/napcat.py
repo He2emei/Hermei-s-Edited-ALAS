@@ -1,3 +1,4 @@
+import os
 import re
 import subprocess
 import sys
@@ -10,6 +11,7 @@ DEFAULT_NOTIFY_SCRIPT = (
     Path.home() / '.agents' / 'skills' / 'use-local-infrastructure'
     / 'scripts' / 'napcat_notify.py'
 )
+PROJECT_ENV_FILE = Path(__file__).resolve().parents[2] / '.env'
 PREVIEW_ID_PATTERN = re.compile(r'^preview_id:\s*([0-9a-f]{16}|[A-Za-z0-9_-]+)\s*$', re.MULTILINE)
 SAFE_LABEL_PATTERN = re.compile(r'[^A-Za-z0-9_.-]+')
 
@@ -17,6 +19,25 @@ SAFE_LABEL_PATTERN = re.compile(r'[^A-Za-z0-9_.-]+')
 def _safe_label(value, fallback):
     value = SAFE_LABEL_PATTERN.sub('_', str(value)).strip('_.-')[:64]
     return value or fallback
+
+
+def _notification_environment():
+    environment = os.environ.copy()
+    try:
+        lines = PROJECT_ENV_FILE.read_text(encoding='utf-8-sig').splitlines()
+    except OSError:
+        return environment
+
+    for line in lines:
+        key, separator, value = line.partition('=')
+        if separator and key.strip() == 'NAPCAT_ACCESS_TOKEN':
+            value = value.strip()
+            if len(value) >= 2 and value[0] == value[-1] and value[0] in "'\"":
+                value = value[1:-1]
+            if value:
+                environment['NAPCAT_ACCESS_TOKEN'] = value
+            break
+    return environment
 
 
 def send_error_notification(
@@ -44,6 +65,7 @@ def send_error_notification(
         'timeout': timeout + 3,
         'check': False,
         'creationflags': getattr(subprocess, 'CREATE_NO_WINDOW', 0),
+        'env': _notification_environment(),
     }
 
     try:
