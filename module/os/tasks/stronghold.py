@@ -4,7 +4,7 @@ from module.os.map import OSMap
 
 
 class OpsiStronghold(OSMap):
-    def clear_stronghold(self):
+    def try_clear_stronghold(self):
         """
         Find a siren stronghold on globe map,
         clear stronghold,
@@ -22,9 +22,7 @@ class OpsiStronghold(OSMap):
         self.globe_update()
         zone = self.find_siren_stronghold()
         if zone is None:
-            # No siren stronghold, delay next run to tomorrow.
-            self.config.task_delay(server_update=True)
-            self.config.task_stop()
+            return False
 
         self.globe_enter(zone)
         self.zone_init()
@@ -33,6 +31,13 @@ class OpsiStronghold(OSMap):
 
         self.fleet_repair(revert=False)
         self.handle_fleet_resolve(revert=False)
+        return True
+
+    def clear_stronghold(self):
+        if not self.try_clear_stronghold():
+            # No siren stronghold, delay next run to tomorrow.
+            self.config.task_delay(server_update=True)
+            self.config.task_stop()
 
     def os_stronghold(self):
         while True:
