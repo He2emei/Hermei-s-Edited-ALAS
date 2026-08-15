@@ -45,7 +45,7 @@ class OSCampaignRun(OSMapOperation):
     def opsi_meowfficer_farming(self):
         try:
             campaign = self.load_campaign()
-            campaign.os_meowfficer_farming()
+            campaign.os_meowfficer_farming_priority()
         except ActionPointLimit:
             if get_os_reset_remain() > 0:
                 self.config.task_delay(server_update=True)
