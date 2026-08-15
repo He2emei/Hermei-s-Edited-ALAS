@@ -18,7 +18,7 @@ class OpsiAbyssal(OSMap):
             self.config.task_delay(server_update=True)
             self.config.task_stop()
 
-    def clear_abyssal(self):
+    def try_clear_abyssal(self):
         """
         Get one abyssal logger in storage,
         attack abyssal boss,
@@ -35,7 +35,7 @@ class OpsiAbyssal(OSMap):
         with self.config.temporary(STORY_ALLOW_SKIP=False):
             result = self.storage_get_next_item('ABYSSAL', use_logger=self.config.OpsiGeneral_UseLogger)
         if not result:
-            self.delay_abyssal(result=False)
+            return False
 
         self.config.override(
             OpsiGeneral_DoRandomMapEvent=False,
@@ -48,6 +48,11 @@ class OpsiAbyssal(OSMap):
             raise RequestHumanTakeover
 
         self.fleet_repair(revert=False)
+        return True
+
+    def clear_abyssal(self):
+        if not self.try_clear_abyssal():
+            self.delay_abyssal(result=False)
         self.delay_abyssal()
 
     def os_abyssal(self):
