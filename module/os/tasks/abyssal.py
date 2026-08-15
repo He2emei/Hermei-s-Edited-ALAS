@@ -5,7 +5,7 @@ from module.os.map import OSMap
 
 
 class OpsiAbyssal(OSMap):
-    def clear_abyssal(self):
+    def try_clear_abyssal(self):
         """
         Get one abyssal logger in storage,
         attack abyssal boss,
@@ -22,12 +22,7 @@ class OpsiAbyssal(OSMap):
         with self.config.temporary(STORY_ALLOW_SKIP=False):
             result = self.storage_get_next_item('ABYSSAL', use_logger=self.config.OpsiGeneral_UseLogger)
         if not result:
-            if get_os_reset_remain() == 0:
-                logger.info('Just less than 1 day to OpSi reset, delay 2.5 hours')
-                self.config.task_delay(minute=150, server_update=True)
-            else:
-                self.config.task_delay(server_update=True)
-            self.config.task_stop()
+            return False
 
         self.config.override(
             OpsiGeneral_DoRandomMapEvent=False,
@@ -40,6 +35,16 @@ class OpsiAbyssal(OSMap):
             raise RequestHumanTakeover
 
         self.fleet_repair(revert=False)
+        return True
+
+    def clear_abyssal(self):
+        if not self.try_clear_abyssal():
+            if get_os_reset_remain() == 0:
+                logger.info('Just less than 1 day to OpSi reset, delay 2.5 hours')
+                self.config.task_delay(minute=150, server_update=True)
+            else:
+                self.config.task_delay(server_update=True)
+            self.config.task_stop()
 
     def os_abyssal(self):
         while True:
