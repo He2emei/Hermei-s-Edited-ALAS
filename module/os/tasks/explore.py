@@ -12,6 +12,11 @@ class OpsiExplore(OSMap):
     # List of failed zone id
     _os_explore_failed_zone = []
 
+    def _disable_obscure_at_month_start(self):
+        if self.config.cross_get(keys='OpsiObscure.Scheduler.Enable', default=False):
+            logger.info('Month-start OpsiExplore is running, disable OpsiObscure')
+            self.config.cross_set(keys='OpsiObscure.Scheduler.Enable', value=False)
+
     def _os_explore_task_delay(self):
         """
         Delay other OpSi tasks during os_explore
@@ -48,6 +53,7 @@ class OpsiExplore(OSMap):
             self.config.task_stop()
 
         logger.hr('OS explore', level=1)
+        self._disable_obscure_at_month_start()
         order = [int(f.strip(' \t\r\n')) for f in self.config.OS_EXPLORE_FILTER.split('>')]
         # Convert user input
         try:
