@@ -4,7 +4,7 @@ from module.os.map import OSMap
 
 
 class OpsiObscure(OSMap):
-    def clear_obscure(self):
+    def try_clear_obscure(self):
         """
         Raises:
             ActionPointLimit:
@@ -16,13 +16,7 @@ class OpsiObscure(OSMap):
 
         result = self.storage_get_next_item('OBSCURE', use_logger=self.config.OpsiGeneral_UseLogger)
         if not result:
-            # No obscure coordinates, delay next run to tomorrow.
-            if get_os_reset_remain() > 0:
-                self.config.task_delay(server_update=True)
-            else:
-                logger.info('Just less than 1 day to OpSi reset, delay 2.5 hours')
-                self.config.task_delay(minute=150, server_update=True)
-            self.config.task_stop()
+            return False
 
         self.config.override(
             OpsiGeneral_DoRandomMapEvent=False,
@@ -38,6 +32,18 @@ class OpsiObscure(OSMap):
 
         self.map_exit()
         self.handle_after_auto_search()
+        return True
+
+    def clear_obscure(self):
+        if self.try_clear_obscure():
+            return
+        # No obscure coordinates, delay next run to tomorrow.
+        if get_os_reset_remain() > 0:
+            self.config.task_delay(server_update=True)
+        else:
+            logger.info('Just less than 1 day to OpSi reset, delay 2.5 hours')
+            self.config.task_delay(minute=150, server_update=True)
+        self.config.task_stop()
 
     def os_obscure(self):
         while True:
