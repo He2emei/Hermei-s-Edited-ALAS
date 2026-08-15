@@ -13,6 +13,7 @@ from module.config.deep import deep_get, deep_set
 from module.exception import *
 from module.logger import logger
 from module.notify import handle_notify
+from module.notify.napcat import send_error_notification
 
 
 class AzurLaneAutoScript:
@@ -27,16 +28,25 @@ class AzurLaneAutoScript:
         # Key: str, task name, value: int, failure count
         self.failure_record = {}
 
+    def _notify_error(self, task, error):
+        try:
+            return send_error_notification(self.config_name, task, error)
+        except Exception as notify_error:
+            logger.warning(f'Unexpected NapCat notification failure: {notify_error}')
+            return False
+
     @cached_property
     def config(self):
         try:
             config = AzurLaneConfig(config_name=self.config_name)
             return config
-        except RequestHumanTakeover:
+        except RequestHumanTakeover as e:
             logger.critical('Request human takeover')
+            self._notify_error('ConfigInitialization', e)
             exit(1)
         except Exception as e:
             logger.exception(e)
+            self._notify_error('ConfigInitialization', e)
             exit(1)
 
     @cached_property
@@ -45,11 +55,13 @@ class AzurLaneAutoScript:
             from module.device.device import Device
             device = Device(config=self.config)
             return device
-        except RequestHumanTakeover:
+        except RequestHumanTakeover as e:
             logger.critical('Request human takeover')
+            self._notify_error('DeviceInitialization', e)
             exit(1)
         except Exception as e:
             logger.exception(e)
+            self._notify_error('DeviceInitialization', e)
             exit(1)
 
     @cached_property
@@ -60,13 +72,20 @@ class AzurLaneAutoScript:
             return checker
         except Exception as e:
             logger.exception(e)
+            self._notify_error('ServerCheckerInitialization', e)
             exit(1)
 
     def run(self, command, skip_first_screenshot=False):
         try:
-            if not skip_first_screenshot:
-                self.device.screenshot()
-            self.__getattribute__(command)()
+            try:
+                if not skip_first_screenshot:
+                    self.device.screenshot()
+                self.__getattribute__(command)()
+            except (TaskEnd, GamePageUnknownError):
+                raise
+            except Exception as e:
+                self._notify_error(command, e)
+                raise
             return True
         except TaskEnd:
             return True
@@ -90,11 +109,12 @@ class AzurLaneAutoScript:
             self.config.task_call('Restart')
             self.device.sleep(10)
             return False
-        except GamePageUnknownError:
+        except GamePageUnknownError as e:
             logger.info('Game server may be under maintenance or network may be broken, check server status now')
             self.checker.check_now()
             if self.checker.is_available():
                 logger.critical('Game page unknown')
+                self._notify_error(command, e)
                 self.save_error_log()
                 handle_notify(
                     self.config.Error_OnePushConfig,
@@ -114,7 +134,7 @@ class AzurLaneAutoScript:
                 content=f"<{self.config_name}> ScriptError",
             )
             exit(1)
-        except RequestHumanTakeover:
+        except RequestHumanTakeover as e:
             logger.critical('Request human takeover')
             handle_notify(
                 self.config.Error_OnePushConfig,
