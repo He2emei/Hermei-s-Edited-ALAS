@@ -1,7 +1,10 @@
+import os
 import subprocess
 import sys
+import tempfile
 import types
 import unittest
+from pathlib import Path
 from unittest.mock import patch
 
 if 'inflection' not in sys.modules:
@@ -27,6 +30,46 @@ class FakeRunner:
 
 
 class NapCatErrorNotificationTest(unittest.TestCase):
+    def _send_with_project_token(self, project_token, inherited_token=None):
+        runner = FakeRunner()
+        inherited_environment = {}
+        if inherited_token is not None:
+            inherited_environment['NAPCAT_ACCESS_TOKEN'] = inherited_token
+
+        with tempfile.TemporaryDirectory() as directory:
+            env_file = Path(directory) / '.env'
+            env_file.write_text(
+                f'NAPCAT_ACCESS_TOKEN={project_token}\n', encoding='utf-8')
+            with patch.dict(os.environ, inherited_environment, clear=True), \
+                    patch('module.notify.napcat.PROJECT_ENV_FILE', env_file):
+                sent = send_error_notification(
+                    'alas-test', 'Main', RuntimeError('boom'), runner=runner)
+        return runner, sent
+
+    def test_passes_project_dotenv_token_only_through_child_environment(self):
+        runner, sent = self._send_with_project_token('test-token-from-dotenv')
+
+        self.assertTrue(sent)
+        for command, options in runner.commands:
+            self.assertNotIn('test-token-from-dotenv', command)
+            self.assertEqual(
+                options['env']['NAPCAT_ACCESS_TOKEN'],
+                'test-token-from-dotenv',
+            )
+
+    def test_project_dotenv_token_overrides_inherited_environment(self):
+        runner, sent = self._send_with_project_token(
+            'current-project-token', inherited_token='stale-inherited-token')
+
+        self.assertTrue(sent)
+        for command, options in runner.commands:
+            self.assertNotIn('current-project-token', command)
+            self.assertNotIn('stale-inherited-token', command)
+            self.assertEqual(
+                options['env']['NAPCAT_ACCESS_TOKEN'],
+                'current-project-token',
+            )
+
     def test_previews_then_sends_error_to_the_fixed_owner_route(self):
         runner = FakeRunner()
 
