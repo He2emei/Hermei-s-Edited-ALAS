@@ -91,7 +91,7 @@ class NapCatErrorNotificationTest(unittest.TestCase):
         self.assertIn('alas-test', message)
         self.assertIn('OpsiMeowfficerFarming', message)
 
-    def test_scheduler_error_exit_notifies_and_preserves_restart_handling(self):
+    def test_game_not_running_restarts_without_notifying_owner(self):
         class FakeConfig:
             def __init__(self):
                 self.calls = []
@@ -113,8 +113,55 @@ class NapCatErrorNotificationTest(unittest.TestCase):
 
         self.assertFalse(result)
         self.assertEqual(app.config.calls, ['Restart'])
+        notify.assert_not_called()
+
+    def test_failed_automatic_recovery_notifies_before_propagating(self):
+        app = object.__new__(AzurLaneAutoScript)
+        app.config_name = 'alas-test'
+        app.__dict__['config'] = types.SimpleNamespace(
+            task_call=lambda task: (_ for _ in ()).throw(
+                RuntimeError('cannot schedule restart')),
+        )
+        app.failing_task = lambda: (_ for _ in ()).throw(
+            GameNotRunningError('emulator stopped'))
+
+        with patch('alas.send_error_notification') as notify:
+            with self.assertRaisesRegex(RuntimeError, 'cannot schedule restart'):
+                app.run('failing_task', skip_first_screenshot=True)
+
         notify.assert_called_once()
         self.assertEqual(notify.call_args.args[:2], ('alas-test', 'failing_task'))
+
+    def test_third_consecutive_task_failure_notifies_before_exit(self):
+        app = object.__new__(AzurLaneAutoScript)
+        app.config_name = 'alas-test'
+        app.is_first_task = False
+        app.failure_record = {'FailingTask': 2}
+        app.__dict__['config'] = types.SimpleNamespace(
+            Error_OnePushConfig={},
+            Error_HandleError=True,
+        )
+        app.__dict__['checker'] = types.SimpleNamespace(
+            wait_until_available=lambda: None,
+            is_recovered=lambda: False,
+            check_now=lambda: None,
+        )
+        app.__dict__['device'] = types.SimpleNamespace(
+            config=None,
+            stuck_record_clear=lambda: None,
+            click_record_clear=lambda: None,
+        )
+        app.get_next_task = lambda: 'FailingTask'
+        app.run = lambda command: False
+
+        with patch('alas.send_error_notification') as notify, \
+                patch('alas.logger.set_file_logger'), \
+                patch('alas.handle_notify'):
+            with self.assertRaises(SystemExit):
+                app.loop()
+
+        notify.assert_called_once()
+        self.assertEqual(notify.call_args.args[:2], ('alas-test', 'FailingTask'))
 
     def test_does_not_pass_raw_error_details_to_the_helper(self):
         runner = FakeRunner()
