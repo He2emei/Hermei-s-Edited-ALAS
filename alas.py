@@ -77,15 +77,16 @@ class AzurLaneAutoScript:
 
     def run(self, command, skip_first_screenshot=False):
         try:
-            try:
-                if not skip_first_screenshot:
-                    self.device.screenshot()
-                self.__getattribute__(command)()
-            except (TaskEnd, GamePageUnknownError):
-                raise
-            except Exception as e:
-                self._notify_error(command, e)
-                raise
+            return self._run(command, skip_first_screenshot=skip_first_screenshot)
+        except Exception as e:
+            self._notify_error(command, e)
+            raise
+
+    def _run(self, command, skip_first_screenshot=False):
+        try:
+            if not skip_first_screenshot:
+                self.device.screenshot()
+            self.__getattribute__(command)()
             return True
         except TaskEnd:
             return True
@@ -114,13 +115,13 @@ class AzurLaneAutoScript:
             self.checker.check_now()
             if self.checker.is_available():
                 logger.critical('Game page unknown')
-                self._notify_error(command, e)
                 self.save_error_log()
                 handle_notify(
                     self.config.Error_OnePushConfig,
                     title=f"Alas <{self.config_name}> crashed",
                     content=f"<{self.config_name}> GamePageUnknownError",
                 )
+                self._notify_error(command, e)
                 exit(1)
             else:
                 self.checker.wait_until_available()
@@ -133,6 +134,7 @@ class AzurLaneAutoScript:
                 title=f"Alas <{self.config_name}> crashed",
                 content=f"<{self.config_name}> ScriptError",
             )
+            self._notify_error(command, e)
             exit(1)
         except RequestHumanTakeover as e:
             logger.critical('Request human takeover')
@@ -141,6 +143,7 @@ class AzurLaneAutoScript:
                 title=f"Alas <{self.config_name}> crashed",
                 content=f"<{self.config_name}> RequestHumanTakeover",
             )
+            self._notify_error(command, e)
             exit(1)
         except Exception as e:
             logger.exception(e)
@@ -150,6 +153,7 @@ class AzurLaneAutoScript:
                 title=f"Alas <{self.config_name}> crashed",
                 content=f"<{self.config_name}> Exception occured",
             )
+            self._notify_error(command, e)
             exit(1)
 
     def save_error_log(self):
@@ -619,6 +623,10 @@ class AzurLaneAutoScript:
                 logger.critical("Possible reason #2: There is a problem with this task. "
                                 "Please contact developers or try to fix it yourself.")
                 logger.critical('Request human takeover')
+                self._notify_error(
+                    task,
+                    RequestHumanTakeover(f'Task `{task}` failed 3 or more times.'),
+                )
                 handle_notify(
                     self.config.Error_OnePushConfig,
                     title=f"Alas <{self.config_name}> crashed",
