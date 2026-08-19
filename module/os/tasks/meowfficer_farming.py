@@ -2,7 +2,7 @@ from module.config.utils import get_os_reset_remain
 from module.exception import RequestHumanTakeover, ScriptError
 from module.logger import logger
 from module.map.map_grids import SelectedGrids
-from module.os.cl1 import get_cl1_yellow_coins_preserve
+from module.os.cl1 import can_run_cl1, get_cl1_yellow_coins_preserve, has_reached_cl1_meowfficer_threshold
 from module.os.map import OSMap
 
 
@@ -20,14 +20,15 @@ class OpsiMeowfficerFarming(OSMap):
         if hazard1_mode:
             call_threshold = self.get_cl1_meowfficer_threshold()
             # Must read AP from screen since _action_point_total is 0 at task startup
-            if not self.action_point_check(call_threshold):
+            self.action_point_check(call_threshold)
+            if not has_reached_cl1_meowfficer_threshold(self._action_point_total, call_threshold):
                 logger.info(f'Under hazard1_mode, current AP {self._action_point_total} is less than '
                             f'CL1 meowfficer threshold {call_threshold}. Delay to next period.')
                 call_hazard1_back = False
                 if self.config.is_task_enabled('OpsiHazard1Leveling'):
                     yellow_coins = self.get_yellow_coins()
                     yellow_coins_preserve = get_cl1_yellow_coins_preserve(self.config)
-                    call_hazard1_back = yellow_coins > yellow_coins_preserve
+                    call_hazard1_back = can_run_cl1(yellow_coins, yellow_coins_preserve)
                     if not call_hazard1_back:
                         logger.info(f'OpsiHazard1Leveling not called back because yellow coins {yellow_coins} '
                                     f'<= preserve {yellow_coins_preserve}')
