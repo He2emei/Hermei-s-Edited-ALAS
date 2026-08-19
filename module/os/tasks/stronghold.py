@@ -22,6 +22,7 @@ class OpsiStronghold(OSMap):
         self.globe_update()
         zone = self.find_siren_stronghold()
         if zone is None:
+            self.os_globe_goto_map()
             return False
 
         self.globe_enter(zone)
