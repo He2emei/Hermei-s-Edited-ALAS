@@ -505,7 +505,8 @@ class ActionPointHandler(ActionPointLimitPolicy, UI, MapEventHandler):
 
         self.action_point_quit()
         for _ in self.loop():
-            if self.appear(IN_MAP, offset=(200, 5)):
+            # Stronghold search can leave the caller on the OpSi globe, where IN_MAP is absent.
+            if self.appear(IN_MAP, offset=(200, 5)) or self.appear(OS_CHECK, offset=(20, 20)):
                 break
 
         return enough
