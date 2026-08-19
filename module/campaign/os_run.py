@@ -14,6 +14,20 @@ class OSCampaignRun(OSMapOperation):
         campaign.os_init()
         return campaign
 
+    def _route_high_value_task_to_priority_dispatch(self):
+        if self.config.OpsiMeowfficerFarming_OperatingMode != 'hazard1_mode':
+            return False
+
+        logger.info(f'Route {self.config.task.command} through unified CL1 priority dispatch')
+        with self.config.multi_set():
+            self.config.task_delay(success=True)
+            self.config.cross_set(
+                keys=f'{self.config.task.command}.Scheduler.Enable',
+                value=False,
+            )
+            self.config.task_call('OpsiMeowfficerFarming')
+        return True
+
     def opsi_explore(self):
         try:
             campaign = self.load_campaign()
@@ -71,6 +85,8 @@ class OSCampaignRun(OSMapOperation):
             self.config.task_delay(minute=60)
 
     def opsi_obscure(self):
+        if self._route_high_value_task_to_priority_dispatch():
+            return
         try:
             campaign = self.load_campaign()
             campaign.os_obscure()
@@ -94,6 +110,8 @@ class OSCampaignRun(OSMapOperation):
             self.config.opsi_task_delay(ap_limit=True)
 
     def opsi_abyssal(self):
+        if self._route_high_value_task_to_priority_dispatch():
+            return
         try:
             campaign = self.load_campaign()
             campaign.os_abyssal()
@@ -111,6 +129,8 @@ class OSCampaignRun(OSMapOperation):
             self.config.opsi_task_delay(ap_limit=True)
 
     def opsi_stronghold(self):
+        if self._route_high_value_task_to_priority_dispatch():
+            return
         try:
             campaign = self.load_campaign()
             campaign.os_stronghold()
