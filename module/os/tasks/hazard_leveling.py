@@ -1,5 +1,5 @@
 from module.logger import logger
-from module.os.cl1 import get_cl1_yellow_coins_preserve
+from module.os.cl1 import can_run_cl1, get_cl1_yellow_coins_preserve, has_reached_cl1_meowfficer_threshold
 from module.os.map import OSMap
 
 
@@ -24,7 +24,7 @@ class OpsiHazard1Leveling(OSMap):
             logger.attr('OS_ACTION_POINT_PRESERVE', self.config.OS_ACTION_POINT_PRESERVE)
 
             yellow_coins_preserve = get_cl1_yellow_coins_preserve(self.config)
-            if self.get_yellow_coins() < yellow_coins_preserve:
+            if not can_run_cl1(self.get_yellow_coins(), yellow_coins_preserve):
                 logger.info(f'Reach the limit of yellow coins, preserve={yellow_coins_preserve}')
                 with self.config.multi_set():
                     self.config.task_delay(server_update=True)
@@ -38,7 +38,7 @@ class OpsiHazard1Leveling(OSMap):
             keep_current_ap = True
             self.action_point_set(cost=5, keep_current_ap=keep_current_ap, check_rest_ap=True)
             call_threshold = self.get_cl1_meowfficer_threshold()
-            if self._action_point_total > call_threshold:
+            if has_reached_cl1_meowfficer_threshold(self._action_point_total, call_threshold):
                 with self.config.multi_set():
                     self.config.task_delay(server_update=True)
                     self.config.task_call('OpsiMeowfficerFarming')
