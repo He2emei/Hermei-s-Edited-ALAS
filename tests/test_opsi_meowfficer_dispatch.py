@@ -10,6 +10,7 @@ from module.os.task_dispatch import (
     run_first_available,
 )
 from module.os.tasks.meowfficer_farming_priority import OpsiMeowfficerFarmingPriority
+from module.os.tasks.stronghold import OpsiStronghold
 from module.os_handler.action_point import ActionPointLimit
 
 
@@ -98,7 +99,55 @@ class PriorityCampaignHarness(OpsiMeowfficerFarmingPriority):
         return available
 
 
+class CandidateTransitionHarness(PriorityCampaignHarness):
+    def __init__(self, config):
+        super().__init__(config, {}, action_points=5000)
+        self.current_page = 'map'
+        self.map_restore_calls = 0
+
+    def try_clear_stronghold(self):
+        self.run_calls.append('OpsiStronghold')
+        return OpsiStronghold.try_clear_stronghold(self)
+
+    def cl1_ap_preserve(self):
+        pass
+
+    def os_map_goto_globe(self):
+        self.current_page = 'globe'
+
+    def globe_update(self):
+        pass
+
+    def find_siren_stronghold(self):
+        return None
+
+    def os_globe_goto_map(self):
+        self.map_restore_calls += 1
+        self.current_page = 'map'
+
+    def try_clear_abyssal(self):
+        self.run_calls.append('OpsiAbyssal')
+        if self.current_page != 'map':
+            raise AssertionError('Abyssal started before the failed stronghold probe restored the OS map')
+        return True
+
+
 class OpsiMeowfficerDispatchTest(unittest.TestCase):
+    def test_failed_stronghold_probe_restores_map_before_abyssal_candidate(self):
+        config = FakeConfig()
+        campaign = CandidateTransitionHarness(config)
+
+        result = campaign.os_meowfficer_farming_priority()
+
+        self.assertEqual(result, 'OpsiAbyssal')
+        self.assertEqual(
+            config.bind_calls,
+            ['OpsiStronghold', 'OpsiAbyssal', 'OpsiMeowfficerFarming'],
+        )
+        self.assertEqual(campaign.run_calls, ['OpsiStronghold', 'OpsiAbyssal'])
+        self.assertEqual(campaign.map_restore_calls, 1)
+        self.assertEqual(campaign.current_page, 'map')
+
     def test_cooling_down_task_delays_without_bypassing_policy_into_shortcat(self):
         config = FakeConfig(enabled_tasks={'OpsiHazard1Leveling'})
         next_run = datetime(2026, 8, 19, 13, 30)
