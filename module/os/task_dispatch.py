@@ -4,16 +4,18 @@ OPSI_MEOWFFICER_PRIORITY_TASKS = (
     ('OpsiObscure', 'try_clear_obscure'),
 )
 OPSI_MEOWFFICER_FALLBACK_TASK = 'OpsiMeowfficerFarming'
+OPSI_HAZARD1_TASK = 'OpsiHazard1Leveling'
 
 
 def run_first_available(config, candidates, fallback):
-    """Run only the highest-priority enabled candidate that reports availability."""
+    """Run the highest-priority candidate that reports availability."""
     for task, run in candidates:
-        if not config.is_task_enabled(task):
-            continue
         config.bind(task)
         if run():
             return task
+
+    if fallback is None:
+        return None
 
     fallback_task, run_fallback = fallback
     config.bind(fallback_task)
