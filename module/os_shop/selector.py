@@ -20,8 +20,28 @@ FILTER_REGEX = re.compile(
 FILTER_ATTR = ('group', 'sub_genre', 'tier')
 FILTER = Filter(FILTER_REGEX, FILTER_ATTR)
 
+PORT_NEW_YORK = 0
+PORT_LIVERPOOL = 1
+PORT_GIBRALTAR = 2
+PORT_ST_PETERSBURG = 3
+
+ITEM_GROUP_LOGGER = 'logger'
+ITEM_GROUP_PURPLE_COINS = 'purplecoins'
+ITEM_GROUP_REPAIR_PACK = 'repairpack'
+
 
 class Selector():
+
+    MONTHLY_CLEAROUT_PORT_FILTERS = {
+        # New York: coordinates only.
+        PORT_NEW_YORK: lambda item: item.group == ITEM_GROUP_LOGGER,
+        # Liverpool: everything except special exchange tokens.
+        PORT_LIVERPOOL: lambda item: item.group != ITEM_GROUP_PURPLE_COINS,
+        # Gibraltar: clear the entire shop.
+        PORT_GIBRALTAR: lambda item: True,
+        # St. Petersburg: everything except repair packs.
+        PORT_ST_PETERSBURG: lambda item: item.group != ITEM_GROUP_REPAIR_PACK,
+    }
 
     def pretreatment(self, items) -> List[Item]:
         """
@@ -125,3 +145,26 @@ class Selector():
             parser = OS_SHOP[preset]
         FILTER.load(parser)
         return FILTER.applys(items, funcs=[self.check_cl1_purple_coins, self.check_item_count])
+
+    def items_filter_in_monthly_clearout(self, items) -> List[Item]:
+        """
+        Select items for the end-of-month clearout using a fixed rule per port.
+
+        Unknown items and invalid counters are skipped defensively. Port indices
+        are assigned by :meth:`PortShop.scan_all` in the order shown by the game:
+        New York, Liverpool, Gibraltar, and St. Petersburg.
+
+        Args:
+            items: Items scanned from all four port shops.
+
+        Returns:
+            list[Item]: Items targeted by the monthly clearout.
+        """
+        selected = []
+        for item in self.pretreatment(items):
+            if not self.check_item_count(item):
+                continue
+            port_filter = self.MONTHLY_CLEAROUT_PORT_FILTERS.get(item.shop_index)
+            if port_filter is not None and port_filter(item):
+                selected.append(item)
+        return selected
