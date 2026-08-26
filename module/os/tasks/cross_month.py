@@ -7,10 +7,48 @@ from module.map.map_grids import SelectedGrids
 from module.os.map import OSMap
 
 
+MONTHLY_SHOP_CLEAROUT_WINDOW = timedelta(days=3)
+MONTHLY_SHOP_RETRY_INTERVAL = timedelta(hours=6)
+CROSS_MONTH_WAIT_WINDOW = timedelta(minutes=10)
+
+
+def monthly_shop_clearout_start(next_reset):
+    """Return the start of the final three-day monthly shop clearout window."""
+    return next_reset - MONTHLY_SHOP_CLEAROUT_WINDOW
+
+
 class OpsiCrossMonth(OSMap):
     def os_cross_month_end(self):
-        self.config.task_delay(target=get_os_next_reset() - timedelta(minutes=10))
+        self.config.task_delay(target=monthly_shop_clearout_start(get_os_next_reset()))
         self.config.task_stop()
+
+    def _prepare_monthly_shop(self, next_reset, now) -> bool:
+        """
+        Schedule or run the monthly port-shop clearout before reset.
+
+        Returns:
+            bool: True when the task has been rescheduled and should stop.
+                False once the existing final-ten-minute cross-month flow may run.
+        """
+        clearout_start = monthly_shop_clearout_start(next_reset)
+        cross_month_start = next_reset - CROSS_MONTH_WAIT_WINDOW
+
+        if now < clearout_start:
+            self.config.task_delay(target=clearout_start)
+            self.config.task_stop()
+            return True
+
+        if now < cross_month_start:
+            needs_retry = self.os_shop_monthly_clearout()
+            if needs_retry:
+                target = min(now + MONTHLY_SHOP_RETRY_INTERVAL, cross_month_start)
+            else:
+                target = cross_month_start
+            self.config.task_delay(target=target)
+            self.config.task_stop()
+            return True
+
+        return False
 
     def os_cross_month(self):
         next_reset = get_os_next_reset()
@@ -20,14 +58,8 @@ class OpsiCrossMonth(OSMap):
         # Check start time
         if next_reset < now:
             raise ScriptError(f'Invalid OpsiNextReset: {next_reset} < {now}')
-        if next_reset - now > timedelta(days=3):
-            logger.error('Too long to next reset, OpSi might reset already. '
-                         'Running OpsiCrossMonth is meaningless, stopped.')
-            self.os_cross_month_end()
-        if next_reset - now > timedelta(minutes=10):
-            logger.error('Too long to next reset, too far from OpSi reset. '
-                         'Running OpsiCrossMonth is meaningless, stopped.')
-            self.os_cross_month_end()
+        if self._prepare_monthly_shop(next_reset, now):
+            return
 
         # Now we are 10min before OpSi reset
         logger.hr('Wait until OpSi reset', level=1)
