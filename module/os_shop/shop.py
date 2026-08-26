@@ -199,10 +199,34 @@ class OSShop(PortShop, AkashiShop):
         return True
 
     def handle_port_supply_buy(self) -> bool:
+        """Buy items selected by the regular configurable OpsiShop filter."""
+        return self._handle_port_supply_buy(
+            select_func=self.items_filter_in_os_shop,
+            update_storage=True,
+            retry_on_uncertain=False,
+        )
+
+    def handle_monthly_port_supply_buy(self) -> bool:
+        """Buy items selected by the fixed end-of-month port policies."""
+        return self._handle_port_supply_buy(
+            select_func=self.items_filter_in_monthly_clearout,
+            update_storage=False,
+            retry_on_uncertain=True,
+        )
+
+    def _handle_port_supply_buy(self, select_func, update_storage,
+                                retry_on_uncertain) -> bool:
         """
+        Args:
+            select_func: Function that filters scanned items.
+            update_storage: Whether to update OpsiShop's regular-filter storage.
+            retry_on_uncertain: Return True when the shop scan is incomplete or
+                contains unrecognized data, so a scheduler can retry later.
+
         Returns:
-            bool: True if success to buy any or no items found.
-                False if not enough coins to buy any.
+            bool: True if selected items were found, or if an uncertain scan
+                should be retried. False only after finding no selected items
+                in a reliable scan.
 
         Pages:
             in: PORT_SUPPLY_CHECK
@@ -210,19 +234,33 @@ class OSShop(PortShop, AkashiShop):
         items = self.scan_all()
         if not len(items):
             logger.warning('Empty OS shop.')
-            self.config.cross_set("OpsiShop.Storage.Storage.BoughtAllYellowCoinItems", True)
-            return False
-        items = self.items_filter_in_os_shop(items)
+            if update_storage:
+                self.config.cross_set("OpsiShop.Storage.Storage.BoughtAllYellowCoinItems", True)
+            return retry_on_uncertain
+        scanned_items = items
+        items = select_func(scanned_items)
+        scan_uncertain = any(
+            getattr(item, 'group', None) is None
+            or item.count < 0
+            or item.total_count < 1
+            or item.count > item.total_count
+            for item in scanned_items
+        )
+        if not len(items) and retry_on_uncertain and scan_uncertain:
+            logger.warning('OS shop scan contains unrecognized items or invalid counters, retry later.')
+            return True
         if not len(items):
             logger.warning('Nothing to buy.')
-            self.config.cross_set("OpsiShop.Storage.Storage.BoughtAllYellowCoinItems", True)
+            if update_storage:
+                self.config.cross_set("OpsiShop.Storage.Storage.BoughtAllYellowCoinItems", True)
             return False
-        if all(item.cost == 'PurpleCoins' for item in items):
-            logger.info("All yellow coin items are bought.")
-            self.config.cross_set("OpsiShop.Storage.Storage.BoughtAllYellowCoinItems", True)
-        else:
-            logger.info("There are still yellow coin items to buy.")
-            self.config.cross_set("OpsiShop.Storage.Storage.BoughtAllYellowCoinItems", False)
+        if update_storage:
+            if all(item.cost == 'PurpleCoins' for item in items):
+                logger.info("All yellow coin items are bought.")
+                self.config.cross_set("OpsiShop.Storage.Storage.BoughtAllYellowCoinItems", True)
+            else:
+                logger.info("There are still yellow coin items to buy.")
+                self.config.cross_set("OpsiShop.Storage.Storage.BoughtAllYellowCoinItems", False)
         self.os_shop_get_coins()
         skip_get_coins = True
         items.reverse()

@@ -8,12 +8,8 @@ from module.os_shop.assets import OS_SHOP_CHECK
 
 
 class OpsiShop(OSMap):
-    def os_shop(self):
-        """
-        Buy all supplies in all ports.
-        If not having enough yellow coins or purple coins, skip buying supplies in next port.
-        """
-        logger.hr('OS port daily', level=1)
+    def _os_shop_visit(self, monthly_clearout=False):
+        """Visit the four port shops and buy items selected for this run."""
         if not self.zone.is_azur_port:
             self.globe_goto(self.zone_nearest_azur_port(self.zone))
 
@@ -21,17 +17,46 @@ class OpsiShop(OSMap):
         self.port_shop_enter()
 
         if self.appear(OS_SHOP_CHECK):
-            not_empty = self.handle_port_supply_buy()
-            next_reset = self._os_shop_delay(not_empty)
-            logger.info('OS port daily finished, delay to next reset')
-            logger.attr('OpsiShopNextReset', next_reset)
+            if monthly_clearout:
+                needs_retry = self.handle_monthly_port_supply_buy()
+            else:
+                needs_retry = self.handle_port_supply_buy()
         else:
-            next_reset = get_os_next_reset()
-            logger.warning('There is no shop in the port, skip to the next month.')
-            logger.attr('OpsiShopNextReset', next_reset)
+            logger.warning('There is no shop in the port.')
+            needs_retry = None
 
         self.port_shop_quit()
         self.port_quit()
+        return needs_retry
+
+    def os_shop_monthly_clearout(self) -> bool:
+        """
+        Buy the fixed end-of-month item set from all four port shops.
+
+        Returns:
+            bool: True when selected items were seen, so another scan may be
+                useful after purchases or when balances were insufficient.
+        """
+        logger.hr('OS port monthly clearout', level=1)
+        result = self._os_shop_visit(monthly_clearout=True)
+        # A missing shop page is not proof that all target items are gone.
+        return True if result is None else result
+
+    def os_shop(self):
+        """
+        Buy all supplies in all ports.
+        If not having enough yellow coins or purple coins, skip buying supplies in next port.
+        """
+        logger.hr('OS port daily', level=1)
+        not_empty = self._os_shop_visit()
+        if not_empty is None:
+            next_reset = get_os_next_reset()
+            logger.warning('There is no shop in the port, skip to the next month.')
+            logger.attr('OpsiShopNextReset', next_reset)
+        else:
+            next_reset = self._os_shop_delay(not_empty)
+            logger.info('OS port daily finished, delay to next reset')
+            logger.attr('OpsiShopNextReset', next_reset)
 
         self.config.task_delay(target=next_reset)
         self.config.task_stop()
