@@ -432,8 +432,13 @@ class AzurLaneAutoScript:
 
     def gems_farming(self):
         from module.campaign.gems_farming import GemsFarming
+        name, folder, mode = self.config.campaign_profile.gems_farming_route(
+            self.config.Campaign_Name,
+            self.config.Campaign_Event,
+            self.config.Campaign_Mode,
+        )
         GemsFarming(config=self.config, device=self.device).run(
-            name=self.config.Campaign_Name, folder=self.config.Campaign_Event, mode=self.config.Campaign_Mode)
+            name=name, folder=folder, mode=mode)
 
     def island_production(self):
         from module.island.production import IslandProduction
