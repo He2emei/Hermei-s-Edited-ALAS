@@ -7,7 +7,7 @@ from module.combat.assets import *
 from module.logger import logger
 from module.notify.napcat import send_notification
 from module.reward.assets import *
-from module.reward.coin_resource import CoinResourceReader, CoinResourceStatus
+from module.reward.coin_resource import CoinResourceStatus, read_coin_storage
 from module.ui.navbar import Navbar
 from module.ui.page import page_main, page_mission, page_reward
 from module.ui.ui import UI
@@ -19,11 +19,10 @@ class Reward(UI):
         if not self.config.CoinOverflowWarning_Enable:
             return False
 
-        reasons = status.warning_reasons(
+        warning_reached = status.storage_warning_reached(
             storage_threshold=self.config.CoinOverflowWarning_StorageThreshold,
-            merchant_threshold=self.config.CoinOverflowWarning_MerchantThreshold,
         )
-        if not reasons:
+        if not warning_reached:
             return False
 
         now = now or datetime.now().replace(microsecond=0)
@@ -37,7 +36,7 @@ class Reward(UI):
         config_name = self.config.config_name
         sent = send_notification(
             context=f'ALAS/resource/{config_name}/coin'[:80],
-            message=status.notification_message(config_name, reasons),
+            message=status.notification_message(config_name),
         )
         if sent:
             self.config.CoinOverflowWarning_LastNotification = now
@@ -47,7 +46,7 @@ class Reward(UI):
         self.ui_ensure(page_main)
         storage_current = storage_limit = 0
         for _ in range(3):
-            storage_current, storage_limit = CoinResourceReader.storage(self.device.image)
+            storage_current, storage_limit = read_coin_storage(self.device.image)
             if storage_limit > 0:
                 break
             self.device.screenshot()
@@ -55,31 +54,11 @@ class Reward(UI):
             logger.warning('Unable to recognize coin storage limit')
 
         self.ui_goto(page_reward)
-        settle_timer = Timer(1, count=3).start()
-        while not settle_timer.reached():
-            self.device.screenshot()
-        merchant_available = False
-        merchant_current = 0
-        for attempt in range(3):
-            merchant_available = self.appear(COIN)
-            merchant_current = CoinResourceReader.merchant(
-                self.device.image, available=merchant_available)
-            if merchant_available and merchant_current > 0:
-                break
-            if attempt >= 2:
-                break
-            self.device.screenshot()
-        if merchant_available and merchant_current <= 0:
-            logger.warning('Unable to recognize claimable Merchant coins')
-        merchant_limit = self.config.CoinOverflowWarning_MerchantCapacity
         status = CoinResourceStatus(
             storage_current=storage_current,
             storage_limit=storage_limit,
-            merchant_current=merchant_current,
-            merchant_limit=merchant_limit,
         )
         logger.attr('CoinStorage', f'{storage_current}/{storage_limit}')
-        logger.attr('MerchantCoins', f'{merchant_current}/{merchant_limit}')
         return status
 
     def reward_receive(self, oil, coin, exp):

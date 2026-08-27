@@ -1751,23 +1751,15 @@
   "CoinOverflowWarning": {
     "_info": {
       "name": "Coin Overflow Warning",
-      "help": "Reads storage quantity and its displayed dynamic limit plus the Merchant quantity, then sends one combined QBot warning at the configured thresholds."
+      "help": "Reads storage quantity and its displayed dynamic limit, then sends a QBot warning at the configured threshold. Merchant quantity does not trigger warnings."
     },
     "Enable": {
       "name": "Enable QBot Warning",
       "help": "Only sends after successful recognition and threshold evaluation."
     },
-    "MerchantCapacity": {
-      "name": "Merchant Capacity",
-      "help": "The Merchant page does not display its limit, so enter the account capacity here; a max-level Merchant is usually 12000."
-    },
     "StorageThreshold": {
       "name": "Storage Warning Ratio",
       "help": "Warn when current storage divided by the in-game displayed limit reaches this ratio."
-    },
-    "MerchantThreshold": {
-      "name": "Merchant Warning Ratio",
-      "help": "Warn when claimable Merchant coins divided by Merchant capacity reaches this ratio."
     },
     "CooldownHours": {
       "name": "Warning Cooldown (Hours)",

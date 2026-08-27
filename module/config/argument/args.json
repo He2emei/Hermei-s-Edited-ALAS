@@ -7322,17 +7322,9 @@
         "type": "checkbox",
         "value": true
       },
-      "MerchantCapacity": {
-        "type": "input",
-        "value": 12000
-      },
       "StorageThreshold": {
         "type": "input",
-        "value": 0.95
-      },
-      "MerchantThreshold": {
-        "type": "input",
-        "value": 0.9
+        "value": 1.0
       },
       "CooldownHours": {
         "type": "input",

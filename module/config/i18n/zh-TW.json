@@ -1751,23 +1751,15 @@
   "CoinOverflowWarning": {
     "_info": {
       "name": "物資溢出預警",
-      "help": "辨識倉庫目前數量、遊戲顯示的動態上限與小賣部可領取數量，達到門檻後透過 QBot 合併提醒。"
+      "help": "辨識倉庫目前數量與遊戲顯示的動態上限，達到門檻後透過 QBot 提醒；小賣部數量不會單獨觸發預警。"
     },
     "Enable": {
       "name": "啟用 QBot 預警",
       "help": "只在辨識成功並達到門檻時傳送。"
     },
-    "MerchantCapacity": {
-      "name": "小賣部容量",
-      "help": "小賣部頁面不顯示上限，請按帳號實際容量設定；滿級通常為 12000。"
-    },
     "StorageThreshold": {
       "name": "倉庫預警比例",
       "help": "目前倉庫物資除以遊戲顯示上限達到此比例時預警。"
-    },
-    "MerchantThreshold": {
-      "name": "小賣部預警比例",
-      "help": "目前可領取物資除以小賣部容量達到此比例時預警。"
     },
     "CooldownHours": {
       "name": "預警冷卻（小時）",

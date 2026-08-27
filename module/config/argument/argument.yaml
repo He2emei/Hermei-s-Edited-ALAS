@@ -486,9 +486,7 @@ Reward:
   CollectWeeklyMission: true
 CoinOverflowWarning:
   Enable: true
-  MerchantCapacity: 12000
-  StorageThreshold: 0.95
-  MerchantThreshold: 0.9
+  StorageThreshold: 1.0
   CooldownHours: 12
   LastNotification:
     value: 2020-01-01 00:00:00
