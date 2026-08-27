@@ -42,6 +42,9 @@
     }
   },
   "General": {
+    "CampaignProfile": {
+      "Mode": "daily"
+    },
     "Retirement": {
       "RetireMode": "one_click_retire"
     },
@@ -407,8 +410,8 @@
     "StopCondition": {
       "OilLimit": 1000,
       "RunCount": 0,
-      "MapAchievement": "non_stop",
-      "StageIncrease": false,
+      "MapAchievement": "map_3_stars",
+      "StageIncrease": true,
       "GetNewShip": false,
       "ReachLevel": 0
     },
@@ -1398,6 +1401,14 @@
       "CollectExp": true,
       "CollectMission": true,
       "CollectWeeklyMission": true
+    },
+    "CoinOverflowWarning": {
+      "Enable": true,
+      "MerchantCapacity": 12000,
+      "StorageThreshold": 0.95,
+      "MerchantThreshold": 0.9,
+      "CooldownHours": 12,
+      "LastNotification": "2020-01-01 00:00:00"
     },
     "Storage": {
       "Storage": {}

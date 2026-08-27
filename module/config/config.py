@@ -6,6 +6,7 @@ from datetime import datetime, timedelta
 import pywebio
 
 from module.base.filter import Filter
+from module.config.campaign_profile import CampaignProfile
 from module.config.config_generated import GeneratedConfig
 from module.config.config_manual import ManualConfig, OutputConfig
 from module.config.config_updater import ConfigUpdater, ensure_time, get_server_next_update, nearest_future
@@ -212,6 +213,11 @@ class AzurLaneConfig(ConfigUpdater, ManualConfig, GeneratedConfig, ConfigWatcher
         for func in self.data.values():
             func = Function(func)
             if not func.enable:
+                continue
+            if not self.campaign_profile.allows(func.command):
+                logger.info(
+                    f'Task `{func.command}` is masked by campaign profile '
+                    f'`{self.campaign_profile.mode}`')
                 continue
             if not isinstance(func.next_run, datetime):
                 error.append(func)
@@ -630,7 +636,14 @@ class AzurLaneConfig(ConfigUpdater, ManualConfig, GeneratedConfig, ConfigWatcher
             self.task_stop(message=message)
 
     def is_task_enabled(self, task):
-        return bool(self.cross_get(keys=[task, 'Scheduler', 'Enable'], default=False))
+        enabled = bool(self.cross_get(keys=[task, 'Scheduler', 'Enable'], default=False))
+        return enabled and self.campaign_profile.allows(task)
+
+    @property
+    def campaign_profile(self):
+        mode = self.cross_get(
+            keys=['General', 'CampaignProfile', 'Mode'], default=CampaignProfile.DAILY)
+        return CampaignProfile(mode)
 
     @property
     def campaign_name(self):
