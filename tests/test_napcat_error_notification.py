@@ -15,7 +15,7 @@ if 'inflection' not in sys.modules:
 
 from alas import AzurLaneAutoScript
 from module.exception import GameNotRunningError
-from module.notify.napcat import send_error_notification
+from module.notify.napcat import send_error_notification, send_notification
 
 
 class FakeRunner:
@@ -130,7 +130,7 @@ class NapCatErrorNotificationTest(unittest.TestCase):
                 app.run('failing_task', skip_first_screenshot=True)
 
         notify.assert_called_once()
-        self.assertEqual(notify.call_args.args[:2], ('alas-test', 'failing_task'))
+        self.assertEqual(notify.call_args[0][:2], ('alas-test', 'failing_task'))
 
     def test_third_consecutive_task_failure_notifies_before_exit(self):
         app = object.__new__(AzurLaneAutoScript)
@@ -161,7 +161,7 @@ class NapCatErrorNotificationTest(unittest.TestCase):
                 app.loop()
 
         notify.assert_called_once()
-        self.assertEqual(notify.call_args.args[:2], ('alas-test', 'FailingTask'))
+        self.assertEqual(notify.call_args[0][:2], ('alas-test', 'FailingTask'))
 
     def test_does_not_pass_raw_error_details_to_the_helper(self):
         runner = FakeRunner()
@@ -190,6 +190,28 @@ class NapCatErrorNotificationTest(unittest.TestCase):
         self.assertTrue(first)
         self.assertTrue(second)
         self.assertEqual(len(runner.commands), 4)
+
+    def test_generic_notification_uses_guarded_preview_and_send_flow(self):
+        runner = FakeRunner()
+
+        sent = send_notification(
+            context='ALAS/resource/alas2/coin',
+            message='仓库物资 93000/94200',
+            runner=runner,
+        )
+
+        self.assertTrue(sent)
+        self.assertEqual(len(runner.commands), 2)
+        preview, send = [command for command, _ in runner.commands]
+        self.assertEqual(
+            preview[preview.index('--context') + 1],
+            'ALAS/resource/alas2/coin',
+        )
+        self.assertEqual(
+            preview[preview.index('--message') + 1],
+            '仓库物资 93000/94200',
+        )
+        self.assertIn('--send', send)
 
 
 if __name__ == '__main__':
