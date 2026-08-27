@@ -703,6 +703,18 @@
       "retire_10": "Retire 10"
     }
   },
+  "CampaignProfile": {
+    "_info": {
+      "name": "Sortie Profile",
+      "help": "Switches scheduler availability and the Gems Farming route without overwriting saved fleets, thresholds, stages, or event folders."
+    },
+    "Mode": {
+      "name": "Current Mode",
+      "help": "Daily pauses event sorties and temporarily routes Gems Farming to main 2-4. Event pauses main sorties and restores the saved event route.",
+      "daily": "Daily",
+      "event": "Event"
+    }
+  },
   "Campaign": {
     "_info": {
       "name": "Level Settings",
@@ -1734,6 +1746,36 @@
     "CollectWeeklyMission": {
       "name": "Collect Weekly Mission Rewards",
       "help": ""
+    }
+  },
+  "CoinOverflowWarning": {
+    "_info": {
+      "name": "Coin Overflow Warning",
+      "help": "Reads storage quantity and its displayed dynamic limit plus the Merchant quantity, then sends one combined QBot warning at the configured thresholds."
+    },
+    "Enable": {
+      "name": "Enable QBot Warning",
+      "help": "Only sends after successful recognition and threshold evaluation."
+    },
+    "MerchantCapacity": {
+      "name": "Merchant Capacity",
+      "help": "The Merchant page does not display its limit, so enter the account capacity here; a max-level Merchant is usually 12000."
+    },
+    "StorageThreshold": {
+      "name": "Storage Warning Ratio",
+      "help": "Warn when current storage divided by the in-game displayed limit reaches this ratio."
+    },
+    "MerchantThreshold": {
+      "name": "Merchant Warning Ratio",
+      "help": "Warn when claimable Merchant coins divided by Merchant capacity reaches this ratio."
+    },
+    "CooldownHours": {
+      "name": "Warning Cooldown (Hours)",
+      "help": "Avoids repeated warnings after a successful send. Failed sends do not start the cooldown."
+    },
+    "LastNotification": {
+      "name": "Last Successful Warning",
+      "help": "Maintained automatically."
     }
   },
   "Awaken": {

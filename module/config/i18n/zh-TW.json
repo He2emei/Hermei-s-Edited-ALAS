@@ -703,6 +703,18 @@
       "retire_10": "退役10個"
     }
   },
+  "CampaignProfile": {
+    "_info": {
+      "name": "出擊模式切換",
+      "help": "只切換任務排程與緊急委託路線，不覆寫已儲存的艦隊、門檻、關卡或活動目錄。"
+    },
+    "Mode": {
+      "name": "目前模式",
+      "help": "日常模式暫停活動出擊並將刷緊急委託暫時切到主線 2-4；活動模式暫停主線出擊並恢復已儲存的活動路線。",
+      "daily": "日常模式",
+      "event": "活動模式"
+    }
+  },
   "Campaign": {
     "_info": {
       "name": "地圖設定",
@@ -1734,6 +1746,36 @@
     "CollectWeeklyMission": {
       "name": "領取周任務獎勵",
       "help": ""
+    }
+  },
+  "CoinOverflowWarning": {
+    "_info": {
+      "name": "物資溢出預警",
+      "help": "辨識倉庫目前數量、遊戲顯示的動態上限與小賣部可領取數量，達到門檻後透過 QBot 合併提醒。"
+    },
+    "Enable": {
+      "name": "啟用 QBot 預警",
+      "help": "只在辨識成功並達到門檻時傳送。"
+    },
+    "MerchantCapacity": {
+      "name": "小賣部容量",
+      "help": "小賣部頁面不顯示上限，請按帳號實際容量設定；滿級通常為 12000。"
+    },
+    "StorageThreshold": {
+      "name": "倉庫預警比例",
+      "help": "目前倉庫物資除以遊戲顯示上限達到此比例時預警。"
+    },
+    "MerchantThreshold": {
+      "name": "小賣部預警比例",
+      "help": "目前可領取物資除以小賣部容量達到此比例時預警。"
+    },
+    "CooldownHours": {
+      "name": "預警冷卻（小時）",
+      "help": "成功傳送後避免重複提醒；傳送失敗不會開始冷卻。"
+    },
+    "LastNotification": {
+      "name": "上次成功預警",
+      "help": "由程式自動維護。"
     }
   },
   "Awaken": {

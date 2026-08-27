@@ -305,6 +305,16 @@
     }
   },
   "General": {
+    "CampaignProfile": {
+      "Mode": {
+        "type": "select",
+        "value": "daily",
+        "option": [
+          "daily",
+          "event"
+        ]
+      }
+    },
     "Retirement": {
       "RetireMode": {
         "type": "select",
@@ -2129,7 +2139,7 @@
       },
       "MapAchievement": {
         "type": "select",
-        "value": "non_stop",
+        "value": "map_3_stars",
         "option": [
           "non_stop",
           "100_percent_clear",
@@ -2140,7 +2150,7 @@
       },
       "StageIncrease": {
         "type": "checkbox",
-        "value": false
+        "value": true
       },
       "GetNewShip": {
         "type": "checkbox",
@@ -7305,6 +7315,34 @@
       "CollectWeeklyMission": {
         "type": "checkbox",
         "value": true
+      }
+    },
+    "CoinOverflowWarning": {
+      "Enable": {
+        "type": "checkbox",
+        "value": true
+      },
+      "MerchantCapacity": {
+        "type": "input",
+        "value": 12000
+      },
+      "StorageThreshold": {
+        "type": "input",
+        "value": 0.95
+      },
+      "MerchantThreshold": {
+        "type": "input",
+        "value": 0.9
+      },
+      "CooldownHours": {
+        "type": "input",
+        "value": 12
+      },
+      "LastNotification": {
+        "type": "datetime",
+        "value": "2020-01-01 00:00:00",
+        "validate": "datetime",
+        "display": "disabled"
       }
     },
     "Storage": {

@@ -142,6 +142,10 @@ OldRetire:
   RetireAmount:
     value: retire_all
     option: [ retire_all, retire_10 ]
+CampaignProfile:
+  Mode:
+    value: daily
+    option: [ daily, event ]
 
 # ==================== Farm ====================
 
@@ -480,6 +484,15 @@ Reward:
   CollectExp: true
   CollectMission: true
   CollectWeeklyMission: true
+CoinOverflowWarning:
+  Enable: true
+  MerchantCapacity: 12000
+  StorageThreshold: 0.95
+  MerchantThreshold: 0.9
+  CooldownHours: 12
+  LastNotification:
+    value: 2020-01-01 00:00:00
+    display: disabled
 Awaken:
   LevelCap:
     value: level120
