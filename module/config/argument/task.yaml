@@ -15,6 +15,7 @@ Alas:
       - Optimization
       - DropRecord
     General:
+      - CampaignProfile
       - Retirement
       - OneClickRetire
       - Enhance
@@ -223,6 +224,7 @@ Reward:
     Reward:
       - Scheduler
       - Reward
+      - CoinOverflowWarning
     Awaken:
       - Scheduler
       - Awaken
