@@ -72,6 +72,9 @@ class GeneratedConfig:
     OldRetire_SSR = False
     OldRetire_RetireAmount = 'retire_all'  # retire_all, retire_10
 
+    # Group `CampaignProfile`
+    CampaignProfile_Mode = 'daily'  # daily, event
+
     # Group `Campaign`
     Campaign_Name = '12-4'
     Campaign_Event = 'campaign_main'  # campaign_main
@@ -262,6 +265,14 @@ class GeneratedConfig:
     Reward_CollectExp = True
     Reward_CollectMission = True
     Reward_CollectWeeklyMission = True
+
+    # Group `CoinOverflowWarning`
+    CoinOverflowWarning_Enable = True
+    CoinOverflowWarning_MerchantCapacity = 12000
+    CoinOverflowWarning_StorageThreshold = 0.95
+    CoinOverflowWarning_MerchantThreshold = 0.9
+    CoinOverflowWarning_CooldownHours = 12
+    CoinOverflowWarning_LastNotification = datetime.datetime(2020, 1, 1, 0, 0)
 
     # Group `Awaken`
     Awaken_LevelCap = 'level120'  # level120, level125

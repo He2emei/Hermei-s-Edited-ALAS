@@ -6,6 +6,10 @@
 
 # ==================== Farm ====================
 
+Main:
+  StopCondition:
+    MapAchievement: non_stop
+    StageIncrease: false
 GemsFarming:
   EquipmentCode:
     Config: |-
@@ -17,6 +21,14 @@ GemsFarming:
 
 # ==================== Event ====================
 
+Event:
+  StopCondition:
+    MapAchievement: map_3_stars
+    StageIncrease: true
+Event2:
+  StopCondition:
+    MapAchievement: non_stop
+    StageIncrease: false
 EventA:
   EventDaily:
     StageFilter: |-
