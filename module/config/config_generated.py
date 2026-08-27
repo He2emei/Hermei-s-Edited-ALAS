@@ -268,9 +268,7 @@ class GeneratedConfig:
 
     # Group `CoinOverflowWarning`
     CoinOverflowWarning_Enable = True
-    CoinOverflowWarning_MerchantCapacity = 12000
-    CoinOverflowWarning_StorageThreshold = 0.95
-    CoinOverflowWarning_MerchantThreshold = 0.9
+    CoinOverflowWarning_StorageThreshold = 1.0
     CoinOverflowWarning_CooldownHours = 12
     CoinOverflowWarning_LastNotification = datetime.datetime(2020, 1, 1, 0, 0)
 
