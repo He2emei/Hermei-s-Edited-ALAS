@@ -1,4 +1,5 @@
 import {alasPath, pythonPath} from '/@/config';
+import {buildPythonEnv} from '/@/python-env';
 
 const {PythonShell} = require('python-shell');
 const treeKill = require('tree-kill');
@@ -11,6 +12,7 @@ export class PyShell extends PythonShell {
       args: args,
       pythonPath: pythonPath,
       scriptPath: alasPath,
+      env: buildPythonEnv(pythonPath),
     };
     super(script, options);
   }
@@ -22,7 +24,12 @@ export class PyShell extends PythonShell {
   }
 
   kill(callback: (...args: any[]) => void): this {
-    treeKill(this.childProcess.pid, 'SIGTERM', callback);
+    const pid = this.childProcess?.pid;
+    if (pid === undefined) {
+      callback();
+      return this;
+    }
+    treeKill(pid, 'SIGTERM', callback);
     return this;
   }
 }

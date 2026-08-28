@@ -29,10 +29,24 @@ if (import.meta.env.MODE === 'development') {
 /**
  * Load deploy settings and start Alas web server.
  */
-let alas = new PyShell(webuiPath, webuiArgs);
-alas.end(function (err: string) {
+const alas = new PyShell(webuiPath, webuiArgs);
+alas.end(function () {
   // if (err) throw err;
 });
+
+
+let isQuitting = false;
+
+function quitApplication() {
+  if (isQuitting) return;
+  isQuitting = true;
+
+  const fallback = setTimeout(() => app.quit(), 3000);
+  alas.kill(function () {
+    clearTimeout(fallback);
+    app.quit();
+  });
+}
 
 
 let mainWindow: BrowserWindow | null = null;
@@ -102,9 +116,14 @@ const createWindow = async () => {
     mainWindow?.isMaximized() ? mainWindow?.restore() : mainWindow?.maximize();
   });
   ipcMain.on('window-close', function () {
-    alas.kill(function () {
-      mainWindow?.close();
-    })
+    quitApplication();
+  });
+
+  mainWindow.on('close', function (event) {
+    if (!isQuitting) {
+      event.preventDefault();
+      quitApplication();
+    }
   });
 
   // Tray
@@ -125,9 +144,7 @@ const createWindow = async () => {
     {
       label: 'Exit',
       click: function () {
-        alas.kill(function () {
-          mainWindow?.close();
-        })
+        quitApplication();
       }
     }
   ]);
@@ -190,7 +207,15 @@ app.on('second-instance', () => {
 
 app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') {
-    app.quit();
+    quitApplication();
+  }
+});
+
+
+app.on('before-quit', (event) => {
+  if (!isQuitting) {
+    event.preventDefault();
+    quitApplication();
   }
 });
 
@@ -207,4 +232,3 @@ if (import.meta.env.PROD) {
     .then(({autoUpdater}) => autoUpdater.checkForUpdatesAndNotify())
     .catch((e) => console.error('Failed check updates:', e));
 }
-
