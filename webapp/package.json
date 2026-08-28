@@ -12,6 +12,7 @@
     "compile": "electron-builder build --config electron-builder.config.js --dir",
     "pretest": "npm run build",
     "test": "node tests/app.spec.js",
+    "test:python-env": "node tests/python-env.spec.js",
     "watch": "node scripts/watch.js",
     "lint": "eslint . --ext js,ts,vue",
     "typecheck-main": "tsc --noEmit -p packages/main/tsconfig.json",
