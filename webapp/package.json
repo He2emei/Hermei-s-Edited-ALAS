@@ -13,6 +13,8 @@
     "pretest": "npm run build",
     "test": "node tests/app.spec.js",
     "test:python-env": "node tests/python-env.spec.js",
+    "pretest:renderer": "npm run build",
+    "test:renderer": "node tests/renderer-health.spec.js",
     "watch": "node scripts/watch.js",
     "lint": "eslint . --ext js,ts,vue",
     "typecheck-main": "tsc --noEmit -p packages/main/tsconfig.json",
