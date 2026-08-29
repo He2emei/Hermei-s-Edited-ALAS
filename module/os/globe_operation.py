@@ -3,7 +3,7 @@ from module.base.utils import *
 from module.logger import logger
 from module.os.assets import *
 from module.os_handler.action_point import ActionPointHandler
-from module.os_handler.assets import AUTO_SEARCH_REWARD
+from module.os_handler.assets import AUTO_SEARCH_REWARD, MISSION_QUIT
 from module.os_handler.port import PORT_CHECK
 from module.ui.assets import BACK_ARROW
 
@@ -276,8 +276,42 @@ class GlobeOperation(ActionPointHandler):
             in: is_in_globe
             out: is_in_map
         """
-        return self.ui_click(GLOBE_GOTO_MAP, check_button=self.is_in_map, offset=(20, 20),
-                             retry_wait=3, skip_first_screenshot=skip_first_screenshot)
+        logger.hr('UI click')
+        click_timer = Timer(3, count=6)
+        confirm_timer = Timer(2, count=4).start()
+        use_zone_card_return = False
+
+        for _ in self.loop(skip_first=skip_first_screenshot):
+            # The 2026-08 CN operation overview may open the operation-info
+            # overlay after the legacy globe button is clicked. Close it and
+            # use the zone-card button, which is now labelled "Return to sea".
+            if self.appear_then_click(MISSION_QUIT, offset=(20, 20), interval=2):
+                use_zone_card_return = True
+                click_timer.clear()
+                confirm_timer.reset()
+                continue
+
+            if self.is_in_globe():
+                confirm_timer.reset()
+                if click_timer.reached():
+                    button = ZONE_ENTRANCE if use_zone_card_return else GLOBE_GOTO_MAP
+                    self.device.click(button)
+                    # Alternate the legacy and new controls so a lost click is
+                    # recoverable on both old and new operation-overview UIs.
+                    use_zone_card_return = not use_zone_card_return
+                    click_timer.reset()
+                continue
+
+            # Do not accept a transient map frame. The new overview can appear
+            # shortly after the legacy globe click and used to trap the next
+            # task in storage_enter().
+            if self.is_in_map():
+                if confirm_timer.reached():
+                    break
+            else:
+                confirm_timer.reset()
+
+        return True
 
     def os_map_goto_globe(self, unpin=True):
         """

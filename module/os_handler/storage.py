@@ -29,6 +29,12 @@ class StorageHandler(GlobeOperation, ZoneManager):
             if self.is_in_storage():
                 break
 
+            # The operation overview can reappear after leaving the globe.
+            # Recover to a stable OS map before looking for the storage button.
+            if self.appear(MISSION_QUIT, offset=(20, 20)) or self.is_in_globe():
+                self.os_globe_goto_map()
+                continue
+
             if self.appear_then_click(STORAGE_ENTER, offset=(200, 5), interval=3):
                 continue
             # A game bug that AUTO_SEARCH_REWARD from the last cleared zone popups
