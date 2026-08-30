@@ -129,6 +129,9 @@ class RewardShipyard(ShipyardUI):
             remain = self._shipyard_ensure_index(count)
             if remain is None:
                 break
+            if remain >= count:
+                logger.warning('No shipyard blueprints could be selected, stop buying')
+                break
 
             if self._shipyard_bp_rarity == 'DR':
                 self.config.ShipyardDr_LastRun = datetime.now().replace(microsecond=0)
@@ -159,6 +162,9 @@ class RewardShipyard(ShipyardUI):
 
             remain = self._shipyard_ensure_index(count)
             if remain is None:
+                break
+            if remain >= count:
+                logger.warning('No shipyard blueprints could be selected, stop using')
                 break
             self._shipyard_buy_confirm('BP_USE')
 
