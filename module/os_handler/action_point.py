@@ -481,7 +481,9 @@ class ActionPointHandler(ActionPointLimitPolicy, UI, MapEventHandler):
 
         # wait until AP popup closed
         for _ in self.loop():
-            if self.appear(IN_MAP, offset=(200, 5)):
+            # A zone-card AP check can return to the OpSi globe/operation
+            # overview instead of the local map. Both are valid caller states.
+            if self.appear(IN_MAP, offset=(200, 5)) or self.appear(OS_CHECK, offset=(20, 20)):
                 break
 
         return True
