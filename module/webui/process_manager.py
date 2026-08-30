@@ -1,6 +1,7 @@
 import argparse
 import os
 import queue
+import sys
 import threading
 from multiprocessing import Process
 from typing import Dict, List, Union
@@ -131,6 +132,12 @@ class ProcessManager:
         return cls._processes[config_name]
 
     @staticmethod
+    def redirect_standard_streams() -> None:
+        """Give Electron workers stable sinks independent of the GUI process."""
+        sys.stdout = open(os.devnull, mode="w", encoding="utf-8")
+        sys.stderr = open(os.devnull, mode="w", encoding="utf-8")
+
+    @staticmethod
     def run_process(
         config_name, func: str, q: queue.Queue, e: threading.Event = None
     ) -> None:
@@ -148,6 +155,10 @@ class ProcessManager:
             logger.info("Electron detected, remove log output to stdout")
             from module.logger import console_hdlr
             logger.removeHandler(console_hdlr)
+            # PythonShell owns the inherited stdout/stderr pipes. If Electron
+            # exits while a worker remains alive, raw print() calls would flush
+            # a closed Windows handle and abort otherwise healthy tasks.
+            ProcessManager.redirect_standard_streams()
         set_func_logger(func=q.put)
 
         from module.config.config import AzurLaneConfig
