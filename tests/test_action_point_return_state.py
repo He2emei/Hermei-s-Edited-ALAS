@@ -19,6 +19,9 @@ class GlobeReturnHarness:
     def action_point_quit(self):
         pass
 
+    def handle_action_point(self, *args, **kwargs):
+        return True
+
     def loop(self):
         yield None
         raise AssertionError('action_point_check kept waiting after returning to the OpSi globe')
@@ -35,6 +38,14 @@ class ActionPointReturnStateTest(unittest.TestCase):
         enough = ActionPointHandler.action_point_check(handler, 1000)
 
         self.assertTrue(enough)
+        self.assertEqual(handler.appear_calls, [IN_MAP, OS_CHECK])
+
+    def test_set_accepts_opsi_globe_after_closing_popup(self):
+        handler = GlobeReturnHarness()
+
+        handled = ActionPointHandler.action_point_set(handler, cost=0)
+
+        self.assertTrue(handled)
         self.assertEqual(handler.appear_calls, [IN_MAP, OS_CHECK])
 
 
