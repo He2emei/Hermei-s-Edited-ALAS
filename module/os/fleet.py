@@ -85,11 +85,40 @@ class OSFleet(OSCamera, Combat, Fleet, OSAsh):
         map_.shape = self.zone.shape
         super().map_data_init(map_)
 
+    def ensure_os_map_ready(self):
+        """
+        Wait for delayed OpSi map events before camera detection starts.
+
+        Akashi's story-choice dialog can appear shortly after walking stops.
+        The translucent dialog leaves map assets visible, so homography can
+        otherwise keep swiping the covered map until click protection fires.
+        """
+        logger.info('Ensure OS map ready')
+        self._os_in_map_confirm_timer.reset()
+        for _ in self.loop():
+            if self.handle_map_event():
+                continue
+
+            # The first story option enters Akashi's shop. Finish the existing
+            # purchase flow and return to the map before camera calibration.
+            if self.appear(PORT_SUPPLY_CHECK, offset=(20, 20)):
+                self.interval_clear(PORT_SUPPLY_CHECK)
+                self.handle_akashi_supply_buy(CLICK_SAFE_AREA)
+                self._solved_map_event.add('is_akashi')
+                self._os_in_map_confirm_timer.reset()
+                continue
+
+            if self.handle_os_in_map():
+                break
+
+        return True
+
     def map_control_init(self):
         """
         Remove non-exist things like strategy, round.
         """
         # self.handle_strategy(index=1 if not self.fleets_reversed() else 2)
+        self.ensure_os_map_ready()
         self.update()
         # if self.handle_fleet_reverse():
         #     self.handle_strategy(index=1)
