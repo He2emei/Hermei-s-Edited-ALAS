@@ -44,21 +44,21 @@ class Reward(UI):
 
     def _coin_resource_status(self):
         self.ui_ensure(page_main)
-        storage_current = storage_limit = 0
-        for _ in range(3):
-            storage_current, storage_limit = read_coin_storage(self.device.image)
-            if storage_limit > 0:
-                break
-            self.device.screenshot()
-        if storage_limit <= 0:
-            logger.warning('Unable to recognize coin storage limit')
+        readings = []
+        for index in range(3):
+            readings.append(read_coin_storage(self.device.image))
+            if index < 2:
+                self.device.screenshot()
+
+        status = CoinResourceStatus.from_readings(readings)
+        if status.storage_limit <= 0:
+            logger.warning(f'Unable to recognize coin storage: {readings}')
 
         self.ui_goto(page_reward)
-        status = CoinResourceStatus(
-            storage_current=storage_current,
-            storage_limit=storage_limit,
+        logger.attr(
+            'CoinStorage',
+            f'{status.storage_current}/{status.storage_limit} from {readings}',
         )
-        logger.attr('CoinStorage', f'{storage_current}/{storage_limit}')
         return status
 
     def reward_receive(self, oil, coin, exp):
