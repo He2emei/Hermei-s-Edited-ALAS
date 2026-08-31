@@ -1,13 +1,15 @@
 from datetime import datetime
 
-from module.config.utils import get_os_reset_remain
-from module.exception import ScriptError
+from module.config.utils import get_os_next_reset, get_os_reset_remain
 from module.logger import logger
 from module.os.cl1 import get_cl1_yellow_coins_preserve
 from module.os.config import OSConfig
 from module.os.map_operation import OSMapOperation
 from module.os.operation_siren import OperationSiren
-from module.os.tasks.cross_month import is_cross_month_catch_up
+from module.os.tasks.cross_month import (
+    is_cross_month_catch_up,
+    monthly_shop_clearout_start,
+)
 from module.os_handler.action_point import ActionPointLimit
 
 
@@ -151,10 +153,15 @@ class OSCampaignRun(OSMapOperation):
             # An overdue run is safe only if the client is already inside it.
             self.device.screenshot()
             if not (self.is_in_map() or self.is_in_globe()):
-                raise ScriptError(
+                logger.warning(
                     'Overdue OpsiCrossMonth found outside Operation Siren; '
-                    'refusing to enter and refresh the old instance'
+                    'the old instance is no longer safely reachable, skip it'
                 )
+                self.config.task_delay(
+                    target=monthly_shop_clearout_start(get_os_next_reset())
+                )
+                self.config.task_stop()
+                return
         campaign = self.load_campaign(skip_first_auto_search=catch_up)
         try:
             campaign.os_cross_month(catch_up=catch_up)
