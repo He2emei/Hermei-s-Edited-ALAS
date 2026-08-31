@@ -56,6 +56,11 @@ class OSCampaignRun(OSMapOperation):
             self.config.opsi_task_delay(ap_limit=True)
 
     def opsi_daily(self):
+        if self.is_in_opsi_explore():
+            logger.info('OpsiExplore is under scheduling, delay OpsiDaily until exploration finishes')
+            self.config.task_delay(server_update=True)
+            self.config.task_stop()
+            return
         try:
             campaign = self.load_campaign()
             campaign.os_daily()
