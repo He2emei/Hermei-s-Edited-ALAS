@@ -22,7 +22,7 @@ from module.ui.page import page_os
 
 
 class OSMap(OSFleet, Map, GlobeCamera, StrategicSearchHandler):
-    def os_init(self):
+    def os_init(self, skip_first_auto_search=False):
         """
         Call this method before doing any Operation functions.
 
@@ -75,8 +75,11 @@ class OSMap(OSFleet, Map, GlobeCamera, StrategicSearchHandler):
             logger.warning('OS is in a special zone type, while SAFE and DANGEROUS are acceptable')
             self.map_exit()
 
-        # Clear current zone
-        if self.zone.zone_id in [22, 44, 154]:
+        # Clear current zone. An overdue cross-month task skips this so it can
+        # buy the old world's reserved AP boxes before doing any other work.
+        if skip_first_auto_search:
+            logger.info('Skip first auto search for cross-month catch-up')
+        elif self.zone.zone_id in [22, 44, 154]:
             logger.info('In zone 22, 44, 154, skip running first auto search')
             self.handle_ash_beacon_attack()
         else:
