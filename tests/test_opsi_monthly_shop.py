@@ -340,8 +340,9 @@ class CrossMonthCatchUpRunnerTest(unittest.TestCase):
         opsi_cross_month = OSCampaignRun.opsi_cross_month
 
         def __init__(self, in_map):
-            self.config = SimpleNamespace(
-                task=SimpleNamespace(next_run=CrossMonthCatchUpRunnerTest.SCHEDULED),
+            self.config = FakeConfig()
+            self.config.task = SimpleNamespace(
+                next_run=CrossMonthCatchUpRunnerTest.SCHEDULED,
             )
             self.device = CrossMonthCatchUpRunnerTest.Device()
             self.in_map = in_map
@@ -372,15 +373,24 @@ class CrossMonthCatchUpRunnerTest(unittest.TestCase):
         self.assertTrue(runner.skip_first_auto_search)
         self.assertTrue(runner.campaign.catch_up)
 
-    def test_overdue_run_outside_opsi_refuses_to_enter_and_refresh(self):
+    def test_overdue_run_outside_opsi_skips_lost_old_world_and_reschedules(self):
         runner = self.Runner(in_map=False)
 
-        with patch('module.campaign.os_run.datetime') as mocked_datetime:
+        with patch('module.campaign.os_run.datetime') as mocked_datetime, \
+                patch(
+                    'module.campaign.os_run.get_os_next_reset',
+                    return_value=datetime(2026, 10, 1, 0, 0),
+                    create=True,
+                ):
             mocked_datetime.now.return_value = self.NOW
-            with self.assertRaisesRegex(ScriptError, 'refusing to enter'):
-                runner.opsi_cross_month()
+            runner.opsi_cross_month()
 
         self.assertEqual(runner.load_calls, 0)
+        self.assertEqual(
+            runner.config.task_delays,
+            [{'target': datetime(2026, 9, 28, 0, 0)}],
+        )
+        self.assertEqual(runner.config.task_stops, 1)
 
 
 if __name__ == '__main__':
