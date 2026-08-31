@@ -6,11 +6,15 @@ from module.os.cl1 import can_run_cl1, get_cl1_yellow_coins_preserve, has_reache
 class FakeConfig:
     OpsiHazard1Leveling_YellowCoinsPreserve = 10000
 
-    def __init__(self, values=None):
+    def __init__(self, values=None, cross_month=False):
         self.values = values or {}
+        self.cross_month = cross_month
 
     def cross_get(self, key, default):
         return self.values.get(key, default)
+
+    def is_task_enabled(self, task):
+        return task == 'OpsiCrossMonth' and self.cross_month
 
 
 class CL1SettingsTest(unittest.TestCase):
@@ -38,6 +42,14 @@ class CL1SettingsTest(unittest.TestCase):
         })
 
         self.assertEqual(get_cl1_yellow_coins_preserve(config), 0)
+
+    def test_month_end_reserves_large_action_point_box_cost(self):
+        config = FakeConfig(cross_month=True)
+
+        self.assertEqual(
+            get_cl1_yellow_coins_preserve(config, reset_remain=2),
+            20000,
+        )
 
 
 if __name__ == '__main__':
