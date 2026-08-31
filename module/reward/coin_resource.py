@@ -1,21 +1,22 @@
 from dataclasses import dataclass
 from datetime import datetime, timedelta
+from statistics import median
 
 from module.base.button import Button
 from module.ocr.ocr import Digit
 
 
 COIN_STORAGE_CURRENT = Button(
-    area=(735, 22, 785, 52),
+    area=(716, 24, 780, 49),
     color=(239, 239, 239),
-    button=(735, 22, 785, 52),
+    button=(716, 24, 780, 49),
     file=None,
     name='COIN_STORAGE_CURRENT',
 )
 COIN_STORAGE_LIMIT = Button(
-    area=(736, 0, 780, 22),
+    area=(716, 0, 780, 22),
     color=(239, 239, 239),
-    button=(736, 0, 780, 22),
+    button=(716, 0, 780, 22),
     file=None,
     name='COIN_STORAGE_LIMIT',
 )
@@ -37,8 +38,28 @@ class CoinResourceStatus:
     storage_limit: int = 0
 
     @staticmethod
+    def storage_limit_valid(limit):
+        # A four-digit result is a known clipped read of the five-digit
+        # warehouse limit (for example 9200 instead of 94200).
+        return isinstance(limit, int) and limit >= 10000
+
+    @classmethod
+    def from_readings(cls, readings):
+        valid = [
+            (current, limit)
+            for current, limit in readings
+            if current >= 0 and cls.storage_limit_valid(limit)
+        ]
+        if not valid:
+            return cls()
+        return cls(
+            storage_current=int(median(current for current, _ in valid)),
+            storage_limit=int(median(limit for _, limit in valid)),
+        )
+
+    @staticmethod
     def _reached(current, limit, threshold):
-        if current < 0 or limit <= 0:
+        if current < 0 or not CoinResourceStatus.storage_limit_valid(limit):
             return False
         threshold = min(max(float(threshold), 0.01), 1.0)
         return current / limit >= threshold
