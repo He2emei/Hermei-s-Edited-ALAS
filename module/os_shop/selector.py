@@ -2,6 +2,7 @@ import re
 from typing import List
 from module.config.config_generated import GeneratedConfig
 from module.os_shop.preset import *
+from module.os_shop.monthly import is_large_action_point_item
 from module.os_shop.item import OSShopItem as Item
 from module.base.filter import Filter
 
@@ -107,6 +108,10 @@ class Selector():
         """
         return item.count >= 1 and item.total_count >= 1 and item.count <= item.total_count
 
+    def check_cross_month_reserved_action_points(self, item) -> bool:
+        """Never buy the four large AP boxes before the cross-month flow."""
+        return not is_large_action_point_item(item)
+
     def items_filter_in_akashi_shop(self, items) -> List[Item]:
         """
         Returns items that can be bought.
@@ -144,7 +149,11 @@ class Selector():
         else:
             parser = OS_SHOP[preset]
         FILTER.load(parser)
-        return FILTER.applys(items, funcs=[self.check_cl1_purple_coins, self.check_item_count])
+        return FILTER.applys(items, funcs=[
+            self.check_cl1_purple_coins,
+            self.check_item_count,
+            self.check_cross_month_reserved_action_points,
+        ])
 
     def items_filter_in_monthly_clearout(self, items) -> List[Item]:
         """
@@ -164,7 +173,18 @@ class Selector():
         for item in self.pretreatment(items):
             if not self.check_item_count(item):
                 continue
+            if is_large_action_point_item(item):
+                continue
             port_filter = self.MONTHLY_CLEAROUT_PORT_FILTERS.get(item.shop_index)
             if port_filter is not None and port_filter(item):
                 selected.append(item)
         return selected
+
+    def items_filter_in_cross_month(self, items) -> List[Item]:
+        """Select the four large AP boxes reserved in Liverpool for reset."""
+        return [
+            item for item in self.pretreatment(items)
+            if self.check_item_count(item)
+            and item.shop_index == PORT_LIVERPOOL
+            and is_large_action_point_item(item)
+        ]
