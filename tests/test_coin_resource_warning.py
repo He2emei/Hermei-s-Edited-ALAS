@@ -1,13 +1,39 @@
 import unittest
 from datetime import datetime, timedelta
 from types import SimpleNamespace
-from unittest.mock import patch
+from unittest.mock import Mock, patch
 
-from module.reward.coin_resource import CoinResourceStatus
+from module.reward.coin_resource import (
+    COIN_STORAGE_CURRENT,
+    COIN_STORAGE_LIMIT,
+    CoinResourceStatus,
+)
 from module.reward.reward import Reward
 
 
 class CoinResourceStatusTest(unittest.TestCase):
+    def test_current_ocr_covers_the_existing_six_digit_main_screen_area(self):
+        self.assertEqual(COIN_STORAGE_CURRENT.area, (716, 24, 780, 49))
+        self.assertEqual(COIN_STORAGE_LIMIT.area, (716, 0, 780, 22))
+
+    def test_reward_retries_a_truncated_limit_before_using_the_reading(self):
+        reward = object.__new__(Reward)
+        reward.device = SimpleNamespace(image=object(), screenshot=Mock())
+        reward.ui_ensure = Mock()
+        reward.ui_goto = Mock()
+
+        readings = [
+            (111618, 9200),
+            (111618, 94200),
+            (111618, 94200),
+        ]
+        with patch('module.reward.reward.read_coin_storage', side_effect=readings):
+            status = reward._coin_resource_status()
+
+        self.assertEqual(status.storage_current, 111618)
+        self.assertEqual(status.storage_limit, 94200)
+        self.assertEqual(reward.device.screenshot.call_count, 2)
+
     def test_storage_below_threshold_does_not_warn(self):
         status = CoinResourceStatus(
             storage_current=90000,
@@ -43,10 +69,17 @@ class CoinResourceStatusTest(unittest.TestCase):
             False,
         )
 
+        truncated = CoinResourceStatus(
+            storage_current=11188,
+            storage_limit=9200,
+        )
+        self.assertFalse(
+            truncated.storage_warning_reached(storage_threshold=1.0))
+
     def test_warning_threshold_is_clamped_to_a_safe_range(self):
         status = CoinResourceStatus(
-            storage_current=80,
-            storage_limit=100,
+            storage_current=8000,
+            storage_limit=10000,
         )
 
         self.assertEqual(
