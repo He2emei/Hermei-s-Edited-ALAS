@@ -10,11 +10,25 @@ from module.os.map import OSMap
 MONTHLY_SHOP_CLEAROUT_WINDOW = timedelta(days=3)
 MONTHLY_SHOP_RETRY_INTERVAL = timedelta(hours=6)
 CROSS_MONTH_WAIT_WINDOW = timedelta(minutes=10)
+CROSS_MONTH_ACTION_POINT_ATTEMPTS = 3
 
 
 def monthly_shop_clearout_start(next_reset):
     """Return the start of the final three-day monthly shop clearout window."""
     return next_reset - MONTHLY_SHOP_CLEAROUT_WINDOW
+
+
+def is_cross_month_catch_up(scheduled, now):
+    """Whether an overdue run belongs to the reset that just passed."""
+    if not isinstance(scheduled, datetime):
+        return False
+    latest_reset = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+    return (
+        monthly_shop_clearout_start(latest_reset)
+        <= scheduled
+        <= latest_reset
+        <= now
+    )
 
 
 class OpsiCrossMonth(OSMap):
@@ -50,31 +64,47 @@ class OpsiCrossMonth(OSMap):
 
         return False
 
-    def os_cross_month(self):
+    def _buy_cross_month_action_points(self):
+        for _ in range(CROSS_MONTH_ACTION_POINT_ATTEMPTS):
+            if not self.os_shop_cross_month_action_points():
+                return
+        raise ScriptError(
+            'Large cross-month AP boxes could not be confirmed as sold out; '
+            'refusing to leave the old Operation Siren instance'
+        )
+
+    def os_cross_month(self, catch_up=False):
         next_reset = get_os_next_reset()
         now = datetime.now()
         logger.attr('OpsiNextReset', next_reset)
 
-        # Check start time
-        if next_reset < now:
-            raise ScriptError(f'Invalid OpsiNextReset: {next_reset} < {now}')
-        if self._prepare_monthly_shop(next_reset, now):
-            return
+        if catch_up:
+            logger.warning('Catch up the overdue cross-month flow without leaving Operation Siren')
+        else:
+            # Check start time
+            if next_reset < now:
+                raise ScriptError(f'Invalid OpsiNextReset: {next_reset} < {now}')
+            if self._prepare_monthly_shop(next_reset, now):
+                return
 
-        # Now we are 10min before OpSi reset
-        logger.hr('Wait until OpSi reset', level=1)
-        logger.warning('ALAS is now waiting for next OpSi reset, please DO NOT touch the game during wait')
-        while True:
-            logger.info(f'Wait until {next_reset}')
-            now = datetime.now()
-            remain = (next_reset - now).total_seconds()
-            if remain <= 0:
-                break
-            else:
-                self.device.sleep(min(remain, 60))
-                continue
+            # Now we are 10min before OpSi reset
+            logger.hr('Wait until OpSi reset', level=1)
+            logger.warning('ALAS is now waiting for next OpSi reset, please DO NOT touch the game during wait')
+            while True:
+                logger.info(f'Wait until {next_reset}')
+                now = datetime.now()
+                remain = (next_reset - now).total_seconds()
+                if remain <= 0:
+                    break
+                else:
+                    self.device.sleep(min(remain, 60))
+                    continue
 
         logger.hr('OpSi reset', level=3)
+
+        # The old Operation Siren instance does not refresh until it is exited.
+        # Buy the four reserved 100-AP boxes before doing any remaining work.
+        self._buy_cross_month_action_points()
 
         def false_func(*args, **kwargs):
             return False
