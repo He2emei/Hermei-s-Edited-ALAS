@@ -1,3 +1,5 @@
+from contextlib import contextmanager
+
 from module.base.timer import Timer
 from module.combat.assets import GET_ITEMS_1
 from module.config.utils import get_os_reset_remain
@@ -5,6 +7,10 @@ from module.exception import GameStuckError, ScriptError
 from module.logger import logger
 from module.os_shop.akashi_shop import AkashiShop
 from module.os_shop.assets import PORT_SUPPLY_CHECK, SHOP_BUY_CONFIRM
+from module.os_shop.monthly import (
+    CROSS_MONTH_ACTION_POINT_YELLOW_COINS,
+    should_reserve_cross_month_action_points,
+)
 from module.os_shop.port_shop import PortShop
 from module.os_shop.ui import OS_SHOP_SCROLL
 from module.shop.assets import AMOUNT_MAX, AMOUNT_MINUS, AMOUNT_PLUS, SHOP_BUY_CONFIRM_AMOUNT, SHOP_BUY_CONFIRM as OS_SHOP_BUY_CONFIRM, SHOP_CLICK_SAFE_AREA
@@ -12,6 +18,17 @@ from module.shop.clerk import OCR_SHOP_AMOUNT
 
 
 class OSShop(PortShop, AkashiShop):
+    _yellow_coin_reserve_override = None
+
+    @contextmanager
+    def _override_yellow_coin_reserve(self, reserve):
+        previous = self._yellow_coin_reserve_override
+        self._yellow_coin_reserve_override = reserve
+        try:
+            yield
+        finally:
+            self._yellow_coin_reserve_override = previous
+
     def os_shop_buy_execute(self, button, skip_first_screenshot=True) -> bool:
         """
         Args:
@@ -208,11 +225,26 @@ class OSShop(PortShop, AkashiShop):
 
     def handle_monthly_port_supply_buy(self) -> bool:
         """Buy items selected by the fixed end-of-month port policies."""
-        return self._handle_port_supply_buy(
+        return self._handle_policy_port_supply_buy(
             select_func=self.items_filter_in_monthly_clearout,
-            update_storage=False,
-            retry_on_uncertain=True,
+            yellow_coin_reserve=CROSS_MONTH_ACTION_POINT_YELLOW_COINS,
         )
+
+    def handle_cross_month_port_supply_buy(self) -> bool:
+        """Buy only the large AP boxes reserved until the monthly reset."""
+        return self._handle_policy_port_supply_buy(
+            select_func=self.items_filter_in_cross_month,
+            yellow_coin_reserve=0,
+        )
+
+    def _handle_policy_port_supply_buy(self, select_func,
+                                       yellow_coin_reserve) -> bool:
+        with self._override_yellow_coin_reserve(yellow_coin_reserve):
+            return self._handle_port_supply_buy(
+                select_func=select_func,
+                update_storage=False,
+                retry_on_uncertain=True,
+            )
 
     def _handle_port_supply_buy(self, select_func, update_storage,
                                 retry_on_uncertain) -> bool:
@@ -312,7 +344,12 @@ class OSShop(PortShop, AkashiShop):
 
     def get_currency_coins(self, item):
         if item.cost == 'YellowCoins':
-            if get_os_reset_remain() == 0:
+            if self._yellow_coin_reserve_override is not None:
+                return max(0, self._shop_yellow_coins - self._yellow_coin_reserve_override)
+            reset_remain = get_os_reset_remain()
+            if should_reserve_cross_month_action_points(self.config, reset_remain):
+                return max(0, self._shop_yellow_coins - CROSS_MONTH_ACTION_POINT_YELLOW_COINS)
+            if reset_remain == 0:
                 return self._shop_yellow_coins - 100
             else:
                 return self._shop_yellow_coins - self.yellow_coins_preserve

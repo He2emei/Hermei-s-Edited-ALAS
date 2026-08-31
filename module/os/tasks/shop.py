@@ -8,7 +8,7 @@ from module.os_shop.assets import OS_SHOP_CHECK
 
 
 class OpsiShop(OSMap):
-    def _os_shop_visit(self, monthly_clearout=False):
+    def _os_shop_visit(self, monthly_clearout=False, cross_month_action_points=False):
         """Visit the four port shops and buy items selected for this run."""
         if not self.zone.is_azur_port:
             self.globe_goto(self.zone_nearest_azur_port(self.zone))
@@ -17,7 +17,9 @@ class OpsiShop(OSMap):
         self.port_shop_enter()
 
         if self.appear(OS_SHOP_CHECK):
-            if monthly_clearout:
+            if cross_month_action_points:
+                needs_retry = self.handle_cross_month_port_supply_buy()
+            elif monthly_clearout:
                 needs_retry = self.handle_monthly_port_supply_buy()
             else:
                 needs_retry = self.handle_port_supply_buy()
@@ -40,6 +42,12 @@ class OpsiShop(OSMap):
         logger.hr('OS port monthly clearout', level=1)
         result = self._os_shop_visit(monthly_clearout=True)
         # A missing shop page is not proof that all target items are gone.
+        return True if result is None else result
+
+    def os_shop_cross_month_action_points(self) -> bool:
+        """Buy the large AP boxes after reset without leaving Operation Siren."""
+        logger.hr('OS port cross-month action points', level=1)
+        result = self._os_shop_visit(cross_month_action_points=True)
         return True if result is None else result
 
     def os_shop(self):
