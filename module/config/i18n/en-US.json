@@ -1461,6 +1461,10 @@
       "name": "Tactical Academy Settings",
       "help": ""
     },
+    "OptimizeBooks": {
+      "name": "Optimize matching books",
+      "help": "Use only matching-color books; minimize XP overflow with available stock, then training time. Stop this pass on unreadable XP/stock or no matching books. Enable Add new students separately."
+    },
     "TacticalFilter": {
       "name": "Tactical Book Priority",
       "help": "Generally does not need to be modified or re-arranged but can do so if desired"
@@ -2699,6 +2703,24 @@
     "MeowfficerMonthEndThreshold": {
       "name": "Month-End AP Threshold",
       "help": "Used on the third-to-last and second-to-last day of each month when Month-End Mode is enabled; the last day uses 0 automatically"
+    }
+  },
+  "OpsiTraining": {
+    "_info": {
+      "name": "Research fleet training",
+      "help": ""
+    },
+    "Enable": {
+      "name": "Maintain fourth training fleet",
+      "help": "Use the current shipyard requirements. Preserve Perseus in slot 1 and Ibuki in slot 4. CN 1280x720 only; awaken ordinary ships to 110 and rainbow ships to 120, never use cognitive arrays."
+    },
+    "CheckIntervalMinutes": {
+      "name": "Check interval (minutes)",
+      "help": "Check between hazard-one searches, at least 10 minutes apart."
+    },
+    "LastCheck": {
+      "name": "Last check",
+      "help": ""
     }
   },
   "IslandProduction": {

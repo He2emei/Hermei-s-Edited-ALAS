@@ -6837,6 +6837,10 @@
       }
     },
     "Tactical": {
+      "OptimizeBooks": {
+        "type": "checkbox",
+        "value": false
+      },
       "TacticalFilter": {
         "type": "textarea",
         "value": "SameT4 > SameT3 > SameT2 > SameT1\n> BlueT2 > YellowT2 > RedT2\n> BlueT3 > YellowT3 > RedT3\n> BlueT4 > YellowT4 > RedT4\n> BlueT1 > YellowT1 > RedT1\n> first"
@@ -9408,6 +9412,21 @@
       "Submarine": {
         "type": "checkbox",
         "value": false,
+        "display": "hide"
+      }
+    },
+    "OpsiTraining": {
+      "Enable": {
+        "type": "checkbox",
+        "value": false
+      },
+      "CheckIntervalMinutes": {
+        "type": "input",
+        "value": 60
+      },
+      "LastCheck": {
+        "type": "input",
+        "value": 0,
         "display": "hide"
       }
     },
