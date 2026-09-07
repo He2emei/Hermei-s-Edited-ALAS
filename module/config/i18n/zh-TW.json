@@ -1461,6 +1461,10 @@
       "name": "戰術學院",
       "help": ""
     },
+    "OptimizeBooks": {
+      "name": "同色教材最省經驗",
+      "help": "僅選擇與技能同色的教材，依庫存優先減少滿級經驗溢出，再縮短學習時間；識別不可信或同色教材用盡時停止本輪。自動添加學生需另外開啟。"
+    },
     "TacticalFilter": {
       "name": "戰術學院過濾器",
       "help": "一般不需要修改"
@@ -2699,6 +2703,24 @@
     "MeowfficerMonthEndThreshold": {
       "name": "月末行動力閾值",
       "help": "月末模式開啟後，每月倒數第三天和倒數第二天使用此閾值；最後一天自動使用 0"
+    }
+  },
+  "OpsiTraining": {
+    "_info": {
+      "name": "科研練級換船",
+      "help": ""
+    },
+    "Enable": {
+      "name": "啟用第四艦隊自動換船",
+      "help": "依開發船塢任務更換2/3/5/6號，保留英仙座及伊吹。僅支援國服1280×720；普通艦覺醒至110、彩艦至120，不使用心智單元II。"
+    },
+    "CheckIntervalMinutes": {
+      "name": "檢查間隔（分鐘）",
+      "help": "於侵蝕1搜索之間檢查，最短10分鐘。"
+    },
+    "LastCheck": {
+      "name": "Last check",
+      "help": ""
     }
   },
   "IslandProduction": {

@@ -1461,6 +1461,10 @@
       "name": "Tactical._info.name",
       "help": "Tactical._info.help"
     },
+    "OptimizeBooks": {
+      "name": "同色教科書を最適化",
+      "help": "同色のみ使用し、在庫に応じて経験値の余剰、所要時間の順に最小化します。認識不能・在庫不足時は中止。新規生徒の追加は別途有効化してください。"
+    },
     "TacticalFilter": {
       "name": "Tactical.TacticalFilter.name",
       "help": "Tactical.TacticalFilter.help"
@@ -2699,6 +2703,24 @@
     "MeowfficerMonthEndThreshold": {
       "name": "OpsiHazard1Leveling.MeowfficerMonthEndThreshold.name",
       "help": "OpsiHazard1Leveling.MeowfficerMonthEndThreshold.help"
+    }
+  },
+  "OpsiTraining": {
+    "_info": {
+      "name": "開発艦育成",
+      "help": ""
+    },
+    "Enable": {
+      "name": "第四艦隊の自動交代",
+      "help": "開発ドックの条件に合わせ2/3/5/6番を交代。1番と4番を保護。中国版1280×720専用。通常艦110、虹艦120まで認識覚醒。"
+    },
+    "CheckIntervalMinutes": {
+      "name": "確認間隔（分）",
+      "help": "侵食1の探索間で確認、最短10分。"
+    },
+    "LastCheck": {
+      "name": "Last check",
+      "help": ""
     }
   },
   "IslandProduction": {

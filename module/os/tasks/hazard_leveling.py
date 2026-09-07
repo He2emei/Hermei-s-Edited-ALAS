@@ -1,3 +1,5 @@
+import time
+
 from module.logger import logger
 from module.os.cl1 import can_run_cl1, get_cl1_yellow_coins_preserve, has_reached_cl1_meowfficer_threshold
 from module.os.map import OSMap
@@ -14,6 +16,12 @@ class OpsiHazard1Leveling(OSMap):
         if not self.config.is_task_enabled('OpsiMeowfficerFarming'):
             self.config.cross_set(keys='OpsiMeowfficerFarming.Scheduler.Enable', value=True)
         while True:
+            # Only touch the training fleet at the boundary between searches.
+            if getattr(self.config, 'OpsiTraining_Enable', False):
+                elapsed = time.time() - self.config.cross_get('OpsiHazard1Leveling.OpsiTraining.LastCheck', 0)
+                if elapsed >= max(10, self.config.OpsiTraining_CheckIntervalMinutes) * 60:
+                    from module.os.training import TrainingFleetManager
+                    TrainingFleetManager(self.config, self.device).maintain(self)
             # Limited action point preserve of hazard 1, configurable via GUI
             self.config.OS_ACTION_POINT_PRESERVE = self.config.OpsiHazard1Leveling_ActionPointPreserve
             if self.config.is_task_enabled('OpsiAshBeacon') \
