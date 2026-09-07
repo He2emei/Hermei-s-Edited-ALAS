@@ -1,0 +1,6593 @@
+{
+  "source": "https://github.com/AzurLaneTools/AzurLaneData/tree/main/CN/sharecfgdata",
+  "retrieved": "2026-09-08",
+  "ships": {
+    "泛用型布里": {
+      "rarity": 4,
+      "faction": 98,
+      "type": 1,
+      "max_stars": 4,
+      "group": 10000
+    },
+    "试作型布里MKII": {
+      "rarity": 5,
+      "faction": 98,
+      "type": 1,
+      "max_stars": 5,
+      "group": 10001
+    },
+    "特装型布里MKIII": {
+      "rarity": 6,
+      "faction": 98,
+      "type": 1,
+      "max_stars": 6,
+      "group": 10002
+    },
+    "杜威": {
+      "rarity": 3,
+      "faction": 1,
+      "type": 1,
+      "max_stars": 5,
+      "group": 10102
+    },
+    "卡辛": {
+      "rarity": 2,
+      "faction": 1,
+      "type": 1,
+      "max_stars": 4,
+      "group": 10103
+    },
+    "唐斯": {
+      "rarity": 2,
+      "faction": 1,
+      "type": 1,
+      "max_stars": 4,
+      "group": 10104
+    },
+    "格里德利": {
+      "rarity": 3,
+      "faction": 1,
+      "type": 1,
+      "max_stars": 5,
+      "group": 10105
+    },
+    "克雷文": {
+      "rarity": 2,
+      "faction": 1,
+      "type": 1,
+      "max_stars": 4,
+      "group": 10106
+    },
+    "麦考尔": {
+      "rarity": 2,
+      "faction": 1,
+      "type": 1,
+      "max_stars": 4,
+      "group": 10107
+    },
+    "莫里": {
+      "rarity": 4,
+      "faction": 1,
+      "type": 1,
+      "max_stars": 5,
+      "group": 10108
+    },
+    "弗莱彻": {
+      "rarity": 3,
+      "faction": 1,
+      "type": 1,
+      "max_stars": 5,
+      "group": 10109
+    },
+    "威廉·D·波特": {
+      "rarity": 6,
+      "faction": 1,
+      "type": 1,
+      "max_stars": 6,
+      "group": 10110
+    },
+    "查尔斯·奥斯本": {
+      "rarity": 4,
+      "faction": 1,
+      "type": 1,
+      "max_stars": 5,
+      "group": 10111
+    },
+    "撒切尔": {
+      "rarity": 3,
+      "faction": 1,
+      "type": 1,
+      "max_stars": 5,
+      "group": 10112
+    },
+    "奥利克": {
+      "rarity": 2,
+      "faction": 1,
+      "type": 1,
+      "max_stars": 4,
+      "group": 10113
+    },
+    "富特": {
+      "rarity": 2,
+      "faction": 1,
+      "type": 1,
+      "max_stars": 4,
+      "group": 10114
+    },
+    "斯彭斯": {
+      "rarity": 2,
+      "faction": 1,
+      "type": 1,
+      "max_stars": 4,
+      "group": 10115
+    },
+    "本森": {
+      "rarity": 3,
+      "faction": 1,
+      "type": 1,
+      "max_stars": 5,
+      "group": 10116
+    },
+    "拉菲": {
+      "rarity": 4,
+      "faction": 1,
+      "type": 1,
+      "max_stars": 5,
+      "group": 10117
+    },
+    "西姆斯": {
+      "rarity": 3,
+      "faction": 1,
+      "type": 1,
+      "max_stars": 5,
+      "group": 10124
+    },
+    "哈曼": {
+      "rarity": 3,
+      "faction": 1,
+      "type": 1,
+      "max_stars": 5,
+      "group": 10125
+    },
+    "埃尔德里奇": {
+      "rarity": 5,
+      "faction": 1,
+      "type": 1,
+      "max_stars": 6,
+      "group": 10126
+    },
+    "贝利": {
+      "rarity": 3,
+      "faction": 1,
+      "type": 1,
+      "max_stars": 5,
+      "group": 10127
+    },
+    "拉德福特": {
+      "rarity": 3,
+      "faction": 1,
+      "type": 1,
+      "max_stars": 5,
+      "group": 10129
+    },
+    "杰金斯": {
+      "rarity": 3,
+      "faction": 1,
+      "type": 1,
+      "max_stars": 5,
+      "group": 10130
+    },
+    "尼古拉斯": {
+      "rarity": 4,
+      "faction": 1,
+      "type": 1,
+      "max_stars": 5,
+      "group": 10131
+    },
+    "布什": {
+      "rarity": 3,
+      "faction": 1,
+      "type": 1,
+      "max_stars": 5,
+      "group": 10133
+    },
+    "黑泽伍德": {
+      "rarity": 3,
+      "faction": 1,
+      "type": 1,
+      "max_stars": 5,
+      "group": 10134
+    },
+    "贝奇": {
+      "rarity": 3,
+      "faction": 1,
+      "type": 1,
+      "max_stars": 5,
+      "group": 10135
+    },
+    "霍比": {
+      "rarity": 3,
+      "faction": 1,
+      "type": 1,
+      "max_stars": 5,
+      "group": 10136
+    },
+    "科尔克": {
+      "rarity": 3,
+      "faction": 1,
+      "type": 1,
+      "max_stars": 5,
+      "group": 10137
+    },
+    "金伯利": {
+      "rarity": 3,
+      "faction": 1,
+      "type": 1,
+      "max_stars": 5,
+      "group": 10138
+    },
+    "马拉尼": {
+      "rarity": 4,
+      "faction": 1,
+      "type": 1,
+      "max_stars": 5,
+      "group": 10139
+    },
+    "艾尔温": {
+      "rarity": 3,
+      "faction": 1,
+      "type": 1,
+      "max_stars": 5,
+      "group": 10140
+    },
+    "斯坦利": {
+      "rarity": 3,
+      "faction": 1,
+      "type": 1,
+      "max_stars": 5,
+      "group": 10141
+    },
+    "斯莫利": {
+      "rarity": 3,
+      "faction": 1,
+      "type": 1,
+      "max_stars": 5,
+      "group": 10142
+    },
+    "哈尔西·鲍威尔": {
+      "rarity": 3,
+      "faction": 1,
+      "type": 1,
+      "max_stars": 5,
+      "group": 10143
+    },
+    "库珀": {
+      "rarity": 4,
+      "faction": 1,
+      "type": 1,
+      "max_stars": 5,
+      "group": 10144
+    },
+    "艾伦·萨姆纳": {
+      "rarity": 5,
+      "faction": 1,
+      "type": 1,
+      "max_stars": 6,
+      "group": 10145
+    },
+    "史蒂芬·波特": {
+      "rarity": 4,
+      "faction": 1,
+      "type": 1,
+      "max_stars": 5,
+      "group": 10146
+    },
+    "莫里森": {
+      "rarity": 4,
+      "faction": 1,
+      "type": 1,
+      "max_stars": 5,
+      "group": 10147
+    },
+    "英格拉罕": {
+      "rarity": 5,
+      "faction": 1,
+      "type": 1,
+      "max_stars": 6,
+      "group": 10148
+    },
+    "布里斯托尔": {
+      "rarity": 5,
+      "faction": 1,
+      "type": 1,
+      "max_stars": 6,
+      "group": 10149
+    },
+    "哈曼II": {
+      "rarity": 4,
+      "faction": 1,
+      "type": 1,
+      "max_stars": 5,
+      "group": 10150
+    },
+    "拉菲II": {
+      "rarity": 6,
+      "faction": 1,
+      "type": 1,
+      "max_stars": 6,
+      "group": 10151
+    },
+    "贝尔": {
+      "rarity": 4,
+      "faction": 1,
+      "type": 1,
+      "max_stars": 5,
+      "group": 10152
+    },
+    "米勒": {
+      "rarity": 4,
+      "faction": 1,
+      "type": 1,
+      "max_stars": 5,
+      "group": 10153
+    },
+    "克拉伦斯·K·布朗森": {
+      "rarity": 4,
+      "faction": 1,
+      "type": 1,
+      "max_stars": 5,
+      "group": 10155
+    },
+    "埃尔德里奇.改": {
+      "rarity": 5,
+      "faction": 1,
+      "type": 1,
+      "max_stars": 6,
+      "group": 10126
+    },
+    "奥马哈": {
+      "rarity": 2,
+      "faction": 1,
+      "type": 2,
+      "max_stars": 4,
+      "group": 10201
+    },
+    "罗利": {
+      "rarity": 2,
+      "faction": 1,
+      "type": 2,
+      "max_stars": 4,
+      "group": 10202
+    },
+    "布鲁克林": {
+      "rarity": 3,
+      "faction": 1,
+      "type": 2,
+      "max_stars": 5,
+      "group": 10203
+    },
+    "菲尼克斯": {
+      "rarity": 3,
+      "faction": 1,
+      "type": 2,
+      "max_stars": 5,
+      "group": 10204
+    },
+    "海伦娜": {
+      "rarity": 4,
+      "faction": 1,
+      "type": 2,
+      "max_stars": 5,
+      "group": 10205
+    },
+    "亚特兰大": {
+      "rarity": 3,
+      "faction": 1,
+      "type": 2,
+      "max_stars": 5,
+      "group": 10206
+    },
+    "朱诺": {
+      "rarity": 3,
+      "faction": 1,
+      "type": 2,
+      "max_stars": 5,
+      "group": 10207
+    },
+    "圣地亚哥": {
+      "rarity": 5,
+      "faction": 1,
+      "type": 2,
+      "max_stars": 6,
+      "group": 10208
+    },
+    "克利夫兰": {
+      "rarity": 4,
+      "faction": 1,
+      "type": 2,
+      "max_stars": 5,
+      "group": 10209
+    },
+    "哥伦比亚": {
+      "rarity": 4,
+      "faction": 1,
+      "type": 2,
+      "max_stars": 5,
+      "group": 10210
+    },
+    "里士满": {
+      "rarity": 2,
+      "faction": 1,
+      "type": 2,
+      "max_stars": 4,
+      "group": 10211
+    },
+    "火奴鲁鲁": {
+      "rarity": 3,
+      "faction": 1,
+      "type": 2,
+      "max_stars": 5,
+      "group": 10212
+    },
+    "圣路易斯": {
+      "rarity": 4,
+      "faction": 1,
+      "type": 2,
+      "max_stars": 5,
+      "group": 10213
+    },
+    "蒙彼利埃": {
+      "rarity": 5,
+      "faction": 1,
+      "type": 2,
+      "max_stars": 6,
+      "group": 10214
+    },
+    "丹佛": {
+      "rarity": 4,
+      "faction": 1,
+      "type": 2,
+      "max_stars": 5,
+      "group": 10215
+    },
+    "孟菲斯": {
+      "rarity": 3,
+      "faction": 1,
+      "type": 2,
+      "max_stars": 5,
+      "group": 10216
+    },
+    "圣地亚哥.改": {
+      "rarity": 5,
+      "faction": 1,
+      "type": 2,
+      "max_stars": 6,
+      "group": 10208
+    },
+    "康克德": {
+      "rarity": 3,
+      "faction": 1,
+      "type": 2,
+      "max_stars": 5,
+      "group": 10218
+    },
+    "小海伦娜": {
+      "rarity": 4,
+      "faction": 1,
+      "type": 2,
+      "max_stars": 5,
+      "group": 10219
+    },
+    "小克利夫兰": {
+      "rarity": 4,
+      "faction": 1,
+      "type": 2,
+      "max_stars": 5,
+      "group": 10220
+    },
+    "小圣地亚哥": {
+      "rarity": 4,
+      "faction": 1,
+      "type": 2,
+      "max_stars": 5,
+      "group": 10221
+    },
+    "圣胡安": {
+      "rarity": 3,
+      "faction": 1,
+      "type": 2,
+      "max_stars": 5,
+      "group": 10222
+    },
+    "伯明翰": {
+      "rarity": 4,
+      "faction": 1,
+      "type": 2,
+      "max_stars": 5,
+      "group": 10223
+    },
+    "克利夫兰(μ兵装)": {
+      "rarity": 4,
+      "faction": 1,
+      "type": 2,
+      "max_stars": 5,
+      "group": 10224
+    },
+    "比洛克西": {
+      "rarity": 4,
+      "faction": 1,
+      "type": 2,
+      "max_stars": 5,
+      "group": 10225
+    },
+    "里诺": {
+      "rarity": 5,
+      "faction": 1,
+      "type": 2,
+      "max_stars": 6,
+      "group": 10226
+    },
+    "马布尔黑德": {
+      "rarity": 3,
+      "faction": 1,
+      "type": 2,
+      "max_stars": 5,
+      "group": 10227
+    },
+    "海伦娜.改": {
+      "rarity": 4,
+      "faction": 1,
+      "type": 2,
+      "max_stars": 5,
+      "group": 10205
+    },
+    "博伊西": {
+      "rarity": 4,
+      "faction": 1,
+      "type": 2,
+      "max_stars": 5,
+      "group": 10229
+    },
+    "朱诺.改": {
+      "rarity": 3,
+      "faction": 1,
+      "type": 2,
+      "max_stars": 5,
+      "group": 10207
+    },
+    "休斯敦II": {
+      "rarity": 5,
+      "faction": 1,
+      "type": 2,
+      "max_stars": 6,
+      "group": 10231
+    },
+    "博伊西(μ兵装)": {
+      "rarity": 4,
+      "faction": 1,
+      "type": 2,
+      "max_stars": 5,
+      "group": 10232
+    },
+    "法戈": {
+      "rarity": 5,
+      "faction": 1,
+      "type": 2,
+      "max_stars": 6,
+      "group": 10233
+    },
+    "圣塔菲": {
+      "rarity": 5,
+      "faction": 1,
+      "type": 2,
+      "max_stars": 6,
+      "group": 10234
+    },
+    "帕萨迪纳 ": {
+      "rarity": 4,
+      "faction": 1,
+      "type": 2,
+      "max_stars": 5,
+      "group": 10235
+    },
+    "彭萨科拉": {
+      "rarity": 2,
+      "faction": 1,
+      "type": 3,
+      "max_stars": 4,
+      "group": 10301
+    },
+    "盐湖城": {
+      "rarity": 2,
+      "faction": 1,
+      "type": 3,
+      "max_stars": 4,
+      "group": 10302
+    },
+    "北安普敦": {
+      "rarity": 3,
+      "faction": 1,
+      "type": 3,
+      "max_stars": 5,
+      "group": 10303
+    },
+    "芝加哥": {
+      "rarity": 3,
+      "faction": 1,
+      "type": 3,
+      "max_stars": 5,
+      "group": 10304
+    },
+    "休斯敦": {
+      "rarity": 4,
+      "faction": 1,
+      "type": 3,
+      "max_stars": 5,
+      "group": 10305
+    },
+    "波特兰": {
+      "rarity": 3,
+      "faction": 1,
+      "type": 3,
+      "max_stars": 5,
+      "group": 10306
+    },
+    "印第安纳波利斯": {
+      "rarity": 4,
+      "faction": 1,
+      "type": 3,
+      "max_stars": 5,
+      "group": 10307
+    },
+    "阿斯托利亚": {
+      "rarity": 4,
+      "faction": 1,
+      "type": 3,
+      "max_stars": 5,
+      "group": 10308
+    },
+    "昆西": {
+      "rarity": 4,
+      "faction": 1,
+      "type": 3,
+      "max_stars": 5,
+      "group": 10309
+    },
+    "文森斯": {
+      "rarity": 4,
+      "faction": 1,
+      "type": 3,
+      "max_stars": 5,
+      "group": 10310
+    },
+    "威奇塔": {
+      "rarity": 4,
+      "faction": 1,
+      "type": 3,
+      "max_stars": 5,
+      "group": 10311
+    },
+    "新奥尔良": {
+      "rarity": 5,
+      "faction": 1,
+      "type": 3,
+      "max_stars": 6,
+      "group": 10312
+    },
+    "明尼阿波利斯": {
+      "rarity": 5,
+      "faction": 1,
+      "type": 3,
+      "max_stars": 6,
+      "group": 10313
+    },
+    "旧金山": {
+      "rarity": 5,
+      "faction": 1,
+      "type": 3,
+      "max_stars": 6,
+      "group": 10314
+    },
+    "巴尔的摩": {
+      "rarity": 5,
+      "faction": 1,
+      "type": 3,
+      "max_stars": 6,
+      "group": 10316
+    },
+    "布莱默顿": {
+      "rarity": 5,
+      "faction": 1,
+      "type": 3,
+      "max_stars": 6,
+      "group": 10324
+    },
+    "巴尔的摩(μ兵装)": {
+      "rarity": 4,
+      "faction": 1,
+      "type": 3,
+      "max_stars": 5,
+      "group": 10325
+    },
+    "北安普敦II": {
+      "rarity": 5,
+      "faction": 1,
+      "type": 3,
+      "max_stars": 6,
+      "group": 10326
+    },
+    "路易斯维尔": {
+      "rarity": 4,
+      "faction": 1,
+      "type": 3,
+      "max_stars": 5,
+      "group": 10327
+    },
+    "匹兹堡": {
+      "rarity": 5,
+      "faction": 1,
+      "type": 3,
+      "max_stars": 6,
+      "group": 10328
+    },
+    "小安克雷奇": {
+      "rarity": 4,
+      "faction": 1,
+      "type": 3,
+      "max_stars": 5,
+      "group": 10329
+    },
+    "星座": {
+      "rarity": 5,
+      "faction": 1,
+      "type": 4,
+      "max_stars": 6,
+      "group": 10401
+    },
+    "内华达": {
+      "rarity": 2,
+      "faction": 1,
+      "type": 5,
+      "max_stars": 4,
+      "group": 10501
+    },
+    "俄克拉荷马": {
+      "rarity": 2,
+      "faction": 1,
+      "type": 5,
+      "max_stars": 4,
+      "group": 10502
+    },
+    "宾夕法尼亚": {
+      "rarity": 3,
+      "faction": 1,
+      "type": 5,
+      "max_stars": 5,
+      "group": 10503
+    },
+    "亚利桑那": {
+      "rarity": 4,
+      "faction": 1,
+      "type": 5,
+      "max_stars": 5,
+      "group": 10504
+    },
+    "田纳西": {
+      "rarity": 3,
+      "faction": 1,
+      "type": 5,
+      "max_stars": 5,
+      "group": 10507
+    },
+    "加利福尼亚": {
+      "rarity": 3,
+      "faction": 1,
+      "type": 5,
+      "max_stars": 5,
+      "group": 10508
+    },
+    "科罗拉多": {
+      "rarity": 4,
+      "faction": 1,
+      "type": 5,
+      "max_stars": 5,
+      "group": 10509
+    },
+    "马里兰": {
+      "rarity": 4,
+      "faction": 1,
+      "type": 5,
+      "max_stars": 5,
+      "group": 10510
+    },
+    "西弗吉尼亚": {
+      "rarity": 4,
+      "faction": 1,
+      "type": 5,
+      "max_stars": 5,
+      "group": 10511
+    },
+    "北卡罗来纳": {
+      "rarity": 5,
+      "faction": 1,
+      "type": 5,
+      "max_stars": 6,
+      "group": 10512
+    },
+    "华盛顿": {
+      "rarity": 5,
+      "faction": 1,
+      "type": 5,
+      "max_stars": 6,
+      "group": 10513
+    },
+    "南达科他": {
+      "rarity": 5,
+      "faction": 1,
+      "type": 5,
+      "max_stars": 6,
+      "group": 10514
+    },
+    "印第安纳": {
+      "rarity": 5,
+      "faction": 1,
+      "type": 5,
+      "max_stars": 6,
+      "group": 10515
+    },
+    "新泽西": {
+      "rarity": 6,
+      "faction": 1,
+      "type": 5,
+      "max_stars": 6,
+      "group": 10517
+    },
+    "马萨诸塞": {
+      "rarity": 5,
+      "faction": 1,
+      "type": 5,
+      "max_stars": 6,
+      "group": 10519
+    },
+    "阿拉巴马": {
+      "rarity": 5,
+      "faction": 1,
+      "type": 5,
+      "max_stars": 6,
+      "group": 10520
+    },
+    "科罗拉多·改": {
+      "rarity": 4,
+      "faction": 1,
+      "type": 5,
+      "max_stars": 5,
+      "group": 10509
+    },
+    "马里兰·改": {
+      "rarity": 4,
+      "faction": 1,
+      "type": 5,
+      "max_stars": 5,
+      "group": 10510
+    },
+    "西弗吉尼亚·改": {
+      "rarity": 4,
+      "faction": 1,
+      "type": 5,
+      "max_stars": 5,
+      "group": 10511
+    },
+    "长岛": {
+      "rarity": 3,
+      "faction": 1,
+      "type": 6,
+      "max_stars": 5,
+      "group": 10601
+    },
+    "博格": {
+      "rarity": 2,
+      "faction": 1,
+      "type": 6,
+      "max_stars": 4,
+      "group": 10602
+    },
+    "卡萨布兰卡": {
+      "rarity": 3,
+      "faction": 1,
+      "type": 6,
+      "max_stars": 5,
+      "group": 10655
+    },
+    "兰利": {
+      "rarity": 2,
+      "faction": 1,
+      "type": 6,
+      "max_stars": 4,
+      "group": 10701
+    },
+    "列克星敦": {
+      "rarity": 4,
+      "faction": 1,
+      "type": 7,
+      "max_stars": 5,
+      "group": 10702
+    },
+    "萨拉托加": {
+      "rarity": 4,
+      "faction": 1,
+      "type": 7,
+      "max_stars": 5,
+      "group": 10703
+    },
+    "突击者": {
+      "rarity": 2,
+      "faction": 1,
+      "type": 6,
+      "max_stars": 4,
+      "group": 10704
+    },
+    "约克城": {
+      "rarity": 4,
+      "faction": 1,
+      "type": 7,
+      "max_stars": 5,
+      "group": 10705
+    },
+    "企业": {
+      "rarity": 5,
+      "faction": 1,
+      "type": 7,
+      "max_stars": 6,
+      "group": 10706
+    },
+    "大黄蜂": {
+      "rarity": 4,
+      "faction": 1,
+      "type": 7,
+      "max_stars": 5,
+      "group": 10707
+    },
+    "胡蜂": {
+      "rarity": 3,
+      "faction": 1,
+      "type": 7,
+      "max_stars": 5,
+      "group": 10708
+    },
+    "埃塞克斯": {
+      "rarity": 5,
+      "faction": 1,
+      "type": 7,
+      "max_stars": 6,
+      "group": 10709
+    },
+    "约克城II": {
+      "rarity": 6,
+      "faction": 1,
+      "type": 7,
+      "max_stars": 6,
+      "group": 10710
+    },
+    "无畏": {
+      "rarity": 5,
+      "faction": 1,
+      "type": 7,
+      "max_stars": 6,
+      "group": 10711
+    },
+    "大黄蜂II": {
+      "rarity": 5,
+      "faction": 1,
+      "type": 7,
+      "max_stars": 6,
+      "group": 10712
+    },
+    "富兰克林": {
+      "rarity": 5,
+      "faction": 1,
+      "type": 7,
+      "max_stars": 6,
+      "group": 10713
+    },
+    "提康德罗加": {
+      "rarity": 5,
+      "faction": 1,
+      "type": 7,
+      "max_stars": 6,
+      "group": 10714
+    },
+    "列克星敦II": {
+      "rarity": 6,
+      "faction": 1,
+      "type": 7,
+      "max_stars": 6,
+      "group": 10716
+    },
+    "邦克山": {
+      "rarity": 5,
+      "faction": 1,
+      "type": 7,
+      "max_stars": 6,
+      "group": 10717
+    },
+    "独立": {
+      "rarity": 4,
+      "faction": 1,
+      "type": 6,
+      "max_stars": 5,
+      "group": 10722
+    },
+    "普林斯顿": {
+      "rarity": 4,
+      "faction": 1,
+      "type": 6,
+      "max_stars": 5,
+      "group": 10723
+    },
+    "科本斯": {
+      "rarity": 5,
+      "faction": 1,
+      "type": 6,
+      "max_stars": 6,
+      "group": 10725
+    },
+    "兰利II": {
+      "rarity": 4,
+      "faction": 1,
+      "type": 6,
+      "max_stars": 5,
+      "group": 10727
+    },
+    "巴丹": {
+      "rarity": 4,
+      "faction": 1,
+      "type": 6,
+      "max_stars": 5,
+      "group": 10729
+    },
+    "圣哈辛托": {
+      "rarity": 4,
+      "faction": 1,
+      "type": 6,
+      "max_stars": 5,
+      "group": 10730
+    },
+    "香格里拉": {
+      "rarity": 5,
+      "faction": 1,
+      "type": 7,
+      "max_stars": 6,
+      "group": 10738
+    },
+    "埃塞克斯.改": {
+      "rarity": 5,
+      "faction": 1,
+      "type": 7,
+      "max_stars": 6,
+      "group": 10709
+    },
+    "独立.改": {
+      "rarity": 4,
+      "faction": 1,
+      "type": 6,
+      "max_stars": 5,
+      "group": 10722
+    },
+    "小企业": {
+      "rarity": 4,
+      "faction": 1,
+      "type": 7,
+      "max_stars": 5,
+      "group": 10799
+    },
+    "鲦鱼": {
+      "rarity": 4,
+      "faction": 1,
+      "type": 8,
+      "max_stars": 5,
+      "group": 10801
+    },
+    "大青花鱼": {
+      "rarity": 5,
+      "faction": 1,
+      "type": 8,
+      "max_stars": 6,
+      "group": 10802
+    },
+    "棘鳍": {
+      "rarity": 5,
+      "faction": 1,
+      "type": 8,
+      "max_stars": 6,
+      "group": 10803
+    },
+    "蓝鳃鱼": {
+      "rarity": 4,
+      "faction": 1,
+      "type": 8,
+      "max_stars": 5,
+      "group": 10804
+    },
+    "大青花鱼(μ兵装)": {
+      "rarity": 4,
+      "faction": 1,
+      "type": 8,
+      "max_stars": 5,
+      "group": 10805
+    },
+    "射水鱼": {
+      "rarity": 5,
+      "faction": 1,
+      "type": 8,
+      "max_stars": 6,
+      "group": 10806
+    },
+    "鹦鹉螺": {
+      "rarity": 4,
+      "faction": 1,
+      "type": 8,
+      "max_stars": 5,
+      "group": 10807
+    },
+    "松鲷": {
+      "rarity": 5,
+      "faction": 1,
+      "type": 8,
+      "max_stars": 6,
+      "group": 10808
+    },
+    "鲱鱼": {
+      "rarity": 4,
+      "faction": 1,
+      "type": 8,
+      "max_stars": 5,
+      "group": 10809
+    },
+    "女灶神": {
+      "rarity": 4,
+      "faction": 1,
+      "type": 12,
+      "max_stars": 5,
+      "group": 11201
+    },
+    "关岛": {
+      "rarity": 6,
+      "faction": 1,
+      "type": 18,
+      "max_stars": 6,
+      "group": 11802
+    },
+    "西雅图": {
+      "rarity": 5,
+      "faction": 1,
+      "type": 2,
+      "max_stars": 6,
+      "group": 19901
+    },
+    "佐治亚": {
+      "rarity": 5,
+      "faction": 1,
+      "type": 5,
+      "max_stars": 6,
+      "group": 19902
+    },
+    "安克雷奇": {
+      "rarity": 5,
+      "faction": 1,
+      "type": 3,
+      "max_stars": 6,
+      "group": 19903
+    },
+    "奇尔沙治": {
+      "rarity": 6,
+      "faction": 1,
+      "type": 10,
+      "max_stars": 6,
+      "group": 19904
+    },
+    "哈尔福德": {
+      "rarity": 5,
+      "faction": 1,
+      "type": 1,
+      "max_stars": 6,
+      "group": 19905
+    },
+    "堪萨斯": {
+      "rarity": 5,
+      "faction": 1,
+      "type": 5,
+      "max_stars": 6,
+      "group": 19906
+    },
+    "女将": {
+      "rarity": 3,
+      "faction": 2,
+      "type": 1,
+      "max_stars": 5,
+      "group": 20101
+    },
+    "阿卡司塔": {
+      "rarity": 3,
+      "faction": 2,
+      "type": 1,
+      "max_stars": 5,
+      "group": 20102
+    },
+    "热心": {
+      "rarity": 3,
+      "faction": 2,
+      "type": 1,
+      "max_stars": 5,
+      "group": 20103
+    },
+    "小猎兔犬": {
+      "rarity": 2,
+      "faction": 2,
+      "type": 1,
+      "max_stars": 4,
+      "group": 20106
+    },
+    "大斗犬": {
+      "rarity": 2,
+      "faction": 2,
+      "type": 1,
+      "max_stars": 4,
+      "group": 20107
+    },
+    "彗星": {
+      "rarity": 2,
+      "faction": 2,
+      "type": 1,
+      "max_stars": 4,
+      "group": 20108
+    },
+    "新月": {
+      "rarity": 4,
+      "faction": 3,
+      "type": 1,
+      "max_stars": 5,
+      "group": 30156
+    },
+    "小天鹅": {
+      "rarity": 2,
+      "faction": 2,
+      "type": 1,
+      "max_stars": 4,
+      "group": 20110
+    },
+    "狐提": {
+      "rarity": 2,
+      "faction": 2,
+      "type": 1,
+      "max_stars": 4,
+      "group": 20111
+    },
+    "命运女神": {
+      "rarity": 3,
+      "faction": 2,
+      "type": 1,
+      "max_stars": 5,
+      "group": 20112
+    },
+    "格伦维尔": {
+      "rarity": 4,
+      "faction": 2,
+      "type": 1,
+      "max_stars": 5,
+      "group": 20113
+    },
+    "萤火虫": {
+      "rarity": 4,
+      "faction": 2,
+      "type": 1,
+      "max_stars": 5,
+      "group": 20114
+    },
+    "勇敢": {
+      "rarity": 4,
+      "faction": 2,
+      "type": 1,
+      "max_stars": 5,
+      "group": 20116
+    },
+    "猎人": {
+      "rarity": 3,
+      "faction": 2,
+      "type": 1,
+      "max_stars": 5,
+      "group": 20120
+    },
+    "标枪": {
+      "rarity": 4,
+      "faction": 2,
+      "type": 1,
+      "max_stars": 5,
+      "group": 20121
+    },
+    "天后": {
+      "rarity": 3,
+      "faction": 2,
+      "type": 1,
+      "max_stars": 5,
+      "group": 20122
+    },
+    "吸血鬼": {
+      "rarity": 4,
+      "faction": 2,
+      "type": 1,
+      "max_stars": 5,
+      "group": 20123
+    },
+    "丘比特": {
+      "rarity": 3,
+      "faction": 2,
+      "type": 1,
+      "max_stars": 5,
+      "group": 20124
+    },
+    "泽西": {
+      "rarity": 3,
+      "faction": 2,
+      "type": 1,
+      "max_stars": 5,
+      "group": 20125
+    },
+    "无敌": {
+      "rarity": 4,
+      "faction": 2,
+      "type": 1,
+      "max_stars": 5,
+      "group": 20126
+    },
+    "火枪手": {
+      "rarity": 4,
+      "faction": 2,
+      "type": 1,
+      "max_stars": 5,
+      "group": 20127
+    },
+    "回声": {
+      "rarity": 3,
+      "faction": 2,
+      "type": 1,
+      "max_stars": 5,
+      "group": 20129
+    },
+    "爱斯基摩人": {
+      "rarity": 4,
+      "faction": 2,
+      "type": 1,
+      "max_stars": 5,
+      "group": 20132
+    },
+    "伊卡洛斯": {
+      "rarity": 4,
+      "faction": 2,
+      "type": 1,
+      "max_stars": 5,
+      "group": 20133
+    },
+    "贾维斯": {
+      "rarity": 5,
+      "faction": 2,
+      "type": 1,
+      "max_stars": 6,
+      "group": 20134
+    },
+    "雅努斯": {
+      "rarity": 5,
+      "faction": 2,
+      "type": 1,
+      "max_stars": 6,
+      "group": 20135
+    },
+    "英雄": {
+      "rarity": 4,
+      "faction": 2,
+      "type": 1,
+      "max_stars": 5,
+      "group": 20136
+    },
+    "努比亚人": {
+      "rarity": 5,
+      "faction": 2,
+      "type": 1,
+      "max_stars": 6,
+      "group": 20137
+    },
+    "特拉法尔加": {
+      "rarity": 6,
+      "faction": 2,
+      "type": 1,
+      "max_stars": 6,
+      "group": 20138
+    },
+    "勇气": {
+      "rarity": 4,
+      "faction": 2,
+      "type": 1,
+      "max_stars": 5,
+      "group": 20139
+    },
+    "女将.改": {
+      "rarity": 3,
+      "faction": 2,
+      "type": 1,
+      "max_stars": 5,
+      "group": 20101
+    },
+    "萤火虫.改": {
+      "rarity": 4,
+      "faction": 2,
+      "type": 1,
+      "max_stars": 5,
+      "group": 20114
+    },
+    "利安得": {
+      "rarity": 2,
+      "faction": 2,
+      "type": 2,
+      "max_stars": 4,
+      "group": 20201
+    },
+    "阿基里斯": {
+      "rarity": 3,
+      "faction": 2,
+      "type": 2,
+      "max_stars": 5,
+      "group": 20202
+    },
+    "阿贾克斯": {
+      "rarity": 3,
+      "faction": 2,
+      "type": 2,
+      "max_stars": 5,
+      "group": 20203
+    },
+    "黛朵": {
+      "rarity": 5,
+      "faction": 2,
+      "type": 2,
+      "max_stars": 6,
+      "group": 20204
+    },
+    "南安普顿": {
+      "rarity": 3,
+      "faction": 2,
+      "type": 2,
+      "max_stars": 5,
+      "group": 20207
+    },
+    "谢菲尔德": {
+      "rarity": 4,
+      "faction": 2,
+      "type": 2,
+      "max_stars": 5,
+      "group": 20208
+    },
+    "曼彻斯特": {
+      "rarity": 4,
+      "faction": 2,
+      "type": 2,
+      "max_stars": 5,
+      "group": 20209
+    },
+    "格罗斯特": {
+      "rarity": 4,
+      "faction": 2,
+      "type": 2,
+      "max_stars": 5,
+      "group": 20210
+    },
+    "爱丁堡": {
+      "rarity": 4,
+      "faction": 2,
+      "type": 2,
+      "max_stars": 5,
+      "group": 20211
+    },
+    "贝尔法斯特": {
+      "rarity": 5,
+      "faction": 2,
+      "type": 2,
+      "max_stars": 6,
+      "group": 20212
+    },
+    "阿瑞托莎": {
+      "rarity": 3,
+      "faction": 2,
+      "type": 2,
+      "max_stars": 5,
+      "group": 20213
+    },
+    "加拉蒂亚": {
+      "rarity": 3,
+      "faction": 2,
+      "type": 2,
+      "max_stars": 5,
+      "group": 20214
+    },
+    "欧若拉": {
+      "rarity": 4,
+      "faction": 2,
+      "type": 2,
+      "max_stars": 5,
+      "group": 20215
+    },
+    "斐济": {
+      "rarity": 3,
+      "faction": 2,
+      "type": 2,
+      "max_stars": 5,
+      "group": 20216
+    },
+    "牙买加": {
+      "rarity": 3,
+      "faction": 2,
+      "type": 2,
+      "max_stars": 5,
+      "group": 20217
+    },
+    "小贝法": {
+      "rarity": 4,
+      "faction": 2,
+      "type": 2,
+      "max_stars": 5,
+      "group": 20218
+    },
+    "纽卡斯尔": {
+      "rarity": 3,
+      "faction": 2,
+      "type": 2,
+      "max_stars": 5,
+      "group": 20219
+    },
+    "天狼星": {
+      "rarity": 5,
+      "faction": 2,
+      "type": 2,
+      "max_stars": 6,
+      "group": 20220
+    },
+    "库拉索": {
+      "rarity": 3,
+      "faction": 2,
+      "type": 2,
+      "max_stars": 5,
+      "group": 20221
+    },
+    "杓鹬": {
+      "rarity": 3,
+      "faction": 2,
+      "type": 2,
+      "max_stars": 5,
+      "group": 20222
+    },
+    "确捷": {
+      "rarity": 5,
+      "faction": 2,
+      "type": 2,
+      "max_stars": 6,
+      "group": 20223
+    },
+    "黑太子": {
+      "rarity": 4,
+      "faction": 2,
+      "type": 2,
+      "max_stars": 5,
+      "group": 20224
+    },
+    "谢菲尔德(μ兵装)": {
+      "rarity": 4,
+      "faction": 2,
+      "type": 2,
+      "max_stars": 5,
+      "group": 20225
+    },
+    "格拉斯哥": {
+      "rarity": 3,
+      "faction": 2,
+      "type": 2,
+      "max_stars": 5,
+      "group": 20226
+    },
+    "赫敏": {
+      "rarity": 5,
+      "faction": 2,
+      "type": 2,
+      "max_stars": 6,
+      "group": 20227
+    },
+    "黛朵(μ兵装)": {
+      "rarity": 5,
+      "faction": 2,
+      "type": 2,
+      "max_stars": 6,
+      "group": 20228
+    },
+    "佩内洛珀": {
+      "rarity": 4,
+      "faction": 2,
+      "type": 2,
+      "max_stars": 5,
+      "group": 20229
+    },
+    "卡律布狄斯": {
+      "rarity": 5,
+      "faction": 2,
+      "type": 2,
+      "max_stars": 6,
+      "group": 20230
+    },
+    "司战女神": {
+      "rarity": 4,
+      "faction": 2,
+      "type": 2,
+      "max_stars": 5,
+      "group": 20231
+    },
+    "进取": {
+      "rarity": 4,
+      "faction": 2,
+      "type": 2,
+      "max_stars": 5,
+      "group": 20232
+    },
+    "斯库拉": {
+      "rarity": 5,
+      "faction": 2,
+      "type": 2,
+      "max_stars": 6,
+      "group": 20233
+    },
+    "利物浦": {
+      "rarity": 4,
+      "faction": 2,
+      "type": 2,
+      "max_stars": 5,
+      "group": 20234
+    },
+    "克利奥佩特拉": {
+      "rarity": 5,
+      "faction": 2,
+      "type": 2,
+      "max_stars": 6,
+      "group": 20235
+    },
+    "特立尼达": {
+      "rarity": 4,
+      "faction": 2,
+      "type": 2,
+      "max_stars": 5,
+      "group": 20236
+    },
+    "伦敦": {
+      "rarity": 4,
+      "faction": 2,
+      "type": 3,
+      "max_stars": 5,
+      "group": 20301
+    },
+    "什罗普郡": {
+      "rarity": 3,
+      "faction": 2,
+      "type": 3,
+      "max_stars": 5,
+      "group": 20302
+    },
+    "肯特": {
+      "rarity": 3,
+      "faction": 2,
+      "type": 3,
+      "max_stars": 5,
+      "group": 20303
+    },
+    "萨福克": {
+      "rarity": 3,
+      "faction": 2,
+      "type": 3,
+      "max_stars": 5,
+      "group": 20304
+    },
+    "诺福克": {
+      "rarity": 3,
+      "faction": 2,
+      "type": 3,
+      "max_stars": 5,
+      "group": 20305
+    },
+    "多塞特郡": {
+      "rarity": 4,
+      "faction": 2,
+      "type": 3,
+      "max_stars": 5,
+      "group": 20306
+    },
+    "约克": {
+      "rarity": 4,
+      "faction": 2,
+      "type": 3,
+      "max_stars": 5,
+      "group": 20307
+    },
+    "埃克塞特": {
+      "rarity": 4,
+      "faction": 2,
+      "type": 3,
+      "max_stars": 5,
+      "group": 20308
+    },
+    "苏塞克斯": {
+      "rarity": 3,
+      "faction": 2,
+      "type": 3,
+      "max_stars": 5,
+      "group": 20309
+    },
+    "小柴郡": {
+      "rarity": 4,
+      "faction": 2,
+      "type": 3,
+      "max_stars": 5,
+      "group": 20310
+    },
+    "伦敦.改": {
+      "rarity": 4,
+      "faction": 2,
+      "type": 3,
+      "max_stars": 5,
+      "group": 20301
+    },
+    "什罗普郡.改": {
+      "rarity": 3,
+      "faction": 2,
+      "type": 3,
+      "max_stars": 5,
+      "group": 20302
+    },
+    "德文郡": {
+      "rarity": 4,
+      "faction": 2,
+      "type": 3,
+      "max_stars": 5,
+      "group": 20313
+    },
+    "声望": {
+      "rarity": 4,
+      "faction": 2,
+      "type": 4,
+      "max_stars": 5,
+      "group": 20401
+    },
+    "反击": {
+      "rarity": 3,
+      "faction": 2,
+      "type": 4,
+      "max_stars": 5,
+      "group": 20402
+    },
+    "胡德": {
+      "rarity": 5,
+      "faction": 2,
+      "type": 4,
+      "max_stars": 6,
+      "group": 20403
+    },
+    "小声望": {
+      "rarity": 4,
+      "faction": 2,
+      "type": 4,
+      "max_stars": 5,
+      "group": 20404
+    },
+    "伊丽莎白女王": {
+      "rarity": 4,
+      "faction": 2,
+      "type": 5,
+      "max_stars": 5,
+      "group": 20501
+    },
+    "厌战": {
+      "rarity": 5,
+      "faction": 2,
+      "type": 5,
+      "max_stars": 6,
+      "group": 20502
+    },
+    "纳尔逊": {
+      "rarity": 4,
+      "faction": 2,
+      "type": 5,
+      "max_stars": 5,
+      "group": 20503
+    },
+    "罗德尼": {
+      "rarity": 4,
+      "faction": 2,
+      "type": 5,
+      "max_stars": 5,
+      "group": 20504
+    },
+    "英王乔治五世": {
+      "rarity": 5,
+      "faction": 2,
+      "type": 5,
+      "max_stars": 6,
+      "group": 20505
+    },
+    "威尔士亲王": {
+      "rarity": 5,
+      "faction": 2,
+      "type": 5,
+      "max_stars": 6,
+      "group": 20506
+    },
+    "约克公爵": {
+      "rarity": 5,
+      "faction": 2,
+      "type": 5,
+      "max_stars": 6,
+      "group": 20507
+    },
+    "豪": {
+      "rarity": 5,
+      "faction": 2,
+      "type": 5,
+      "max_stars": 6,
+      "group": 20509
+    },
+    "英勇": {
+      "rarity": 4,
+      "faction": 2,
+      "type": 5,
+      "max_stars": 5,
+      "group": 20510
+    },
+    "复仇": {
+      "rarity": 4,
+      "faction": 2,
+      "type": 5,
+      "max_stars": 5,
+      "group": 20511
+    },
+    "厌战.改": {
+      "rarity": 5,
+      "faction": 2,
+      "type": 5,
+      "max_stars": 6,
+      "group": 20502
+    },
+    "前卫": {
+      "rarity": 6,
+      "faction": 2,
+      "type": 5,
+      "max_stars": 6,
+      "group": 20513
+    },
+    "皇家橡树": {
+      "rarity": 5,
+      "faction": 2,
+      "type": 5,
+      "max_stars": 6,
+      "group": 20514
+    },
+    "纳尔逊.改": {
+      "rarity": 4,
+      "faction": 2,
+      "type": 5,
+      "max_stars": 5,
+      "group": 20503
+    },
+    "狮": {
+      "rarity": 6,
+      "faction": 2,
+      "type": 5,
+      "max_stars": 6,
+      "group": 20516
+    },
+    "竞技神": {
+      "rarity": 2,
+      "faction": 2,
+      "type": 6,
+      "max_stars": 4,
+      "group": 20601
+    },
+    "百眼巨人": {
+      "rarity": 4,
+      "faction": 2,
+      "type": 6,
+      "max_stars": 5,
+      "group": 20602
+    },
+    "独角兽": {
+      "rarity": 4,
+      "faction": 2,
+      "type": 6,
+      "max_stars": 5,
+      "group": 20603
+    },
+    "半人马": {
+      "rarity": 5,
+      "faction": 2,
+      "type": 6,
+      "max_stars": 6,
+      "group": 20604
+    },
+    "追赶者": {
+      "rarity": 4,
+      "faction": 2,
+      "type": 6,
+      "max_stars": 5,
+      "group": 20605
+    },
+    "英仙座": {
+      "rarity": 5,
+      "faction": 2,
+      "type": 6,
+      "max_stars": 6,
+      "group": 20606
+    },
+    "阿尔比恩": {
+      "rarity": 5,
+      "faction": 2,
+      "type": 6,
+      "max_stars": 6,
+      "group": 20607
+    },
+    "忒修斯": {
+      "rarity": 5,
+      "faction": 2,
+      "type": 6,
+      "max_stars": 6,
+      "group": 20608
+    },
+    "独角兽.改": {
+      "rarity": 4,
+      "faction": 2,
+      "type": 6,
+      "max_stars": 5,
+      "group": 20603
+    },
+    "鹰": {
+      "rarity": 4,
+      "faction": 2,
+      "type": 7,
+      "max_stars": 5,
+      "group": 20701
+    },
+    "皇家方舟": {
+      "rarity": 4,
+      "faction": 2,
+      "type": 7,
+      "max_stars": 5,
+      "group": 20702
+    },
+    "光辉": {
+      "rarity": 5,
+      "faction": 2,
+      "type": 7,
+      "max_stars": 6,
+      "group": 20703
+    },
+    "胜利": {
+      "rarity": 5,
+      "faction": 2,
+      "type": 7,
+      "max_stars": 6,
+      "group": 20704
+    },
+    "可畏": {
+      "rarity": 5,
+      "faction": 2,
+      "type": 7,
+      "max_stars": 6,
+      "group": 20705
+    },
+    "光荣": {
+      "rarity": 4,
+      "faction": 2,
+      "type": 7,
+      "max_stars": 5,
+      "group": 20706
+    },
+    "怨仇": {
+      "rarity": 6,
+      "faction": 2,
+      "type": 7,
+      "max_stars": 6,
+      "group": 20707
+    },
+    "小光辉": {
+      "rarity": 4,
+      "faction": 2,
+      "type": 7,
+      "max_stars": 5,
+      "group": 20709
+    },
+    "光辉(μ兵装)": {
+      "rarity": 5,
+      "faction": 2,
+      "type": 7,
+      "max_stars": 6,
+      "group": 20711
+    },
+    "不挠": {
+      "rarity": 5,
+      "faction": 2,
+      "type": 7,
+      "max_stars": 6,
+      "group": 20712
+    },
+    "小可畏": {
+      "rarity": 4,
+      "faction": 2,
+      "type": 7,
+      "max_stars": 5,
+      "group": 20713
+    },
+    "可畏(μ兵装)": {
+      "rarity": 5,
+      "faction": 2,
+      "type": 7,
+      "max_stars": 6,
+      "group": 20714
+    },
+    "黑暗界": {
+      "rarity": 4,
+      "faction": 2,
+      "type": 13,
+      "max_stars": 5,
+      "group": 21301
+    },
+    "恐怖": {
+      "rarity": 4,
+      "faction": 2,
+      "type": 13,
+      "max_stars": 5,
+      "group": 21302
+    },
+    "阿贝克隆比": {
+      "rarity": 4,
+      "faction": 2,
+      "type": 13,
+      "max_stars": 5,
+      "group": 21304
+    },
+    "海王星": {
+      "rarity": 5,
+      "faction": 2,
+      "type": 2,
+      "max_stars": 6,
+      "group": 29901
+    },
+    "君主": {
+      "rarity": 5,
+      "faction": 2,
+      "type": 5,
+      "max_stars": 6,
+      "group": 29902
+    },
+    "柴郡": {
+      "rarity": 5,
+      "faction": 2,
+      "type": 3,
+      "max_stars": 6,
+      "group": 29903
+    },
+    "德雷克": {
+      "rarity": 6,
+      "faction": 2,
+      "type": 3,
+      "max_stars": 6,
+      "group": 29904
+    },
+    "普利茅斯": {
+      "rarity": 6,
+      "faction": 2,
+      "type": 2,
+      "max_stars": 6,
+      "group": 29905
+    },
+    "吹雪": {
+      "rarity": 4,
+      "faction": 3,
+      "type": 1,
+      "max_stars": 5,
+      "group": 30101
+    },
+    "白雪": {
+      "rarity": 4,
+      "faction": 3,
+      "type": 1,
+      "max_stars": 5,
+      "group": 30102
+    },
+    "深雪": {
+      "rarity": 4,
+      "faction": 3,
+      "type": 1,
+      "max_stars": 5,
+      "group": 30104
+    },
+    "绫波": {
+      "rarity": 4,
+      "faction": 3,
+      "type": 1,
+      "max_stars": 5,
+      "group": 30105
+    },
+    "晓": {
+      "rarity": 3,
+      "faction": 3,
+      "type": 1,
+      "max_stars": 5,
+      "group": 30109
+    },
+    "响": {
+      "rarity": 4,
+      "faction": 3,
+      "type": 1,
+      "max_stars": 5,
+      "group": 30110
+    },
+    "雷": {
+      "rarity": 3,
+      "faction": 3,
+      "type": 1,
+      "max_stars": 5,
+      "group": 30111
+    },
+    "电": {
+      "rarity": 3,
+      "faction": 3,
+      "type": 1,
+      "max_stars": 5,
+      "group": 30112
+    },
+    "白露": {
+      "rarity": 3,
+      "faction": 3,
+      "type": 1,
+      "max_stars": 5,
+      "group": 30113
+    },
+    "夕立": {
+      "rarity": 5,
+      "faction": 3,
+      "type": 1,
+      "max_stars": 6,
+      "group": 30114
+    },
+    "时雨": {
+      "rarity": 4,
+      "faction": 3,
+      "type": 1,
+      "max_stars": 5,
+      "group": 30115
+    },
+    "雪风": {
+      "rarity": 5,
+      "faction": 3,
+      "type": 1,
+      "max_stars": 6,
+      "group": 30116
+    },
+    "阳炎": {
+      "rarity": 3,
+      "faction": 3,
+      "type": 1,
+      "max_stars": 5,
+      "group": 30117
+    },
+    "不知火": {
+      "rarity": 2,
+      "faction": 3,
+      "type": 1,
+      "max_stars": 4,
+      "group": 30118
+    },
+    "野分": {
+      "rarity": 4,
+      "faction": 3,
+      "type": 1,
+      "max_stars": 5,
+      "group": 30120
+    },
+    "初春": {
+      "rarity": 3,
+      "faction": 3,
+      "type": 1,
+      "max_stars": 5,
+      "group": 30121
+    },
+    "若叶": {
+      "rarity": 3,
+      "faction": 3,
+      "type": 1,
+      "max_stars": 5,
+      "group": 30123
+    },
+    "初霜": {
+      "rarity": 3,
+      "faction": 3,
+      "type": 1,
+      "max_stars": 5,
+      "group": 30124
+    },
+    "有明": {
+      "rarity": 3,
+      "faction": 3,
+      "type": 1,
+      "max_stars": 5,
+      "group": 30125
+    },
+    "夕暮": {
+      "rarity": 3,
+      "faction": 3,
+      "type": 1,
+      "max_stars": 5,
+      "group": 30126
+    },
+    "黑潮": {
+      "rarity": 3,
+      "faction": 3,
+      "type": 1,
+      "max_stars": 5,
+      "group": 30127
+    },
+    "亲潮": {
+      "rarity": 3,
+      "faction": 3,
+      "type": 1,
+      "max_stars": 5,
+      "group": 30128
+    },
+    "岛风": {
+      "rarity": 6,
+      "faction": 3,
+      "type": 1,
+      "max_stars": 6,
+      "group": 30129
+    },
+    "神风": {
+      "rarity": 3,
+      "faction": 3,
+      "type": 1,
+      "max_stars": 5,
+      "group": 30130
+    },
+    "松风": {
+      "rarity": 3,
+      "faction": 3,
+      "type": 1,
+      "max_stars": 5,
+      "group": 30131
+    },
+    "睦月": {
+      "rarity": 2,
+      "faction": 3,
+      "type": 1,
+      "max_stars": 4,
+      "group": 30132
+    },
+    "如月": {
+      "rarity": 2,
+      "faction": 3,
+      "type": 1,
+      "max_stars": 4,
+      "group": 30133
+    },
+    "卯月": {
+      "rarity": 2,
+      "faction": 3,
+      "type": 1,
+      "max_stars": 4,
+      "group": 30135
+    },
+    "水无月": {
+      "rarity": 2,
+      "faction": 3,
+      "type": 1,
+      "max_stars": 4,
+      "group": 30137
+    },
+    "文月": {
+      "rarity": 3,
+      "faction": 3,
+      "type": 1,
+      "max_stars": 5,
+      "group": 30138
+    },
+    "长月": {
+      "rarity": 3,
+      "faction": 3,
+      "type": 1,
+      "max_stars": 5,
+      "group": 30139
+    },
+    "三日月": {
+      "rarity": 2,
+      "faction": 3,
+      "type": 1,
+      "max_stars": 4,
+      "group": 30141
+    },
+    "海风": {
+      "rarity": 4,
+      "faction": 3,
+      "type": 1,
+      "max_stars": 5,
+      "group": 30147
+    },
+    "山风": {
+      "rarity": 4,
+      "faction": 3,
+      "type": 1,
+      "max_stars": 5,
+      "group": 30148
+    },
+    "江风": {
+      "rarity": 5,
+      "faction": 3,
+      "type": 1,
+      "max_stars": 6,
+      "group": 30149
+    },
+    "霞.改": {
+      "rarity": 4,
+      "faction": 3,
+      "type": 1,
+      "max_stars": 5,
+      "group": 30181
+    },
+    "清波": {
+      "rarity": 3,
+      "faction": 3,
+      "type": 1,
+      "max_stars": 5,
+      "group": 30154
+    },
+    "春月": {
+      "rarity": 4,
+      "faction": 3,
+      "type": 1,
+      "max_stars": 5,
+      "group": 30157
+    },
+    "宵月": {
+      "rarity": 4,
+      "faction": 3,
+      "type": 1,
+      "max_stars": 5,
+      "group": 30158
+    },
+    "浦风": {
+      "rarity": 3,
+      "faction": 3,
+      "type": 1,
+      "max_stars": 5,
+      "group": 30159
+    },
+    "矶风": {
+      "rarity": 3,
+      "faction": 3,
+      "type": 1,
+      "max_stars": 5,
+      "group": 30160
+    },
+    "滨风": {
+      "rarity": 3,
+      "faction": 3,
+      "type": 1,
+      "max_stars": 5,
+      "group": 30161
+    },
+    "谷风": {
+      "rarity": 3,
+      "faction": 3,
+      "type": 1,
+      "max_stars": 5,
+      "group": 30162
+    },
+    "朝潮": {
+      "rarity": 3,
+      "faction": 3,
+      "type": 1,
+      "max_stars": 5,
+      "group": 30163
+    },
+    "大潮": {
+      "rarity": 3,
+      "faction": 3,
+      "type": 1,
+      "max_stars": 5,
+      "group": 30164
+    },
+    "满潮": {
+      "rarity": 3,
+      "faction": 3,
+      "type": 1,
+      "max_stars": 5,
+      "group": 30165
+    },
+    "荒潮": {
+      "rarity": 3,
+      "faction": 3,
+      "type": 1,
+      "max_stars": 5,
+      "group": 30166
+    },
+    "浦波": {
+      "rarity": 4,
+      "faction": 3,
+      "type": 1,
+      "max_stars": 5,
+      "group": 30172
+    },
+    "旗风": {
+      "rarity": 3,
+      "faction": 3,
+      "type": 1,
+      "max_stars": 5,
+      "group": 30179
+    },
+    "卷波": {
+      "rarity": 4,
+      "faction": 3,
+      "type": 1,
+      "max_stars": 5,
+      "group": 30180
+    },
+    "霞": {
+      "rarity": 5,
+      "faction": 106,
+      "type": 3,
+      "max_stars": 6,
+      "group": 1060003
+    },
+    "花月": {
+      "rarity": 4,
+      "faction": 3,
+      "type": 1,
+      "max_stars": 5,
+      "group": 30182
+    },
+    "长波": {
+      "rarity": 4,
+      "faction": 3,
+      "type": 1,
+      "max_stars": 5,
+      "group": 30183
+    },
+    "凉月": {
+      "rarity": 5,
+      "faction": 3,
+      "type": 1,
+      "max_stars": 6,
+      "group": 30184
+    },
+    "追风": {
+      "rarity": 3,
+      "faction": 3,
+      "type": 1,
+      "max_stars": 5,
+      "group": 30185
+    },
+    "风云": {
+      "rarity": 5,
+      "faction": 3,
+      "type": 1,
+      "max_stars": 6,
+      "group": 30186
+    },
+    "夕立.改": {
+      "rarity": 5,
+      "faction": 3,
+      "type": 1,
+      "max_stars": 6,
+      "group": 30114
+    },
+    "若月": {
+      "rarity": 5,
+      "faction": 3,
+      "type": 1,
+      "max_stars": 6,
+      "group": 30188
+    },
+    "初月": {
+      "rarity": 5,
+      "faction": 3,
+      "type": 1,
+      "max_stars": 6,
+      "group": 30189
+    },
+    "朝凪": {
+      "rarity": 4,
+      "faction": 3,
+      "type": 1,
+      "max_stars": 5,
+      "group": 30190
+    },
+    "凉波": {
+      "rarity": 4,
+      "faction": 3,
+      "type": 1,
+      "max_stars": 5,
+      "group": 30191
+    },
+    "妙风": {
+      "rarity": 4,
+      "faction": 3,
+      "type": 1,
+      "max_stars": 5,
+      "group": 30192
+    },
+    "白露.改": {
+      "rarity": 3,
+      "faction": 3,
+      "type": 1,
+      "max_stars": 5,
+      "group": 30113
+    },
+    "藤波": {
+      "rarity": 5,
+      "faction": 3,
+      "type": 1,
+      "max_stars": 6,
+      "group": 30194
+    },
+    "夕张": {
+      "rarity": 4,
+      "faction": 3,
+      "type": 2,
+      "max_stars": 5,
+      "group": 30201
+    },
+    "长良": {
+      "rarity": 2,
+      "faction": 3,
+      "type": 2,
+      "max_stars": 4,
+      "group": 30204
+    },
+    "五十铃": {
+      "rarity": 3,
+      "faction": 3,
+      "type": 2,
+      "max_stars": 5,
+      "group": 30205
+    },
+    "名取": {
+      "rarity": 4,
+      "faction": 3,
+      "type": 2,
+      "max_stars": 5,
+      "group": 30206
+    },
+    "由良": {
+      "rarity": 4,
+      "faction": 3,
+      "type": 2,
+      "max_stars": 5,
+      "group": 30207
+    },
+    "鬼怒": {
+      "rarity": 4,
+      "faction": 3,
+      "type": 2,
+      "max_stars": 5,
+      "group": 30208
+    },
+    "阿武隈": {
+      "rarity": 2,
+      "faction": 3,
+      "type": 2,
+      "max_stars": 4,
+      "group": 30209
+    },
+    "最上": {
+      "rarity": 4,
+      "faction": 3,
+      "type": 2,
+      "max_stars": 5,
+      "group": 30210
+    },
+    "三隈": {
+      "rarity": 4,
+      "faction": 3,
+      "type": 2,
+      "max_stars": 5,
+      "group": 30211
+    },
+    "川内": {
+      "rarity": 3,
+      "faction": 3,
+      "type": 2,
+      "max_stars": 5,
+      "group": 30212
+    },
+    "神通": {
+      "rarity": 4,
+      "faction": 3,
+      "type": 2,
+      "max_stars": 5,
+      "group": 30213
+    },
+    "那珂": {
+      "rarity": 3,
+      "faction": 3,
+      "type": 2,
+      "max_stars": 5,
+      "group": 30214
+    },
+    "阿贺野": {
+      "rarity": 4,
+      "faction": 3,
+      "type": 2,
+      "max_stars": 5,
+      "group": 30220
+    },
+    "能代": {
+      "rarity": 5,
+      "faction": 3,
+      "type": 2,
+      "max_stars": 6,
+      "group": 30221
+    },
+    "酒匂": {
+      "rarity": 5,
+      "faction": 3,
+      "type": 2,
+      "max_stars": 6,
+      "group": 30223
+    },
+    "能代(μ兵装)": {
+      "rarity": 5,
+      "faction": 3,
+      "type": 2,
+      "max_stars": 6,
+      "group": 30224
+    },
+    "渡良濑": {
+      "rarity": 5,
+      "faction": 3,
+      "type": 2,
+      "max_stars": 6,
+      "group": 30225
+    },
+    "绫濑": {
+      "rarity": 4,
+      "faction": 3,
+      "type": 2,
+      "max_stars": 5,
+      "group": 30226
+    },
+    "水无濑": {
+      "rarity": 4,
+      "faction": 3,
+      "type": 2,
+      "max_stars": 5,
+      "group": 30227
+    },
+    "木津": {
+      "rarity": 4,
+      "faction": 3,
+      "type": 2,
+      "max_stars": 5,
+      "group": 30228
+    },
+    "名寄": {
+      "rarity": 4,
+      "faction": 3,
+      "type": 2,
+      "max_stars": 5,
+      "group": 30229
+    },
+    "古鹰": {
+      "rarity": 2,
+      "faction": 3,
+      "type": 3,
+      "max_stars": 4,
+      "group": 30301
+    },
+    "加古": {
+      "rarity": 2,
+      "faction": 3,
+      "type": 3,
+      "max_stars": 4,
+      "group": 30302
+    },
+    "青叶": {
+      "rarity": 2,
+      "faction": 3,
+      "type": 3,
+      "max_stars": 4,
+      "group": 30303
+    },
+    "衣笠": {
+      "rarity": 2,
+      "faction": 3,
+      "type": 3,
+      "max_stars": 4,
+      "group": 30304
+    },
+    "筑摩": {
+      "rarity": 5,
+      "faction": 3,
+      "type": 3,
+      "max_stars": 6,
+      "group": 30306
+    },
+    "妙高": {
+      "rarity": 3,
+      "faction": 3,
+      "type": 3,
+      "max_stars": 5,
+      "group": 30307
+    },
+    "那智": {
+      "rarity": 3,
+      "faction": 3,
+      "type": 3,
+      "max_stars": 5,
+      "group": 30308
+    },
+    "足柄": {
+      "rarity": 4,
+      "faction": 3,
+      "type": 3,
+      "max_stars": 5,
+      "group": 30309
+    },
+    "羽黑": {
+      "rarity": 4,
+      "faction": 3,
+      "type": 3,
+      "max_stars": 5,
+      "group": 30310
+    },
+    "高雄": {
+      "rarity": 5,
+      "faction": 3,
+      "type": 3,
+      "max_stars": 6,
+      "group": 30311
+    },
+    "爱宕": {
+      "rarity": 6,
+      "faction": 4,
+      "type": 5,
+      "max_stars": 6,
+      "group": 30312
+    },
+    "摩耶": {
+      "rarity": 5,
+      "faction": 3,
+      "type": 3,
+      "max_stars": 6,
+      "group": 30313
+    },
+    "鸟海": {
+      "rarity": 5,
+      "faction": 3,
+      "type": 3,
+      "max_stars": 6,
+      "group": 30314
+    },
+    "最上.改": {
+      "rarity": 4,
+      "faction": 3,
+      "type": 3,
+      "max_stars": 5,
+      "group": 30210
+    },
+    "铃谷": {
+      "rarity": 4,
+      "faction": 3,
+      "type": 3,
+      "max_stars": 5,
+      "group": 30317
+    },
+    "熊野": {
+      "rarity": 4,
+      "faction": 3,
+      "type": 3,
+      "max_stars": 5,
+      "group": 30318
+    },
+    "云仙": {
+      "rarity": 6,
+      "faction": 3,
+      "type": 3,
+      "max_stars": 6,
+      "group": 30319
+    },
+    "浅间": {
+      "rarity": 5,
+      "faction": 3,
+      "type": 3,
+      "max_stars": 6,
+      "group": 30320
+    },
+    "金刚": {
+      "rarity": 4,
+      "faction": 3,
+      "type": 4,
+      "max_stars": 5,
+      "group": 30401
+    },
+    "比叡": {
+      "rarity": 6,
+      "faction": 4,
+      "type": 5,
+      "max_stars": 6,
+      "group": 20502
+    },
+    "榛名": {
+      "rarity": 4,
+      "faction": 3,
+      "type": 4,
+      "max_stars": 5,
+      "group": 30403
+    },
+    "雾岛": {
+      "rarity": 4,
+      "faction": 3,
+      "type": 4,
+      "max_stars": 5,
+      "group": 30404
+    },
+    "天城": {
+      "rarity": 6,
+      "faction": 3,
+      "type": 7,
+      "max_stars": 6,
+      "group": 30715
+    },
+    "小比叡": {
+      "rarity": 4,
+      "faction": 3,
+      "type": 4,
+      "max_stars": 5,
+      "group": 30406
+    },
+    "小天城": {
+      "rarity": 4,
+      "faction": 3,
+      "type": 4,
+      "max_stars": 5,
+      "group": 30407
+    },
+    "金刚(μ兵装)": {
+      "rarity": 4,
+      "faction": 3,
+      "type": 4,
+      "max_stars": 5,
+      "group": 30408
+    },
+    "扶桑": {
+      "rarity": 3,
+      "faction": 3,
+      "type": 5,
+      "max_stars": 5,
+      "group": 30501
+    },
+    "山城": {
+      "rarity": 3,
+      "faction": 3,
+      "type": 5,
+      "max_stars": 5,
+      "group": 30502
+    },
+    "伊势": {
+      "rarity": 3,
+      "faction": 3,
+      "type": 5,
+      "max_stars": 5,
+      "group": 30503
+    },
+    "日向": {
+      "rarity": 3,
+      "faction": 3,
+      "type": 5,
+      "max_stars": 5,
+      "group": 30504
+    },
+    "长门": {
+      "rarity": 5,
+      "faction": 3,
+      "type": 5,
+      "max_stars": 6,
+      "group": 30505
+    },
+    "陆奥": {
+      "rarity": 4,
+      "faction": 3,
+      "type": 5,
+      "max_stars": 5,
+      "group": 30506
+    },
+    "加贺": {
+      "rarity": 5,
+      "faction": 3,
+      "type": 5,
+      "max_stars": 6,
+      "group": 30507
+    },
+    "土佐": {
+      "rarity": 5,
+      "faction": 3,
+      "type": 5,
+      "max_stars": 6,
+      "group": 30508
+    },
+    "武藏": {
+      "rarity": 6,
+      "faction": 3,
+      "type": 5,
+      "max_stars": 6,
+      "group": 30510
+    },
+    "三笠": {
+      "rarity": 6,
+      "faction": 4,
+      "type": 5,
+      "max_stars": 6,
+      "group": 20502
+    },
+    "纪伊": {
+      "rarity": 5,
+      "faction": 3,
+      "type": 5,
+      "max_stars": 6,
+      "group": 30512
+    },
+    "尾张": {
+      "rarity": 5,
+      "faction": 3,
+      "type": 5,
+      "max_stars": 6,
+      "group": 30513
+    },
+    "骏河": {
+      "rarity": 5,
+      "faction": 3,
+      "type": 5,
+      "max_stars": 6,
+      "group": 30514
+    },
+    "近江": {
+      "rarity": 5,
+      "faction": 3,
+      "type": 5,
+      "max_stars": 6,
+      "group": 30516
+    },
+    "飞鹰": {
+      "rarity": 3,
+      "faction": 3,
+      "type": 6,
+      "max_stars": 5,
+      "group": 30601
+    },
+    "隼鹰": {
+      "rarity": 3,
+      "faction": 3,
+      "type": 6,
+      "max_stars": 5,
+      "group": 30602
+    },
+    "凤翔": {
+      "rarity": 4,
+      "faction": 3,
+      "type": 6,
+      "max_stars": 5,
+      "group": 30603
+    },
+    "瑞凤": {
+      "rarity": 5,
+      "faction": 3,
+      "type": 6,
+      "max_stars": 6,
+      "group": 30604
+    },
+    "祥凤": {
+      "rarity": 3,
+      "faction": 3,
+      "type": 6,
+      "max_stars": 5,
+      "group": 30605
+    },
+    "龙骧": {
+      "rarity": 4,
+      "faction": 3,
+      "type": 6,
+      "max_stars": 5,
+      "group": 30606
+    },
+    "龙凤": {
+      "rarity": 5,
+      "faction": 3,
+      "type": 6,
+      "max_stars": 6,
+      "group": 30607
+    },
+    "千岁": {
+      "rarity": 4,
+      "faction": 3,
+      "type": 6,
+      "max_stars": 5,
+      "group": 30608
+    },
+    "千代田": {
+      "rarity": 4,
+      "faction": 3,
+      "type": 6,
+      "max_stars": 5,
+      "group": 30609
+    },
+    "赤城": {
+      "rarity": 5,
+      "faction": 3,
+      "type": 7,
+      "max_stars": 6,
+      "group": 30701
+    },
+    "苍龙": {
+      "rarity": 4,
+      "faction": 3,
+      "type": 7,
+      "max_stars": 5,
+      "group": 30703
+    },
+    "飞龙": {
+      "rarity": 4,
+      "faction": 3,
+      "type": 7,
+      "max_stars": 5,
+      "group": 30704
+    },
+    "翔鹤": {
+      "rarity": 5,
+      "faction": 3,
+      "type": 7,
+      "max_stars": 6,
+      "group": 30705
+    },
+    "瑞鹤": {
+      "rarity": 5,
+      "faction": 3,
+      "type": 7,
+      "max_stars": 6,
+      "group": 30706
+    },
+    "大凤": {
+      "rarity": 5,
+      "faction": 3,
+      "type": 7,
+      "max_stars": 6,
+      "group": 30707
+    },
+    "信浓": {
+      "rarity": 6,
+      "faction": 3,
+      "type": 7,
+      "max_stars": 6,
+      "group": 30708
+    },
+    "小赤城": {
+      "rarity": 4,
+      "faction": 3,
+      "type": 7,
+      "max_stars": 5,
+      "group": 30709
+    },
+    "赤城(μ兵装)": {
+      "rarity": 5,
+      "faction": 3,
+      "type": 7,
+      "max_stars": 6,
+      "group": 30710
+    },
+    "大凤(μ兵装)": {
+      "rarity": 5,
+      "faction": 3,
+      "type": 7,
+      "max_stars": 6,
+      "group": 30711
+    },
+    "葛城": {
+      "rarity": 5,
+      "faction": 3,
+      "type": 7,
+      "max_stars": 6,
+      "group": 30712
+    },
+    "小大凤": {
+      "rarity": 4,
+      "faction": 3,
+      "type": 7,
+      "max_stars": 5,
+      "group": 30713
+    },
+    "小信浓": {
+      "rarity": 4,
+      "faction": 3,
+      "type": 7,
+      "max_stars": 5,
+      "group": 30714
+    },
+    "白凤": {
+      "rarity": 6,
+      "faction": 3,
+      "type": 7,
+      "max_stars": 6,
+      "group": 30716
+    },
+    "云龙": {
+      "rarity": 5,
+      "faction": 3,
+      "type": 7,
+      "max_stars": 6,
+      "group": 30717
+    },
+    "伊19": {
+      "rarity": 5,
+      "faction": 3,
+      "type": 8,
+      "max_stars": 6,
+      "group": 30801
+    },
+    "伊26": {
+      "rarity": 4,
+      "faction": 3,
+      "type": 8,
+      "max_stars": 5,
+      "group": 30802
+    },
+    "伊58": {
+      "rarity": 4,
+      "faction": 3,
+      "type": 8,
+      "max_stars": 5,
+      "group": 30803
+    },
+    "伊25": {
+      "rarity": 4,
+      "faction": 3,
+      "type": 8,
+      "max_stars": 5,
+      "group": 30804
+    },
+    "伊56": {
+      "rarity": 4,
+      "faction": 3,
+      "type": 8,
+      "max_stars": 5,
+      "group": 30805
+    },
+    "伊168": {
+      "rarity": 5,
+      "faction": 3,
+      "type": 8,
+      "max_stars": 6,
+      "group": 30806
+    },
+    "扶桑.改": {
+      "rarity": 3,
+      "faction": 3,
+      "type": 10,
+      "max_stars": 5,
+      "group": 30501
+    },
+    "山城.改": {
+      "rarity": 3,
+      "faction": 3,
+      "type": 10,
+      "max_stars": 5,
+      "group": 30502
+    },
+    "伊势.改": {
+      "rarity": 3,
+      "faction": 3,
+      "type": 10,
+      "max_stars": 5,
+      "group": 30503
+    },
+    "日向.改": {
+      "rarity": 3,
+      "faction": 3,
+      "type": 10,
+      "max_stars": 5,
+      "group": 30504
+    },
+    "明石": {
+      "rarity": 5,
+      "faction": 3,
+      "type": 12,
+      "max_stars": 6,
+      "group": 31201
+    },
+    "伊13": {
+      "rarity": 5,
+      "faction": 3,
+      "type": 17,
+      "max_stars": 6,
+      "group": 31701
+    },
+    "伊404": {
+      "rarity": 6,
+      "faction": 3,
+      "type": 17,
+      "max_stars": 6,
+      "group": 31702
+    },
+    "樫野": {
+      "rarity": 4,
+      "faction": 3,
+      "type": 19,
+      "max_stars": 5,
+      "group": 31901
+    },
+    "伊吹": {
+      "rarity": 5,
+      "faction": 3,
+      "type": 3,
+      "max_stars": 6,
+      "group": 39901
+    },
+    "出云": {
+      "rarity": 5,
+      "faction": 3,
+      "type": 5,
+      "max_stars": 6,
+      "group": 39902
+    },
+    "北风": {
+      "rarity": 5,
+      "faction": 3,
+      "type": 1,
+      "max_stars": 6,
+      "group": 39903
+    },
+    "吾妻": {
+      "rarity": 6,
+      "faction": 3,
+      "type": 18,
+      "max_stars": 6,
+      "group": 39904
+    },
+    "白龙": {
+      "rarity": 6,
+      "faction": 3,
+      "type": 7,
+      "max_stars": 6,
+      "group": 39905
+    },
+    "四万十": {
+      "rarity": 5,
+      "faction": 3,
+      "type": 2,
+      "max_stars": 6,
+      "group": 39906
+    },
+    "大山": {
+      "rarity": 5,
+      "faction": 3,
+      "type": 5,
+      "max_stars": 6,
+      "group": 39907
+    },
+    "Z1": {
+      "rarity": 4,
+      "faction": 4,
+      "type": 1,
+      "max_stars": 5,
+      "group": 40101
+    },
+    "Z2": {
+      "rarity": 4,
+      "faction": 4,
+      "type": 1,
+      "max_stars": 5,
+      "group": 40102
+    },
+    "Z9": {
+      "rarity": 4,
+      "faction": 4,
+      "type": 1,
+      "max_stars": 5,
+      "group": 40109
+    },
+    "Z11": {
+      "rarity": 4,
+      "faction": 4,
+      "type": 1,
+      "max_stars": 5,
+      "group": 40111
+    },
+    "Z13": {
+      "rarity": 4,
+      "faction": 4,
+      "type": 1,
+      "max_stars": 5,
+      "group": 40113
+    },
+    "Z16": {
+      "rarity": 4,
+      "faction": 4,
+      "type": 1,
+      "max_stars": 5,
+      "group": 40116
+    },
+    "Z18": {
+      "rarity": 3,
+      "faction": 4,
+      "type": 1,
+      "max_stars": 5,
+      "group": 40118
+    },
+    "Z19": {
+      "rarity": 3,
+      "faction": 4,
+      "type": 1,
+      "max_stars": 5,
+      "group": 40119
+    },
+    "Z20": {
+      "rarity": 2,
+      "faction": 4,
+      "type": 1,
+      "max_stars": 4,
+      "group": 40120
+    },
+    "Z21": {
+      "rarity": 2,
+      "faction": 4,
+      "type": 1,
+      "max_stars": 4,
+      "group": 40121
+    },
+    "Z23": {
+      "rarity": 4,
+      "faction": 4,
+      "type": 1,
+      "max_stars": 5,
+      "group": 40123
+    },
+    "Z24": {
+      "rarity": 4,
+      "faction": 4,
+      "type": 1,
+      "max_stars": 5,
+      "group": 40124
+    },
+    "Z25": {
+      "rarity": 4,
+      "faction": 4,
+      "type": 1,
+      "max_stars": 5,
+      "group": 40125
+    },
+    "Z26": {
+      "rarity": 4,
+      "faction": 4,
+      "type": 1,
+      "max_stars": 5,
+      "group": 40126
+    },
+    "Z28": {
+      "rarity": 4,
+      "faction": 4,
+      "type": 1,
+      "max_stars": 5,
+      "group": 40128
+    },
+    "Z35": {
+      "rarity": 4,
+      "faction": 4,
+      "type": 1,
+      "max_stars": 5,
+      "group": 40135
+    },
+    "Z36": {
+      "rarity": 4,
+      "faction": 4,
+      "type": 1,
+      "max_stars": 5,
+      "group": 40136
+    },
+    "Z43": {
+      "rarity": 4,
+      "faction": 4,
+      "type": 1,
+      "max_stars": 5,
+      "group": 40143
+    },
+    "Z46": {
+      "rarity": 5,
+      "faction": 4,
+      "type": 1,
+      "max_stars": 6,
+      "group": 40146
+    },
+    "Z47": {
+      "rarity": 5,
+      "faction": 4,
+      "type": 1,
+      "max_stars": 6,
+      "group": 40147
+    },
+    "Z52": {
+      "rarity": 6,
+      "faction": 4,
+      "type": 1,
+      "max_stars": 6,
+      "group": 40152
+    },
+    "奥托·冯·阿尔文斯莱本": {
+      "rarity": 5,
+      "faction": 4,
+      "type": 1,
+      "max_stars": 6,
+      "group": 40199
+    },
+    "柯尼斯堡": {
+      "rarity": 2,
+      "faction": 4,
+      "type": 2,
+      "max_stars": 4,
+      "group": 40201
+    },
+    "卡尔斯鲁厄": {
+      "rarity": 2,
+      "faction": 4,
+      "type": 2,
+      "max_stars": 4,
+      "group": 40202
+    },
+    "科隆": {
+      "rarity": 2,
+      "faction": 4,
+      "type": 2,
+      "max_stars": 4,
+      "group": 40203
+    },
+    "莱比锡": {
+      "rarity": 3,
+      "faction": 4,
+      "type": 2,
+      "max_stars": 5,
+      "group": 40204
+    },
+    "纽伦堡": {
+      "rarity": 4,
+      "faction": 4,
+      "type": 2,
+      "max_stars": 5,
+      "group": 40205
+    },
+    "马格德堡": {
+      "rarity": 5,
+      "faction": 4,
+      "type": 2,
+      "max_stars": 6,
+      "group": 40206
+    },
+    "埃姆登": {
+      "rarity": 5,
+      "faction": 4,
+      "type": 2,
+      "max_stars": 6,
+      "group": 40207
+    },
+    "埃尔宾": {
+      "rarity": 4,
+      "faction": 4,
+      "type": 2,
+      "max_stars": 5,
+      "group": 40208
+    },
+    "雷根斯堡": {
+      "rarity": 5,
+      "faction": 4,
+      "type": 2,
+      "max_stars": 6,
+      "group": 40210
+    },
+    "杜伊斯堡": {
+      "rarity": 5,
+      "faction": 4,
+      "type": 2,
+      "max_stars": 6,
+      "group": 40211
+    },
+    "科隆.改": {
+      "rarity": 2,
+      "faction": 4,
+      "type": 2,
+      "max_stars": 4,
+      "group": 40203
+    },
+    "希佩尔海军上将": {
+      "rarity": 4,
+      "faction": 4,
+      "type": 3,
+      "max_stars": 5,
+      "group": 40301
+    },
+    "布吕歇尔": {
+      "rarity": 5,
+      "faction": 4,
+      "type": 3,
+      "max_stars": 6,
+      "group": 40302
+    },
+    "欧根亲王": {
+      "rarity": 5,
+      "faction": 4,
+      "type": 3,
+      "max_stars": 6,
+      "group": 40303
+    },
+    "德意志": {
+      "rarity": 4,
+      "faction": 4,
+      "type": 3,
+      "max_stars": 5,
+      "group": 40304
+    },
+    "斯佩伯爵海军上将": {
+      "rarity": 4,
+      "faction": 4,
+      "type": 3,
+      "max_stars": 5,
+      "group": 40305
+    },
+    "希佩尔海军上将(μ兵装)": {
+      "rarity": 4,
+      "faction": 4,
+      "type": 3,
+      "max_stars": 5,
+      "group": 40307
+    },
+    "罗恩(μ兵装)": {
+      "rarity": 5,
+      "faction": 4,
+      "type": 3,
+      "max_stars": 6,
+      "group": 40308
+    },
+    "海因里希亲王": {
+      "rarity": 5,
+      "faction": 4,
+      "type": 3,
+      "max_stars": 6,
+      "group": 40309
+    },
+    "阿达尔伯特亲王": {
+      "rarity": 5,
+      "faction": 4,
+      "type": 3,
+      "max_stars": 6,
+      "group": 40310
+    },
+    "小欧根": {
+      "rarity": 4,
+      "faction": 4,
+      "type": 3,
+      "max_stars": 5,
+      "group": 40312
+    },
+    "小斯佩": {
+      "rarity": 4,
+      "faction": 4,
+      "type": 3,
+      "max_stars": 5,
+      "group": 40313
+    },
+    "腓特烈·卡尔": {
+      "rarity": 5,
+      "faction": 4,
+      "type": 3,
+      "max_stars": 6,
+      "group": 40314
+    },
+    "欧根亲王(μ兵装)": {
+      "rarity": 5,
+      "faction": 4,
+      "type": 3,
+      "max_stars": 6,
+      "group": 40315
+    },
+    "小埃吉尔": {
+      "rarity": 4,
+      "faction": 4,
+      "type": 18,
+      "max_stars": 5,
+      "group": 40316
+    },
+    "沙恩霍斯特": {
+      "rarity": 4,
+      "faction": 4,
+      "type": 4,
+      "max_stars": 5,
+      "group": 40401
+    },
+    "格奈森瑙": {
+      "rarity": 4,
+      "faction": 4,
+      "type": 4,
+      "max_stars": 5,
+      "group": 40402
+    },
+    "塞德利茨": {
+      "rarity": 5,
+      "faction": 4,
+      "type": 4,
+      "max_stars": 6,
+      "group": 40403
+    },
+    "吕佐夫": {
+      "rarity": 5,
+      "faction": 4,
+      "type": 4,
+      "max_stars": 6,
+      "group": 40404
+    },
+    "布伦希尔德": {
+      "rarity": 5,
+      "faction": 4,
+      "type": 4,
+      "max_stars": 6,
+      "group": 40405
+    },
+    "亚尔薇特": {
+      "rarity": 5,
+      "faction": 4,
+      "type": 4,
+      "max_stars": 6,
+      "group": 40406
+    },
+    "曾克海军上将": {
+      "rarity": 5,
+      "faction": 4,
+      "type": 4,
+      "max_stars": 6,
+      "group": 40407
+    },
+    "俾斯麦": {
+      "rarity": 5,
+      "faction": 4,
+      "type": 5,
+      "max_stars": 6,
+      "group": 40501
+    },
+    "提尔比茨": {
+      "rarity": 5,
+      "faction": 4,
+      "type": 5,
+      "max_stars": 6,
+      "group": 40502
+    },
+    "乌尔里希·冯·胡滕": {
+      "rarity": 6,
+      "faction": 4,
+      "type": 5,
+      "max_stars": 6,
+      "group": 40503
+    },
+    "图林根": {
+      "rarity": 4,
+      "faction": 4,
+      "type": 5,
+      "max_stars": 5,
+      "group": 40504
+    },
+    "俾斯麦Zwei": {
+      "rarity": 6,
+      "faction": 4,
+      "type": 5,
+      "max_stars": 6,
+      "group": 40505
+    },
+    "小腓特烈": {
+      "rarity": 4,
+      "faction": 4,
+      "type": 5,
+      "max_stars": 5,
+      "group": 40506
+    },
+    "威悉": {
+      "rarity": 4,
+      "faction": 4,
+      "type": 6,
+      "max_stars": 5,
+      "group": 40601
+    },
+    "易北": {
+      "rarity": 4,
+      "faction": 4,
+      "type": 6,
+      "max_stars": 5,
+      "group": 40602
+    },
+    "亚德": {
+      "rarity": 4,
+      "faction": 4,
+      "type": 6,
+      "max_stars": 5,
+      "group": 40603
+    },
+    "齐柏林伯爵": {
+      "rarity": 5,
+      "faction": 4,
+      "type": 7,
+      "max_stars": 6,
+      "group": 40701
+    },
+    "小齐柏林": {
+      "rarity": 4,
+      "faction": 4,
+      "type": 7,
+      "max_stars": 5,
+      "group": 40702
+    },
+    "彼得·史特拉塞": {
+      "rarity": 5,
+      "faction": 4,
+      "type": 7,
+      "max_stars": 6,
+      "group": 40703
+    },
+    "弗里茨·鲁梅": {
+      "rarity": 6,
+      "faction": 4,
+      "type": 7,
+      "max_stars": 6,
+      "group": 40704
+    },
+    "U-81": {
+      "rarity": 5,
+      "faction": 4,
+      "type": 8,
+      "max_stars": 6,
+      "group": 40801
+    },
+    "U-47": {
+      "rarity": 5,
+      "faction": 4,
+      "type": 8,
+      "max_stars": 6,
+      "group": 40802
+    },
+    "U-557": {
+      "rarity": 4,
+      "faction": 4,
+      "type": 8,
+      "max_stars": 5,
+      "group": 40803
+    },
+    "U-556": {
+      "rarity": 4,
+      "faction": 4,
+      "type": 8,
+      "max_stars": 5,
+      "group": 40804
+    },
+    "U-73": {
+      "rarity": 4,
+      "faction": 4,
+      "type": 8,
+      "max_stars": 5,
+      "group": 40805
+    },
+    "U-101": {
+      "rarity": 5,
+      "faction": 4,
+      "type": 8,
+      "max_stars": 6,
+      "group": 40806
+    },
+    "U-522": {
+      "rarity": 4,
+      "faction": 4,
+      "type": 8,
+      "max_stars": 5,
+      "group": 40807
+    },
+    "U-110": {
+      "rarity": 4,
+      "faction": 4,
+      "type": 8,
+      "max_stars": 5,
+      "group": 40808
+    },
+    "U-96": {
+      "rarity": 5,
+      "faction": 4,
+      "type": 8,
+      "max_stars": 6,
+      "group": 40809
+    },
+    "U-37": {
+      "rarity": 5,
+      "faction": 4,
+      "type": 8,
+      "max_stars": 6,
+      "group": 40810
+    },
+    "U-410": {
+      "rarity": 4,
+      "faction": 4,
+      "type": 8,
+      "max_stars": 5,
+      "group": 40811
+    },
+    "U-1206": {
+      "rarity": 4,
+      "faction": 4,
+      "type": 8,
+      "max_stars": 5,
+      "group": 40812
+    },
+    "U-31": {
+      "rarity": 4,
+      "faction": 4,
+      "type": 8,
+      "max_stars": 5,
+      "group": 40813
+    },
+    "U-552": {
+      "rarity": 5,
+      "faction": 4,
+      "type": 8,
+      "max_stars": 6,
+      "group": 40814
+    },
+    "罗恩": {
+      "rarity": 5,
+      "faction": 4,
+      "type": 3,
+      "max_stars": 6,
+      "group": 49901
+    },
+    "腓特烈大帝": {
+      "rarity": 6,
+      "faction": 4,
+      "type": 5,
+      "max_stars": 6,
+      "group": 49902
+    },
+    "美因茨": {
+      "rarity": 5,
+      "faction": 4,
+      "type": 2,
+      "max_stars": 6,
+      "group": 49903
+    },
+    "奥丁": {
+      "rarity": 5,
+      "faction": 4,
+      "type": 4,
+      "max_stars": 6,
+      "group": 49904
+    },
+    "埃吉尔": {
+      "rarity": 6,
+      "faction": 4,
+      "type": 18,
+      "max_stars": 6,
+      "group": 49905
+    },
+    "奥古斯特·冯·帕塞瓦尔": {
+      "rarity": 5,
+      "faction": 4,
+      "type": 7,
+      "max_stars": 6,
+      "group": 49906
+    },
+    "鲁普雷希特亲王": {
+      "rarity": 5,
+      "faction": 4,
+      "type": 4,
+      "max_stars": 6,
+      "group": 49907
+    },
+    "菲利克斯·舒尔茨": {
+      "rarity": 5,
+      "faction": 4,
+      "type": 1,
+      "max_stars": 6,
+      "group": 49908
+    },
+    "兴登堡": {
+      "rarity": 6,
+      "faction": 4,
+      "type": 3,
+      "max_stars": 6,
+      "group": 49909
+    },
+    "梅克伦堡": {
+      "rarity": 6,
+      "faction": 4,
+      "type": 5,
+      "max_stars": 6,
+      "group": 49910
+    },
+    "鞍山": {
+      "rarity": 4,
+      "faction": 5,
+      "type": 1,
+      "max_stars": 5,
+      "group": 50101
+    },
+    "抚顺": {
+      "rarity": 4,
+      "faction": 5,
+      "type": 1,
+      "max_stars": 5,
+      "group": 50102
+    },
+    "长春": {
+      "rarity": 4,
+      "faction": 5,
+      "type": 1,
+      "max_stars": 5,
+      "group": 50103
+    },
+    "太原": {
+      "rarity": 4,
+      "faction": 5,
+      "type": 1,
+      "max_stars": 5,
+      "group": 50104
+    },
+    "龙武": {
+      "rarity": 4,
+      "faction": 5,
+      "type": 1,
+      "max_stars": 5,
+      "group": 50105
+    },
+    "虎贲": {
+      "rarity": 4,
+      "faction": 5,
+      "type": 1,
+      "max_stars": 5,
+      "group": 50106
+    },
+    "飞云": {
+      "rarity": 4,
+      "faction": 5,
+      "type": 1,
+      "max_stars": 5,
+      "group": 50107
+    },
+    "长风": {
+      "rarity": 4,
+      "faction": 5,
+      "type": 1,
+      "max_stars": 5,
+      "group": 50108
+    },
+    "伏波": {
+      "rarity": 4,
+      "faction": 5,
+      "type": 1,
+      "max_stars": 5,
+      "group": 50109
+    },
+    "逸仙": {
+      "rarity": 4,
+      "faction": 5,
+      "type": 2,
+      "max_stars": 5,
+      "group": 50201
+    },
+    "宁海": {
+      "rarity": 4,
+      "faction": 5,
+      "type": 2,
+      "max_stars": 5,
+      "group": 50202
+    },
+    "平海": {
+      "rarity": 4,
+      "faction": 5,
+      "type": 2,
+      "max_stars": 5,
+      "group": 50203
+    },
+    "应瑞": {
+      "rarity": 4,
+      "faction": 5,
+      "type": 2,
+      "max_stars": 5,
+      "group": 50204
+    },
+    "肇和": {
+      "rarity": 4,
+      "faction": 5,
+      "type": 2,
+      "max_stars": 5,
+      "group": 50205
+    },
+    "海天": {
+      "rarity": 4,
+      "faction": 5,
+      "type": 2,
+      "max_stars": 5,
+      "group": 50207
+    },
+    "海圻": {
+      "rarity": 4,
+      "faction": 5,
+      "type": 2,
+      "max_stars": 5,
+      "group": 50208
+    },
+    "济安": {
+      "rarity": 4,
+      "faction": 5,
+      "type": 2,
+      "max_stars": 5,
+      "group": 50209
+    },
+    "海容": {
+      "rarity": 4,
+      "faction": 5,
+      "type": 2,
+      "max_stars": 5,
+      "group": 50210
+    },
+    "逸仙.改": {
+      "rarity": 4,
+      "faction": 5,
+      "type": 2,
+      "max_stars": 5,
+      "group": 50201
+    },
+    "海筹": {
+      "rarity": 4,
+      "faction": 5,
+      "type": 2,
+      "max_stars": 5,
+      "group": 50212
+    },
+    "应瑞.改": {
+      "rarity": 4,
+      "faction": 5,
+      "type": 2,
+      "max_stars": 5,
+      "group": 50204
+    },
+    "肇和.改": {
+      "rarity": 4,
+      "faction": 5,
+      "type": 2,
+      "max_stars": 5,
+      "group": 50205
+    },
+    "建武": {
+      "rarity": 5,
+      "faction": 5,
+      "type": 3,
+      "max_stars": 6,
+      "group": 50301
+    },
+    "彰武": {
+      "rarity": 5,
+      "faction": 5,
+      "type": 3,
+      "max_stars": 6,
+      "group": 50302
+    },
+    "寰昌": {
+      "rarity": 5,
+      "faction": 5,
+      "type": 4,
+      "max_stars": 6,
+      "group": 50401
+    },
+    "镇海": {
+      "rarity": 4,
+      "faction": 5,
+      "type": 6,
+      "max_stars": 5,
+      "group": 50601
+    },
+    "华甲": {
+      "rarity": 4,
+      "faction": 5,
+      "type": 6,
+      "max_stars": 5,
+      "group": 50602
+    },
+    "镇海.改": {
+      "rarity": 4,
+      "faction": 5,
+      "type": 6,
+      "max_stars": 5,
+      "group": 50601
+    },
+    "华甲·改": {
+      "rarity": 4,
+      "faction": 5,
+      "type": 6,
+      "max_stars": 5,
+      "group": 50602
+    },
+    "定安": {
+      "rarity": 4,
+      "faction": 5,
+      "type": 19,
+      "max_stars": 5,
+      "group": 51901
+    },
+    "鞍山.改": {
+      "rarity": 4,
+      "faction": 5,
+      "type": 20,
+      "max_stars": 5,
+      "group": 50101
+    },
+    "抚顺.改": {
+      "rarity": 4,
+      "faction": 5,
+      "type": 20,
+      "max_stars": 5,
+      "group": 50102
+    },
+    "长春.改": {
+      "rarity": 4,
+      "faction": 5,
+      "type": 20,
+      "max_stars": 5,
+      "group": 50103
+    },
+    "太原.改": {
+      "rarity": 4,
+      "faction": 5,
+      "type": 20,
+      "max_stars": 5,
+      "group": 50104
+    },
+    "哈尔滨": {
+      "rarity": 5,
+      "faction": 5,
+      "type": 2,
+      "max_stars": 6,
+      "group": 59901
+    },
+    "龙骑兵": {
+      "rarity": 4,
+      "faction": 6,
+      "type": 1,
+      "max_stars": 5,
+      "group": 60102
+    },
+    "文琴佐·焦贝蒂": {
+      "rarity": 4,
+      "faction": 6,
+      "type": 1,
+      "max_stars": 5,
+      "group": 60103
+    },
+    "西北风": {
+      "rarity": 4,
+      "faction": 6,
+      "type": 1,
+      "max_stars": 5,
+      "group": 60104
+    },
+    "西南风": {
+      "rarity": 4,
+      "faction": 6,
+      "type": 1,
+      "max_stars": 5,
+      "group": 60105
+    },
+    "尼科洛索·达雷科 ": {
+      "rarity": 4,
+      "faction": 6,
+      "type": 1,
+      "max_stars": 5,
+      "group": 60106
+    },
+    "庞培·马格诺": {
+      "rarity": 5,
+      "faction": 6,
+      "type": 1,
+      "max_stars": 6,
+      "group": 60107
+    },
+    "阿尔弗雷多·奥里亚尼": {
+      "rarity": 4,
+      "faction": 6,
+      "type": 1,
+      "max_stars": 5,
+      "group": 60108
+    },
+    "埃曼努埃尔·佩萨格诺": {
+      "rarity": 4,
+      "faction": 6,
+      "type": 1,
+      "max_stars": 5,
+      "group": 60109
+    },
+    "阿蒂利奥·雷戈洛": {
+      "rarity": 5,
+      "faction": 6,
+      "type": 1,
+      "max_stars": 6,
+      "group": 60110
+    },
+    "焦苏埃·卡尔杜齐 ": {
+      "rarity": 4,
+      "faction": 6,
+      "type": 1,
+      "max_stars": 5,
+      "group": 60111
+    },
+    "乌戈里诺·维瓦尔迪": {
+      "rarity": 4,
+      "faction": 6,
+      "type": 1,
+      "max_stars": 5,
+      "group": 60112
+    },
+    "阿布鲁齐公爵": {
+      "rarity": 5,
+      "faction": 6,
+      "type": 2,
+      "max_stars": 6,
+      "group": 60201
+    },
+    "朱塞佩·加里波第": {
+      "rarity": 5,
+      "faction": 6,
+      "type": 2,
+      "max_stars": 6,
+      "group": 60202
+    },
+    "巴托洛梅奥·科莱奥尼": {
+      "rarity": 4,
+      "faction": 6,
+      "type": 2,
+      "max_stars": 5,
+      "group": 60203
+    },
+    "阿尔贝托·迪·朱塞诺": {
+      "rarity": 4,
+      "faction": 6,
+      "type": 2,
+      "max_stars": 5,
+      "group": 60204
+    },
+    "特伦托": {
+      "rarity": 3,
+      "faction": 6,
+      "type": 3,
+      "max_stars": 5,
+      "group": 60301
+    },
+    "扎拉": {
+      "rarity": 5,
+      "faction": 6,
+      "type": 3,
+      "max_stars": 6,
+      "group": 60302
+    },
+    "波拉": {
+      "rarity": 5,
+      "faction": 6,
+      "type": 3,
+      "max_stars": 6,
+      "group": 60303
+    },
+    "的里雅斯特": {
+      "rarity": 4,
+      "faction": 6,
+      "type": 3,
+      "max_stars": 5,
+      "group": 60304
+    },
+    "博尔扎诺": {
+      "rarity": 4,
+      "faction": 6,
+      "type": 3,
+      "max_stars": 5,
+      "group": 60305
+    },
+    "戈里齐亚": {
+      "rarity": 5,
+      "faction": 6,
+      "type": 3,
+      "max_stars": 6,
+      "group": 60306
+    },
+    "维托里奥·维内托": {
+      "rarity": 5,
+      "faction": 6,
+      "type": 5,
+      "max_stars": 6,
+      "group": 60501
+    },
+    "利托里奥": {
+      "rarity": 5,
+      "faction": 6,
+      "type": 5,
+      "max_stars": 6,
+      "group": 60502
+    },
+    "罗马": {
+      "rarity": 5,
+      "faction": 6,
+      "type": 5,
+      "max_stars": 6,
+      "group": 60503
+    },
+    "加富尔伯爵": {
+      "rarity": 3,
+      "faction": 6,
+      "type": 5,
+      "max_stars": 5,
+      "group": 60505
+    },
+    "朱利奥·凯撒": {
+      "rarity": 4,
+      "faction": 6,
+      "type": 5,
+      "max_stars": 5,
+      "group": 60506
+    },
+    "安德烈亚·多利亚": {
+      "rarity": 4,
+      "faction": 6,
+      "type": 5,
+      "max_stars": 5,
+      "group": 60507
+    },
+    "拉斐尔": {
+      "rarity": 6,
+      "faction": 6,
+      "type": 5,
+      "max_stars": 6,
+      "group": 60508
+    },
+    "弗朗西斯科·卡拉乔洛": {
+      "rarity": 5,
+      "faction": 6,
+      "type": 5,
+      "max_stars": 6,
+      "group": 60509
+    },
+    "天鹰": {
+      "rarity": 5,
+      "faction": 6,
+      "type": 7,
+      "max_stars": 6,
+      "group": 60701
+    },
+    "帝国": {
+      "rarity": 5,
+      "faction": 6,
+      "type": 7,
+      "max_stars": 6,
+      "group": 60702
+    },
+    "托里拆利 ": {
+      "rarity": 4,
+      "faction": 6,
+      "type": 8,
+      "max_stars": 5,
+      "group": 60801
+    },
+    "莱昂纳多·达·芬奇": {
+      "rarity": 5,
+      "faction": 6,
+      "type": 8,
+      "max_stars": 6,
+      "group": 60802
+    },
+    "巴拉卡少校": {
+      "rarity": 5,
+      "faction": 6,
+      "type": 8,
+      "max_stars": 6,
+      "group": 60803
+    },
+    "马可波罗": {
+      "rarity": 5,
+      "faction": 6,
+      "type": 5,
+      "max_stars": 6,
+      "group": 69901
+    },
+    "那不勒斯": {
+      "rarity": 6,
+      "faction": 6,
+      "type": 3,
+      "max_stars": 6,
+      "group": 69902
+    },
+    "维托里奥·库尼贝尔蒂": {
+      "rarity": 5,
+      "faction": 6,
+      "type": 1,
+      "max_stars": 6,
+      "group": 69903
+    },
+    "威严": {
+      "rarity": 4,
+      "faction": 7,
+      "type": 1,
+      "max_stars": 5,
+      "group": 70102
+    },
+    "明斯克": {
+      "rarity": 4,
+      "faction": 7,
+      "type": 1,
+      "max_stars": 5,
+      "group": 70103
+    },
+    "塔什干": {
+      "rarity": 5,
+      "faction": 7,
+      "type": 1,
+      "max_stars": 6,
+      "group": 70104
+    },
+    "塔什干(μ兵装)": {
+      "rarity": 5,
+      "faction": 7,
+      "type": 1,
+      "max_stars": 6,
+      "group": 70105
+    },
+    "神速": {
+      "rarity": 4,
+      "faction": 7,
+      "type": 1,
+      "max_stars": 5,
+      "group": 70106
+    },
+    "雷鸣": {
+      "rarity": 4,
+      "faction": 7,
+      "type": 1,
+      "max_stars": 5,
+      "group": 70107
+    },
+    "洪亮": {
+      "rarity": 4,
+      "faction": 7,
+      "type": 1,
+      "max_stars": 5,
+      "group": 70108
+    },
+    "灵敏": {
+      "rarity": 4,
+      "faction": 7,
+      "type": 1,
+      "max_stars": 5,
+      "group": 70109
+    },
+    "基辅": {
+      "rarity": 5,
+      "faction": 7,
+      "type": 1,
+      "max_stars": 6,
+      "group": 70110
+    },
+    "火力": {
+      "rarity": 5,
+      "faction": 7,
+      "type": 1,
+      "max_stars": 6,
+      "group": 70111
+    },
+    "凶猛": {
+      "rarity": 4,
+      "faction": 7,
+      "type": 1,
+      "max_stars": 5,
+      "group": 70112
+    },
+    "顽皮": {
+      "rarity": 5,
+      "faction": 7,
+      "type": 1,
+      "max_stars": 6,
+      "group": 70113
+    },
+    "阿芙乐尔": {
+      "rarity": 5,
+      "faction": 7,
+      "type": 2,
+      "max_stars": 6,
+      "group": 70201
+    },
+    "水星纪念": {
+      "rarity": 4,
+      "faction": 7,
+      "type": 2,
+      "max_stars": 5,
+      "group": 70202
+    },
+    "恰巴耶夫": {
+      "rarity": 5,
+      "faction": 7,
+      "type": 2,
+      "max_stars": 6,
+      "group": 70203
+    },
+    "基洛夫": {
+      "rarity": 5,
+      "faction": 7,
+      "type": 2,
+      "max_stars": 6,
+      "group": 70204
+    },
+    "古比雪夫": {
+      "rarity": 5,
+      "faction": 7,
+      "type": 2,
+      "max_stars": 6,
+      "group": 70205
+    },
+    "摩尔曼斯克": {
+      "rarity": 4,
+      "faction": 7,
+      "type": 2,
+      "max_stars": 5,
+      "group": 70206
+    },
+    "伏罗希洛夫": {
+      "rarity": 5,
+      "faction": 7,
+      "type": 2,
+      "max_stars": 6,
+      "group": 70207
+    },
+    "奥列格": {
+      "rarity": 4,
+      "faction": 7,
+      "type": 2,
+      "max_stars": 5,
+      "group": 70208
+    },
+    "红色山脉": {
+      "rarity": 4,
+      "faction": 7,
+      "type": 2,
+      "max_stars": 5,
+      "group": 70209
+    },
+    "博加特里": {
+      "rarity": 4,
+      "faction": 7,
+      "type": 2,
+      "max_stars": 5,
+      "group": 70210
+    },
+    "水星纪念.改": {
+      "rarity": 4,
+      "faction": 7,
+      "type": 2,
+      "max_stars": 5,
+      "group": 70202
+    },
+    "塔林": {
+      "rarity": 5,
+      "faction": 7,
+      "type": 3,
+      "max_stars": 6,
+      "group": 70301
+    },
+    "库尔斯克": {
+      "rarity": 5,
+      "faction": 7,
+      "type": 3,
+      "max_stars": 6,
+      "group": 70302
+    },
+    "莫斯科": {
+      "rarity": 6,
+      "faction": 7,
+      "type": 3,
+      "max_stars": 6,
+      "group": 70303
+    },
+    "甘古特": {
+      "rarity": 4,
+      "faction": 7,
+      "type": 5,
+      "max_stars": 5,
+      "group": 70501
+    },
+    "苏维埃同盟": {
+      "rarity": 6,
+      "faction": 7,
+      "type": 5,
+      "max_stars": 6,
+      "group": 70502
+    },
+    "苏维埃贝拉罗斯": {
+      "rarity": 5,
+      "faction": 7,
+      "type": 5,
+      "max_stars": 6,
+      "group": 70504
+    },
+    "苏维埃罗西亚": {
+      "rarity": 5,
+      "faction": 7,
+      "type": 5,
+      "max_stars": 6,
+      "group": 70505
+    },
+    "阿尔汉格尔斯克": {
+      "rarity": 4,
+      "faction": 7,
+      "type": 5,
+      "max_stars": 5,
+      "group": 70506
+    },
+    "塞瓦斯托波尔": {
+      "rarity": 4,
+      "faction": 7,
+      "type": 5,
+      "max_stars": 5,
+      "group": 70507
+    },
+    "波尔塔瓦": {
+      "rarity": 4,
+      "faction": 7,
+      "type": 5,
+      "max_stars": 5,
+      "group": 70508
+    },
+    "喀山": {
+      "rarity": 5,
+      "faction": 7,
+      "type": 5,
+      "max_stars": 6,
+      "group": 70509
+    },
+    "伏尔加": {
+      "rarity": 5,
+      "faction": 7,
+      "type": 7,
+      "max_stars": 6,
+      "group": 70701
+    },
+    "喀琅施塔得": {
+      "rarity": 6,
+      "faction": 7,
+      "type": 18,
+      "max_stars": 6,
+      "group": 71801
+    },
+    "契卡洛夫": {
+      "rarity": 5,
+      "faction": 7,
+      "type": 7,
+      "max_stars": 6,
+      "group": 79901
+    },
+    "纳希莫夫海军上将": {
+      "rarity": 6,
+      "faction": 7,
+      "type": 7,
+      "max_stars": 6,
+      "group": 79902
+    },
+    "迪米特里·顿斯科伊": {
+      "rarity": 5,
+      "faction": 7,
+      "type": 2,
+      "max_stars": 6,
+      "group": 79903
+    },
+    "凯旋": {
+      "rarity": 5,
+      "faction": 8,
+      "type": 1,
+      "max_stars": 6,
+      "group": 80101
+    },
+    "福尔班": {
+      "rarity": 3,
+      "faction": 8,
+      "type": 1,
+      "max_stars": 5,
+      "group": 80102
+    },
+    "鲁莽": {
+      "rarity": 4,
+      "faction": 8,
+      "type": 1,
+      "max_stars": 5,
+      "group": 80103
+    },
+    "倔强": {
+      "rarity": 4,
+      "faction": 8,
+      "type": 1,
+      "max_stars": 5,
+      "group": 80104
+    },
+    "大胆": {
+      "rarity": 5,
+      "faction": 8,
+      "type": 1,
+      "max_stars": 6,
+      "group": 80105
+    },
+    "可怖": {
+      "rarity": 5,
+      "faction": 8,
+      "type": 1,
+      "max_stars": 6,
+      "group": 80107
+    },
+    "马耶·布雷泽": {
+      "rarity": 4,
+      "faction": 8,
+      "type": 1,
+      "max_stars": 5,
+      "group": 80108
+    },
+    "鲁莽(μ兵装)": {
+      "rarity": 4,
+      "faction": 8,
+      "type": 1,
+      "max_stars": 5,
+      "group": 80109
+    },
+    "埃米尔·贝尔汀": {
+      "rarity": 4,
+      "faction": 8,
+      "type": 2,
+      "max_stars": 5,
+      "group": 80201
+    },
+    "圣女贞德": {
+      "rarity": 5,
+      "faction": 8,
+      "type": 2,
+      "max_stars": 6,
+      "group": 80202
+    },
+    "吉尚": {
+      "rarity": 5,
+      "faction": 8,
+      "type": 2,
+      "max_stars": 6,
+      "group": 80203
+    },
+    "迪盖·特鲁因 ": {
+      "rarity": 4,
+      "faction": 8,
+      "type": 2,
+      "max_stars": 5,
+      "group": 80204
+    },
+    "絮弗伦": {
+      "rarity": 4,
+      "faction": 8,
+      "type": 3,
+      "max_stars": 5,
+      "group": 80301
+    },
+    "布伦努斯": {
+      "rarity": 5,
+      "faction": 8,
+      "type": 3,
+      "max_stars": 6,
+      "group": 80302
+    },
+    "迪凯纳": {
+      "rarity": 4,
+      "faction": 8,
+      "type": 3,
+      "max_stars": 5,
+      "group": 80303
+    },
+    "马塞纳": {
+      "rarity": 5,
+      "faction": 8,
+      "type": 4,
+      "max_stars": 6,
+      "group": 80401
+    },
+    "黎塞留": {
+      "rarity": 5,
+      "faction": 8,
+      "type": 5,
+      "max_stars": 6,
+      "group": 80501
+    },
+    "里昂": {
+      "rarity": 4,
+      "faction": 8,
+      "type": 5,
+      "max_stars": 5,
+      "group": 80502
+    },
+    "阿尔萨斯": {
+      "rarity": 6,
+      "faction": 8,
+      "type": 5,
+      "max_stars": 6,
+      "group": 80503
+    },
+    "贝劳森林": {
+      "rarity": 5,
+      "faction": 8,
+      "type": 6,
+      "max_stars": 6,
+      "group": 80601
+    },
+    "贝亚恩": {
+      "rarity": 5,
+      "faction": 8,
+      "type": 7,
+      "max_stars": 5,
+      "group": 80701
+    },
+    "伴尔维": {
+      "rarity": 5,
+      "faction": 8,
+      "type": 7,
+      "max_stars": 6,
+      "group": 80702
+    },
+    "絮库夫": {
+      "rarity": 4,
+      "faction": 8,
+      "type": 8,
+      "max_stars": 5,
+      "group": 80801
+    },
+    "路易九世": {
+      "rarity": 5,
+      "faction": 8,
+      "type": 3,
+      "max_stars": 6,
+      "group": 89901
+    },
+    "香槟": {
+      "rarity": 5,
+      "faction": 8,
+      "type": 5,
+      "max_stars": 6,
+      "group": 89902
+    },
+    "布雷斯特": {
+      "rarity": 6,
+      "faction": 8,
+      "type": 18,
+      "max_stars": 6,
+      "group": 89903
+    },
+    "贝亚德": {
+      "rarity": 5,
+      "faction": 8,
+      "type": 2,
+      "max_stars": 6,
+      "group": 89904
+    },
+    "？？？？？": {
+      "rarity": 5,
+      "faction": 1,
+      "type": 7,
+      "max_stars": 6,
+      "group": 10706
+    },
+    "J-10": {
+      "rarity": 6,
+      "faction": 5,
+      "type": 1,
+      "max_stars": 5,
+      "group": 10117
+    },
+    "J-15": {
+      "rarity": 6,
+      "faction": 5,
+      "type": 1,
+      "max_stars": 5,
+      "group": 10117
+    },
+    "FC-1": {
+      "rarity": 6,
+      "faction": 5,
+      "type": 1,
+      "max_stars": 5,
+      "group": 10117
+    },
+    "FC-31": {
+      "rarity": 6,
+      "faction": 5,
+      "type": 1,
+      "max_stars": 5,
+      "group": 10117
+    },
+    "J-20": {
+      "rarity": 6,
+      "faction": 5,
+      "type": 1,
+      "max_stars": 5,
+      "group": 10117
+    },
+    "飞龙·META": {
+      "rarity": 5,
+      "faction": 97,
+      "type": 7,
+      "max_stars": 6,
+      "group": 970701
+    },
+    "皇家方舟·META": {
+      "rarity": 5,
+      "faction": 97,
+      "type": 7,
+      "max_stars": 6,
+      "group": 970702
+    },
+    "格奈森瑙·META": {
+      "rarity": 5,
+      "faction": 97,
+      "type": 18,
+      "max_stars": 6,
+      "group": 970401
+    },
+    "孟菲斯·META": {
+      "rarity": 4,
+      "faction": 97,
+      "type": 2,
+      "max_stars": 5,
+      "group": 970202
+    },
+    "弗兰德尔": {
+      "rarity": 5,
+      "faction": 9,
+      "type": 18,
+      "max_stars": 6,
+      "group": 99902
+    },
+    "加斯科涅": {
+      "rarity": 5,
+      "faction": 2,
+      "type": 5,
+      "max_stars": 6,
+      "group": 99901
+    },
+    "皇家财富号": {
+      "rarity": 5,
+      "faction": 96,
+      "type": 22,
+      "max_stars": 6,
+      "group": 960001
+    },
+    "拉菲-传说级魔法师": {
+      "rarity": 5,
+      "faction": 98,
+      "type": 5,
+      "max_stars": 5,
+      "group": 10117
+    },
+    "标枪-传说级勇者": {
+      "rarity": 5,
+      "faction": 98,
+      "type": 1,
+      "max_stars": 5,
+      "group": 20121
+    },
+    "Z23- 传说级战士": {
+      "rarity": 5,
+      "faction": 98,
+      "type": 1,
+      "max_stars": 5,
+      "group": 40123
+    },
+    "绫波-传说级格斗家": {
+      "rarity": 5,
+      "faction": 98,
+      "type": 1,
+      "max_stars": 5,
+      "group": 30105
+    },
+    "抚顺-勇者": {
+      "rarity": 5,
+      "faction": 98,
+      "type": 2,
+      "max_stars": 5,
+      "group": 71801
+    },
+    "利物浦-神官": {
+      "rarity": 5,
+      "faction": 98,
+      "type": 7,
+      "max_stars": 5,
+      "group": 10738
+    },
+    "独角兽-见习神官": {
+      "rarity": 5,
+      "faction": 98,
+      "type": 6,
+      "max_stars": 5,
+      "group": 10738
+    },
+    "努比亚人-药剂师": {
+      "rarity": 5,
+      "faction": 98,
+      "type": 4,
+      "max_stars": 5,
+      "group": 70505
+    },
+    "鲁莽-王国军二级魔法师": {
+      "rarity": 5,
+      "faction": 98,
+      "type": 1,
+      "max_stars": 5,
+      "group": 80103
+    },
+    "倔强-王国军二级魔法师": {
+      "rarity": 5,
+      "faction": 98,
+      "type": 1,
+      "max_stars": 5,
+      "group": 80104
+    },
+    "阿尔及利亚-王国军方旗骑士": {
+      "rarity": 5,
+      "faction": 98,
+      "type": 3,
+      "max_stars": 5,
+      "group": 90302
+    },
+    "不屈-王国军守护骑士": {
+      "rarity": 5,
+      "faction": 98,
+      "type": 1,
+      "max_stars": 5,
+      "group": 90113
+    },
+    "圣女贞德-王国军圣女": {
+      "rarity": 5,
+      "faction": 98,
+      "type": 2,
+      "max_stars": 5,
+      "group": 80202
+    },
+    "前卫-王国军方旗骑士": {
+      "rarity": 5,
+      "faction": 98,
+      "type": 5,
+      "max_stars": 5,
+      "group": 20513
+    },
+    "霞飞-战斗天使": {
+      "rarity": 5,
+      "faction": 98,
+      "type": 7,
+      "max_stars": 5,
+      "group": 90701
+    },
+    "金布里机甲1号": {
+      "rarity": 5,
+      "faction": 98,
+      "type": 18,
+      "max_stars": 5,
+      "group": 71801
+    },
+    "金布里机甲2号": {
+      "rarity": 5,
+      "faction": 98,
+      "type": 18,
+      "max_stars": 5,
+      "group": 71801
+    },
+    "金布里机甲3号": {
+      "rarity": 5,
+      "faction": 98,
+      "type": 18,
+      "max_stars": 5,
+      "group": 71801
+    },
+    "腓特烈·卡尔-钢铁教会机械师": {
+      "rarity": 5,
+      "faction": 98,
+      "type": 7,
+      "max_stars": 5,
+      "group": 40314
+    },
+    "Z43—幼儿园": {
+      "rarity": 4,
+      "faction": 4,
+      "type": 1,
+      "max_stars": 5,
+      "group": 40143
+    },
+    "Z47—幼儿园": {
+      "rarity": 5,
+      "faction": 4,
+      "type": 1,
+      "max_stars": 6,
+      "group": 40147
+    },
+    "亚尔薇特—幼儿园": {
+      "rarity": 5,
+      "faction": 4,
+      "type": 4,
+      "max_stars": 6,
+      "group": 40406
+    },
+    "埃尔德里奇-幼儿园": {
+      "rarity": 5,
+      "faction": 1,
+      "type": 1,
+      "max_stars": 6,
+      "group": 10126
+    },
+    "约克公爵—幼儿园": {
+      "rarity": 5,
+      "faction": 2,
+      "type": 5,
+      "max_stars": 6,
+      "group": 20507
+    },
+    "果敢": {
+      "rarity": 5,
+      "faction": 9,
+      "type": 1,
+      "max_stars": 6,
+      "group": 90114
+    },
+    "迪普莱克斯": {
+      "rarity": 4,
+      "faction": 9,
+      "type": 3,
+      "max_stars": 5,
+      "group": 90303
+    },
+    "斯特拉斯堡": {
+      "rarity": 5,
+      "faction": 9,
+      "type": 4,
+      "max_stars": 6,
+      "group": 90402
+    },
+    "比叡·META（前排）": {
+      "rarity": 5,
+      "faction": 97,
+      "type": 18,
+      "max_stars": 6,
+      "group": 970405
+    },
+    "加贺BB（前排）": {
+      "rarity": 5,
+      "faction": 3,
+      "type": 18,
+      "max_stars": 6,
+      "group": 30507
+    },
+    "霞·META": {
+      "rarity": 4,
+      "faction": 97,
+      "type": 1,
+      "max_stars": 5,
+      "group": 970106
+    },
+    "神通·META": {
+      "rarity": 5,
+      "faction": 97,
+      "type": 2,
+      "max_stars": 6,
+      "group": 970205
+    },
+    "长门·META": {
+      "rarity": 5,
+      "faction": 97,
+      "type": 5,
+      "max_stars": 6,
+      "group": 970506
+    },
+    "天城CV": {
+      "rarity": 6,
+      "faction": 3,
+      "type": 7,
+      "max_stars": 6,
+      "group": 30715
+    },
+    "玛丽·西莱斯特号": {
+      "rarity": 5,
+      "faction": 96,
+      "type": 23,
+      "max_stars": 6,
+      "group": 960004
+    },
+    "圣马丁号": {
+      "rarity": 5,
+      "faction": 96,
+      "type": 24,
+      "max_stars": 6,
+      "group": 960002
+    },
+    "金鹿号": {
+      "rarity": 5,
+      "faction": 96,
+      "type": 24,
+      "max_stars": 6,
+      "group": 960003
+    },
+    "加里冒险号": {
+      "rarity": 5,
+      "faction": 96,
+      "type": 24,
+      "max_stars": 6,
+      "group": 960006
+    },
+    "朴茨茅斯冒险号": {
+      "rarity": 5,
+      "faction": 96,
+      "type": 23,
+      "max_stars": 6,
+      "group": 960010
+    },
+    "冈依沙瓦号": {
+      "rarity": 5,
+      "faction": 96,
+      "type": 24,
+      "max_stars": 6,
+      "group": 960007
+    },
+    "菈菈·撒塔琳·戴比路克": {
+      "rarity": 5,
+      "faction": 111,
+      "type": 3,
+      "max_stars": 6,
+      "group": 1110001
+    },
+    "娜娜·阿丝达·戴比路克": {
+      "rarity": 5,
+      "faction": 111,
+      "type": 1,
+      "max_stars": 6,
+      "group": 1110002
+    },
+    "梦梦·贝莉雅·戴比路克": {
+      "rarity": 5,
+      "faction": 111,
+      "type": 2,
+      "max_stars": 6,
+      "group": 1110003
+    },
+    "金色暗影": {
+      "rarity": 5,
+      "faction": 111,
+      "type": 5,
+      "max_stars": 6,
+      "group": 1110004
+    },
+    "西连寺春菜": {
+      "rarity": 4,
+      "faction": 111,
+      "type": 4,
+      "max_stars": 5,
+      "group": 1110005
+    },
+    "古手川唯": {
+      "rarity": 4,
+      "faction": 111,
+      "type": 7,
+      "max_stars": 5,
+      "group": 1110006
+    },
+    "焦苏埃·卡尔杜齐": {
+      "rarity": 4,
+      "faction": 6,
+      "type": 1,
+      "max_stars": 5,
+      "group": 60111
+    },
+    "马可波罗（王座 前排）": {
+      "rarity": 18,
+      "faction": 6,
+      "type": 18,
+      "max_stars": 6,
+      "group": 69901
+    },
+    "马可波罗（后排 原皮）": {
+      "rarity": 5,
+      "faction": 6,
+      "type": 5,
+      "max_stars": 6,
+      "group": 69901
+    },
+    "拉斐尔（前排）": {
+      "rarity": 18,
+      "faction": 6,
+      "type": 18,
+      "max_stars": 6,
+      "group": 60508
+    },
+    "拉斐尔（后排）": {
+      "rarity": 6,
+      "faction": 6,
+      "type": 5,
+      "max_stars": 6,
+      "group": 60508
+    },
+    "博尔扎诺·META": {
+      "rarity": 4,
+      "faction": 97,
+      "type": 3,
+      "max_stars": 5,
+      "group": 970306
+    },
+    "特伦托·META": {
+      "rarity": 4,
+      "faction": 97,
+      "type": 3,
+      "max_stars": 5,
+      "group": 970301
+    },
+    "朱利奥·凯撒·META": {
+      "rarity": 4,
+      "faction": 97,
+      "type": 5,
+      "max_stars": 5,
+      "group": 970507
+    },
+    "安德烈亚·多利亚·META": {
+      "rarity": 5,
+      "faction": 97,
+      "type": 5,
+      "max_stars": 6,
+      "group": 970508
+    },
+    "七省": {
+      "rarity": 5,
+      "faction": 11,
+      "type": 2,
+      "max_stars": 6,
+      "group": 110201
+    },
+    "埃佛森": {
+      "rarity": 4,
+      "faction": 11,
+      "type": 1,
+      "max_stars": 5,
+      "group": 110101
+    },
+    "声望·META": {
+      "rarity": 5,
+      "faction": 97,
+      "type": 4,
+      "max_stars": 6,
+      "group": 970404
+    },
+    "反击·META": {
+      "rarity": 5,
+      "faction": 97,
+      "type": 4,
+      "max_stars": 6,
+      "group": 970403
+    },
+    "构建者": {
+      "rarity": 6,
+      "faction": 99,
+      "type": 7,
+      "max_stars": 6,
+      "group": 10000
+    },
+    "BLACK★ROCK SHOOTER（后排）": {
+      "rarity": 5,
+      "faction": 112,
+      "type": 4,
+      "max_stars": 6,
+      "group": 1120001
+    },
+    "BLACK★ROCK SHOOTER（前排）": {
+      "rarity": 5,
+      "faction": 112,
+      "type": 3,
+      "max_stars": 6,
+      "group": 1120001
+    },
+    "死亡主宰": {
+      "rarity": 5,
+      "faction": 112,
+      "type": 7,
+      "max_stars": 6,
+      "group": 1120002
+    },
+    "抚顺.改（后排）": {
+      "rarity": 4,
+      "faction": 5,
+      "type": 21,
+      "max_stars": 5,
+      "group": 50102
+    },
+    "朴茨茅斯冒险号（后排）": {
+      "rarity": 5,
+      "faction": 96,
+      "type": 24,
+      "max_stars": 6,
+      "group": 960006
+    },
+    "艾菈·冯·杜勒": {
+      "rarity": 5,
+      "faction": 113,
+      "type": 2,
+      "max_stars": 6,
+      "group": 1130002
+    },
+    "蕾妮雅": {
+      "rarity": 5,
+      "faction": 113,
+      "type": 1,
+      "max_stars": 6,
+      "group": 1130004
+    },
+    "优米雅·利斯菲尔德": {
+      "rarity": 5,
+      "faction": 113,
+      "type": 6,
+      "max_stars": 6,
+      "group": 1130001
+    },
+    "妮娜·弗里德": {
+      "rarity": 5,
+      "faction": 113,
+      "type": 5,
+      "max_stars": 6,
+      "group": 1130003
+    },
+    "抚顺.改（前排）": {
+      "rarity": 4,
+      "faction": 5,
+      "type": 20,
+      "max_stars": 5,
+      "group": 50102
+    },
+    "云仙（后排）": {
+      "rarity": 6,
+      "faction": 3,
+      "type": 4,
+      "max_stars": 6,
+      "group": 30319
+    },
+    "伊404（前排）": {
+      "rarity": 6,
+      "faction": 3,
+      "type": 2,
+      "max_stars": 6,
+      "group": 31702
+    },
+    "和睦号": {
+      "rarity": 5,
+      "faction": 96,
+      "type": 23,
+      "max_stars": 6,
+      "group": 960009
+    },
+    "企业·META": {
+      "rarity": 5,
+      "faction": 97,
+      "type": 7,
+      "max_stars": 6,
+      "group": 10706
+    },
+    "马可波罗（圣座 前排）": {
+      "rarity": 18,
+      "faction": 6,
+      "type": 18,
+      "max_stars": 6,
+      "group": 69901
+    },
+    "基洛夫·META（后排）": {
+      "rarity": 4,
+      "faction": 97,
+      "type": 21,
+      "max_stars": 5,
+      "group": 50102
+    },
+    "仲裁者·提尔瑞特·VII": {
+      "rarity": 6,
+      "faction": 99,
+      "type": 5,
+      "max_stars": 6,
+      "group": 10000
+    },
+    "白上吹雪": {
+      "rarity": 5,
+      "faction": 105,
+      "type": 1,
+      "max_stars": 6,
+      "group": 1050001
+    },
+    "夏色祭": {
+      "rarity": 4,
+      "faction": 105,
+      "type": 1,
+      "max_stars": 5,
+      "group": 1050004
+    },
+    "百鬼绫目": {
+      "rarity": 4,
+      "faction": 105,
+      "type": 3,
+      "max_stars": 5,
+      "group": 1050005
+    },
+    "时乃空": {
+      "rarity": 5,
+      "faction": 105,
+      "type": 7,
+      "max_stars": 6,
+      "group": 1050002
+    },
+    "紫咲诗音": {
+      "rarity": 4,
+      "faction": 105,
+      "type": 6,
+      "max_stars": 5,
+      "group": 1050006
+    },
+    "大神澪": {
+      "rarity": 4,
+      "faction": 105,
+      "type": 7,
+      "max_stars": 5,
+      "group": 1050007
+    },
+    "湊阿库娅": {
+      "rarity": 5,
+      "faction": 105,
+      "type": 8,
+      "max_stars": 6,
+      "group": 1050003
+    },
+    "狂战帝王古立特": {
+      "rarity": 5,
+      "faction": 108,
+      "type": 2,
+      "max_stars": 6,
+      "group": 1080001
+    },
+    "莫加多尔": {
+      "rarity": 6,
+      "faction": 9,
+      "type": 1,
+      "max_stars": 6,
+      "group": 90107
+    },
+    "金狮": {
+      "rarity": 6,
+      "faction": 11,
+      "type": 3,
+      "max_stars": 6,
+      "group": 119901
+    },
+    "勒马尔": {
+      "rarity": 3,
+      "faction": 9,
+      "type": 1,
+      "max_stars": 5,
+      "group": 90101
+    },
+    "塔尔图": {
+      "rarity": 4,
+      "faction": 9,
+      "type": 1,
+      "max_stars": 5,
+      "group": 90102
+    },
+    "沃克兰": {
+      "rarity": 4,
+      "faction": 9,
+      "type": 1,
+      "max_stars": 5,
+      "group": 90103
+    },
+    "凯尔圣": {
+      "rarity": 4,
+      "faction": 9,
+      "type": 1,
+      "max_stars": 5,
+      "group": 90104
+    },
+    "花剑": {
+      "rarity": 4,
+      "faction": 9,
+      "type": 1,
+      "max_stars": 5,
+      "group": 90105
+    },
+    "重剑": {
+      "rarity": 4,
+      "faction": 9,
+      "type": 1,
+      "max_stars": 5,
+      "group": 90106
+    },
+    "恶毒": {
+      "rarity": 5,
+      "faction": 9,
+      "type": 1,
+      "max_stars": 6,
+      "group": 90111
+    },
+    "恶毒(μ兵装)": {
+      "rarity": 5,
+      "faction": 9,
+      "type": 1,
+      "max_stars": 6,
+      "group": 90112
+    },
+    "不屈": {
+      "rarity": 5,
+      "faction": 9,
+      "type": 1,
+      "max_stars": 6,
+      "group": 90113
+    },
+    "拉·加利索尼埃": {
+      "rarity": 4,
+      "faction": 9,
+      "type": 2,
+      "max_stars": 5,
+      "group": 90201
+    },
+    "马赛曲": {
+      "rarity": 5,
+      "faction": 9,
+      "type": 2,
+      "max_stars": 6,
+      "group": 90202
+    },
+    "福煦": {
+      "rarity": 4,
+      "faction": 9,
+      "type": 3,
+      "max_stars": 5,
+      "group": 90301
+    },
+    "阿尔及利亚": {
+      "rarity": 5,
+      "faction": 9,
+      "type": 3,
+      "max_stars": 6,
+      "group": 90302
+    },
+    "敦刻尔克": {
+      "rarity": 4,
+      "faction": 9,
+      "type": 4,
+      "max_stars": 5,
+      "group": 90401
+    },
+    "让·巴尔": {
+      "rarity": 5,
+      "faction": 9,
+      "type": 5,
+      "max_stars": 6,
+      "group": 90501
+    },
+    "克莱蒙梭": {
+      "rarity": 5,
+      "faction": 9,
+      "type": 5,
+      "max_stars": 6,
+      "group": 90502
+    },
+    "加斯科涅(μ兵装)": {
+      "rarity": 5,
+      "faction": 9,
+      "type": 5,
+      "max_stars": 6,
+      "group": 90503
+    },
+    "霞飞": {
+      "rarity": 5,
+      "faction": 9,
+      "type": 7,
+      "max_stars": 6,
+      "group": 90701
+    },
+    "维达号": {
+      "rarity": 4,
+      "faction": 96,
+      "type": 22,
+      "max_stars": 5,
+      "group": 960005
+    },
+    "幻想号": {
+      "rarity": 5,
+      "faction": 96,
+      "type": 23,
+      "max_stars": 6,
+      "group": 960008
+    },
+    "海豚号": {
+      "rarity": 4,
+      "faction": 96,
+      "type": 22,
+      "max_stars": 5,
+      "group": 960011
+    },
+    "安妮女王复仇号": {
+      "rarity": 5,
+      "faction": 96,
+      "type": 24,
+      "max_stars": 6,
+      "group": 960012
+    },
+    "莱姆号": {
+      "rarity": 5,
+      "faction": 96,
+      "type": 23,
+      "max_stars": 6,
+      "group": 960013
+    },
+    "珍珠号": {
+      "rarity": 5,
+      "faction": 96,
+      "type": 24,
+      "max_stars": 6,
+      "group": 960014
+    },
+    "皇家詹姆斯号": {
+      "rarity": 4,
+      "faction": 96,
+      "type": 23,
+      "max_stars": 5,
+      "group": 960015
+    },
+    "冒险号": {
+      "rarity": 4,
+      "faction": 96,
+      "type": 22,
+      "max_stars": 5,
+      "group": 960016
+    },
+    "猎人·META": {
+      "rarity": 4,
+      "faction": 97,
+      "type": 1,
+      "max_stars": 5,
+      "group": 970101
+    },
+    "命运女神·META": {
+      "rarity": 4,
+      "faction": 97,
+      "type": 1,
+      "max_stars": 5,
+      "group": 970102
+    },
+    "旗风·META": {
+      "rarity": 4,
+      "faction": 97,
+      "type": 1,
+      "max_stars": 5,
+      "group": 970103
+    },
+    "金伯利·META": {
+      "rarity": 4,
+      "faction": 97,
+      "type": 1,
+      "max_stars": 5,
+      "group": 970104
+    },
+    "吸血鬼·META": {
+      "rarity": 4,
+      "faction": 97,
+      "type": 1,
+      "max_stars": 5,
+      "group": 970105
+    },
+    "格伦维尔·META": {
+      "rarity": 4,
+      "faction": 97,
+      "type": 1,
+      "max_stars": 5,
+      "group": 970107
+    },
+    "江风·META": {
+      "rarity": 5,
+      "faction": 97,
+      "type": 1,
+      "max_stars": 6,
+      "group": 970108
+    },
+    "夕立·META": {
+      "rarity": 5,
+      "faction": 97,
+      "type": 1,
+      "max_stars": 6,
+      "group": 970109
+    },
+    "杜威·META": {
+      "rarity": 4,
+      "faction": 97,
+      "type": 1,
+      "max_stars": 5,
+      "group": 970110
+    },
+    "龙骑兵·META": {
+      "rarity": 4,
+      "faction": 97,
+      "type": 1,
+      "max_stars": 5,
+      "group": 970111
+    },
+    "海伦娜·META": {
+      "rarity": 5,
+      "faction": 97,
+      "type": 2,
+      "max_stars": 6,
+      "group": 970201
+    },
+    "谢菲尔德·META": {
+      "rarity": 4,
+      "faction": 97,
+      "type": 2,
+      "max_stars": 5,
+      "group": 970203
+    },
+    "拉·加利索尼埃·META": {
+      "rarity": 4,
+      "faction": 97,
+      "type": 2,
+      "max_stars": 5,
+      "group": 970204
+    },
+    "基洛夫·META": {
+      "rarity": 5,
+      "faction": 97,
+      "type": 2,
+      "max_stars": 6,
+      "group": 970206
+    },
+    "水星纪念·META": {
+      "rarity": 5,
+      "faction": 97,
+      "type": 2,
+      "max_stars": 6,
+      "group": 970207
+    },
+    "博伊西·META": {
+      "rarity": 4,
+      "faction": 97,
+      "type": 2,
+      "max_stars": 5,
+      "group": 970208
+    },
+    "克利夫兰·META": {
+      "rarity": 5,
+      "faction": 97,
+      "type": 2,
+      "max_stars": 6,
+      "group": 970209
+    },
+    "科隆·META": {
+      "rarity": 4,
+      "faction": 97,
+      "type": 2,
+      "max_stars": 5,
+      "group": 970210
+    },
+    "雷根斯堡·META": {
+      "rarity": 5,
+      "faction": 97,
+      "type": 2,
+      "max_stars": 6,
+      "group": 970211
+    },
+    "阿尔及利亚·META": {
+      "rarity": 5,
+      "faction": 97,
+      "type": 3,
+      "max_stars": 6,
+      "group": 970302
+    },
+    "福煦·META": {
+      "rarity": 4,
+      "faction": 97,
+      "type": 3,
+      "max_stars": 5,
+      "group": 970303
+    },
+    "威奇塔·META": {
+      "rarity": 5,
+      "faction": 97,
+      "type": 3,
+      "max_stars": 6,
+      "group": 970304
+    },
+    "希佩尔海军上将·META": {
+      "rarity": 5,
+      "faction": 97,
+      "type": 3,
+      "max_stars": 6,
+      "group": 970305
+    },
+    "沙恩霍斯特·META": {
+      "rarity": 5,
+      "faction": 97,
+      "type": 4,
+      "max_stars": 6,
+      "group": 970402
+    },
+    "比叡·META": {
+      "rarity": 5,
+      "faction": 97,
+      "type": 4,
+      "max_stars": 6,
+      "group": 970405
+    },
+    "敦刻尔克·META": {
+      "rarity": 4,
+      "faction": 97,
+      "type": 4,
+      "max_stars": 5,
+      "group": 970406
+    },
+    "扶桑·META": {
+      "rarity": 4,
+      "faction": 97,
+      "type": 5,
+      "max_stars": 5,
+      "group": 970501
+    },
+    "山城·META": {
+      "rarity": 4,
+      "faction": 97,
+      "type": 5,
+      "max_stars": 5,
+      "group": 970502
+    },
+    "亚利桑那·META": {
+      "rarity": 5,
+      "faction": 97,
+      "type": 5,
+      "max_stars": 6,
+      "group": 970503
+    },
+    "伊丽莎白女王·META": {
+      "rarity": 5,
+      "faction": 97,
+      "type": 5,
+      "max_stars": 6,
+      "group": 970504
+    },
+    "罗德尼·META": {
+      "rarity": 5,
+      "faction": 97,
+      "type": 5,
+      "max_stars": 6,
+      "group": 970505
+    },
+    "内华达·META": {
+      "rarity": 4,
+      "faction": 97,
+      "type": 5,
+      "max_stars": 5,
+      "group": 970509
+    },
+    "甘古特·META": {
+      "rarity": 5,
+      "faction": 97,
+      "type": 5,
+      "max_stars": 6,
+      "group": 970510
+    },
+    "飞鹰·META": {
+      "rarity": 4,
+      "faction": 97,
+      "type": 6,
+      "max_stars": 5,
+      "group": 970601
+    },
+    "隼鹰·META": {
+      "rarity": 4,
+      "faction": 97,
+      "type": 6,
+      "max_stars": 5,
+      "group": 970602
+    },
+    "普林斯顿·META": {
+      "rarity": 4,
+      "faction": 97,
+      "type": 6,
+      "max_stars": 5,
+      "group": 970603
+    },
+    "凤翔·META": {
+      "rarity": 4,
+      "faction": 97,
+      "type": 6,
+      "max_stars": 5,
+      "group": 970604
+    },
+    "苍龙·META": {
+      "rarity": 5,
+      "faction": 97,
+      "type": 7,
+      "max_stars": 6,
+      "group": 970703
+    },
+    "贝亚恩·META": {
+      "rarity": 5,
+      "faction": 97,
+      "type": 7,
+      "max_stars": 6,
+      "group": 970704
+    },
+    "大凤·META": {
+      "rarity": 5,
+      "faction": 97,
+      "type": 7,
+      "max_stars": 6,
+      "group": 970705
+    },
+    "大黄蜂·META": {
+      "rarity": 5,
+      "faction": 97,
+      "type": 7,
+      "max_stars": 6,
+      "group": 970706
+    },
+    "光荣·META": {
+      "rarity": 5,
+      "faction": 97,
+      "type": 7,
+      "max_stars": 6,
+      "group": 970707
+    },
+    "约克城·META": {
+      "rarity": 5,
+      "faction": 97,
+      "type": 7,
+      "max_stars": 6,
+      "group": 970708
+    },
+    "U-556·META": {
+      "rarity": 5,
+      "faction": 97,
+      "type": 8,
+      "max_stars": 6,
+      "group": 970801
+    },
+    "女灶神·META": {
+      "rarity": 4,
+      "faction": 97,
+      "type": 12,
+      "max_stars": 5,
+      "group": 971201
+    },
+    "黑暗界·META": {
+      "rarity": 4,
+      "faction": 97,
+      "type": 13,
+      "max_stars": 5,
+      "group": 971301
+    },
+    "涅普顿": {
+      "rarity": 4,
+      "faction": 101,
+      "type": 2,
+      "max_stars": 5,
+      "group": 1010001
+    },
+    "诺瓦露": {
+      "rarity": 4,
+      "faction": 101,
+      "type": 3,
+      "max_stars": 5,
+      "group": 1010002
+    },
+    "布兰": {
+      "rarity": 4,
+      "faction": 101,
+      "type": 1,
+      "max_stars": 5,
+      "group": 1010003
+    },
+    "贝露": {
+      "rarity": 4,
+      "faction": 101,
+      "type": 7,
+      "max_stars": 5,
+      "group": 1010004
+    },
+    "绀紫之心": {
+      "rarity": 5,
+      "faction": 101,
+      "type": 2,
+      "max_stars": 6,
+      "group": 1010005
+    },
+    "圣黑之心": {
+      "rarity": 5,
+      "faction": 101,
+      "type": 3,
+      "max_stars": 6,
+      "group": 1010006
+    },
+    "群白之心": {
+      "rarity": 5,
+      "faction": 101,
+      "type": 1,
+      "max_stars": 6,
+      "group": 1010007
+    },
+    "翡绿之心": {
+      "rarity": 5,
+      "faction": 101,
+      "type": 7,
+      "max_stars": 6,
+      "group": 1010008
+    },
+    "22": {
+      "rarity": 4,
+      "faction": 102,
+      "type": 1,
+      "max_stars": 5,
+      "group": 1020001
+    },
+    "33": {
+      "rarity": 4,
+      "faction": 102,
+      "type": 1,
+      "max_stars": 5,
+      "group": 1020002
+    },
+    "久远": {
+      "rarity": 5,
+      "faction": 103,
+      "type": 3,
+      "max_stars": 6,
+      "group": 1030001
+    },
+    "猫音": {
+      "rarity": 5,
+      "faction": 103,
+      "type": 1,
+      "max_stars": 6,
+      "group": 1030002
+    },
+    "露露缇耶": {
+      "rarity": 5,
+      "faction": 103,
+      "type": 2,
+      "max_stars": 6,
+      "group": 1030003
+    },
+    "乌璐露": {
+      "rarity": 4,
+      "faction": 103,
+      "type": 6,
+      "max_stars": 5,
+      "group": 1030004
+    },
+    "萨拉娜": {
+      "rarity": 4,
+      "faction": 103,
+      "type": 6,
+      "max_stars": 5,
+      "group": 1030005
+    },
+    "芙米露露": {
+      "rarity": 4,
+      "faction": 103,
+      "type": 7,
+      "max_stars": 5,
+      "group": 1030006
+    },
+    "绊爱": {
+      "rarity": 4,
+      "faction": 104,
+      "type": 1,
+      "max_stars": 5,
+      "group": 1040001
+    },
+    "绊爱·Elegant": {
+      "rarity": 5,
+      "faction": 104,
+      "type": 3,
+      "max_stars": 6,
+      "group": 1040002
+    },
+    "绊爱·Anniversary": {
+      "rarity": 5,
+      "faction": 104,
+      "type": 7,
+      "max_stars": 6,
+      "group": 1040003
+    },
+    "绊爱·SuperGamer": {
+      "rarity": 5,
+      "faction": 104,
+      "type": 5,
+      "max_stars": 6,
+      "group": 1040004
+    },
+    "玛莉萝丝": {
+      "rarity": 5,
+      "faction": 106,
+      "type": 1,
+      "max_stars": 6,
+      "group": 1060001
+    },
+    "穗香": {
+      "rarity": 5,
+      "faction": 106,
+      "type": 5,
+      "max_stars": 6,
+      "group": 1060002
+    },
+    "海咲": {
+      "rarity": 5,
+      "faction": 106,
+      "type": 2,
+      "max_stars": 6,
+      "group": 1060004
+    },
+    "凪咲": {
+      "rarity": 4,
+      "faction": 106,
+      "type": 5,
+      "max_stars": 5,
+      "group": 1060005
+    },
+    "女天狗": {
+      "rarity": 4,
+      "faction": 106,
+      "type": 7,
+      "max_stars": 5,
+      "group": 1060006
+    },
+    "莫妮卡": {
+      "rarity": 4,
+      "faction": 106,
+      "type": 2,
+      "max_stars": 5,
+      "group": 1060007
+    },
+    "露娜": {
+      "rarity": 5,
+      "faction": 106,
+      "type": 6,
+      "max_stars": 6,
+      "group": 1060008
+    },
+    "环": {
+      "rarity": 5,
+      "faction": 106,
+      "type": 4,
+      "max_stars": 6,
+      "group": 1060009
+    },
+    "伊莉丝": {
+      "rarity": 5,
+      "faction": 106,
+      "type": 7,
+      "max_stars": 6,
+      "group": 1060010
+    },
+    "雫": {
+      "rarity": 5,
+      "faction": 106,
+      "type": 5,
+      "max_stars": 6,
+      "group": 1060011
+    },
+    "香迪": {
+      "rarity": 5,
+      "faction": 106,
+      "type": 3,
+      "max_stars": 6,
+      "group": 1060012
+    },
+    "筑紫 ": {
+      "rarity": 5,
+      "faction": 106,
+      "type": 1,
+      "max_stars": 6,
+      "group": 1060013
+    },
+    "派蒂": {
+      "rarity": 5,
+      "faction": 106,
+      "type": 8,
+      "max_stars": 6,
+      "group": 1060014
+    },
+    "千乃": {
+      "rarity": 5,
+      "faction": 106,
+      "type": 2,
+      "max_stars": 6,
+      "group": 1060015
+    },
+    "天海春香": {
+      "rarity": 5,
+      "faction": 107,
+      "type": 2,
+      "max_stars": 6,
+      "group": 1070001
+    },
+    "如月千早": {
+      "rarity": 5,
+      "faction": 107,
+      "type": 7,
+      "max_stars": 6,
+      "group": 1070002
+    },
+    "水濑伊织": {
+      "rarity": 5,
+      "faction": 107,
+      "type": 5,
+      "max_stars": 6,
+      "group": 1070003
+    },
+    "三浦 梓": {
+      "rarity": 5,
+      "faction": 107,
+      "type": 3,
+      "max_stars": 6,
+      "group": 1070004
+    },
+    "秋月律子": {
+      "rarity": 4,
+      "faction": 107,
+      "type": 19,
+      "max_stars": 5,
+      "group": 1070005
+    },
+    "双海亚美": {
+      "rarity": 4,
+      "faction": 107,
+      "type": 8,
+      "max_stars": 5,
+      "group": 1070006
+    },
+    "双海真美": {
+      "rarity": 4,
+      "faction": 107,
+      "type": 8,
+      "max_stars": 5,
+      "group": 1070007
+    },
+    "宝多六花 ": {
+      "rarity": 5,
+      "faction": 108,
+      "type": 2,
+      "max_stars": 6,
+      "group": 1080001
+    },
+    "新条茜 ": {
+      "rarity": 5,
+      "faction": 108,
+      "type": 5,
+      "max_stars": 6,
+      "group": 1080002
+    },
+    "莲": {
+      "rarity": 4,
+      "faction": 108,
+      "type": 2,
+      "max_stars": 5,
+      "group": 1080003
+    },
+    "奈美子": {
+      "rarity": 4,
+      "faction": 108,
+      "type": 3,
+      "max_stars": 5,
+      "group": 1080004
+    },
+    "南梦芽": {
+      "rarity": 5,
+      "faction": 108,
+      "type": 3,
+      "max_stars": 6,
+      "group": 1080005
+    },
+    "飞鸟川千濑": {
+      "rarity": 5,
+      "faction": 108,
+      "type": 7,
+      "max_stars": 6,
+      "group": 1080006
+    },
+    "貉": {
+      "rarity": 4,
+      "faction": 108,
+      "type": 5,
+      "max_stars": 5,
+      "group": 1080007
+    },
+    "第二代": {
+      "rarity": 5,
+      "faction": 108,
+      "type": 10,
+      "max_stars": 6,
+      "group": 1080008
+    },
+    "公主": {
+      "rarity": 5,
+      "faction": 108,
+      "type": 19,
+      "max_stars": 6,
+      "group": 1080009
+    },
+    "莱莎琳·斯托特": {
+      "rarity": 5,
+      "faction": 109,
+      "type": 2,
+      "max_stars": 6,
+      "group": 1090001
+    },
+    "科洛蒂娅·巴兰茨": {
+      "rarity": 5,
+      "faction": 109,
+      "type": 6,
+      "max_stars": 6,
+      "group": 1090002
+    },
+    "帕特莉夏·阿贝尔海姆": {
+      "rarity": 5,
+      "faction": 109,
+      "type": 5,
+      "max_stars": 6,
+      "group": 1090003
+    },
+    "莉拉·德西亚斯": {
+      "rarity": 4,
+      "faction": 109,
+      "type": 3,
+      "max_stars": 5,
+      "group": 1090004
+    },
+    "赛莉·古劳斯": {
+      "rarity": 4,
+      "faction": 109,
+      "type": 7,
+      "max_stars": 5,
+      "group": 1090005
+    },
+    "卡菈·伊迪亚斯": {
+      "rarity": 5,
+      "faction": 109,
+      "type": 18,
+      "max_stars": 6,
+      "group": 1090006
+    },
+    "飞鸟": {
+      "rarity": 5,
+      "faction": 110,
+      "type": 2,
+      "max_stars": 6,
+      "group": 1100001
+    },
+    "斑鸠": {
+      "rarity": 5,
+      "faction": 110,
+      "type": 3,
+      "max_stars": 6,
+      "group": 1100002
+    },
+    "焰": {
+      "rarity": 5,
+      "faction": 110,
+      "type": 8,
+      "max_stars": 6,
+      "group": 1100003
+    },
+    "雪泉": {
+      "rarity": 5,
+      "faction": 110,
+      "type": 7,
+      "max_stars": 6,
+      "group": 1100004
+    },
+    "雪不归": {
+      "rarity": 5,
+      "faction": 110,
+      "type": 5,
+      "max_stars": 6,
+      "group": 1100005
+    },
+    "紫": {
+      "rarity": 4,
+      "faction": 110,
+      "type": 6,
+      "max_stars": 5,
+      "group": 1100006
+    },
+    "夕烧": {
+      "rarity": 4,
+      "faction": 110,
+      "type": 3,
+      "max_stars": 5,
+      "group": 1100007
+    },
+    "BLACK★ROCK SHOOTER": {
+      "rarity": 5,
+      "faction": 112,
+      "type": 4,
+      "max_stars": 6,
+      "group": 1120001
+    },
+    "DEAD MASTER": {
+      "rarity": 5,
+      "faction": 112,
+      "type": 7,
+      "max_stars": 6,
+      "group": 1120002
+    },
+    "赫斯缇雅": {
+      "rarity": 5,
+      "faction": 114,
+      "type": 12,
+      "max_stars": 6,
+      "group": 1140001
+    },
+    "琉·璃昂": {
+      "rarity": 5,
+      "faction": 114,
+      "type": 2,
+      "max_stars": 6,
+      "group": 1140002
+    },
+    "夜刀神十香": {
+      "rarity": 5,
+      "faction": 115,
+      "type": 3,
+      "max_stars": 6,
+      "group": 1150001
+    },
+    "鸢一折纸": {
+      "rarity": 5,
+      "faction": 115,
+      "type": 7,
+      "max_stars": 6,
+      "group": 1150002
+    },
+    "五河琴里": {
+      "rarity": 5,
+      "faction": 115,
+      "type": 5,
+      "max_stars": 6,
+      "group": 1150003
+    },
+    "四糸乃": {
+      "rarity": 5,
+      "faction": 115,
+      "type": 6,
+      "max_stars": 6,
+      "group": 1150004
+    },
+    "时崎狂三": {
+      "rarity": 5,
+      "faction": 115,
+      "type": 2,
+      "max_stars": 6,
+      "group": 1150005
+    },
+    "八舞耶俱矢·八舞夕弦": {
+      "rarity": 5,
+      "faction": 115,
+      "type": 2,
+      "max_stars": 6,
+      "group": 1150006
+    }
+  }
+}
