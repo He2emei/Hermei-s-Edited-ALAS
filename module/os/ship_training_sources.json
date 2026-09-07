@@ -1,0 +1,11 @@
+{
+  "repository": "https://github.com/AzurLaneTools/AzurLaneData",
+  "observed_main_commit": "4cca5c2437007b62d30a6235fcfc0c0203231378",
+  "retrieved": "2026-09-08",
+  "files": {
+    "ship_data_breakout.json": "8a7ca38619a33926e303f4c853134992cef98f6b04bde926db365c0d928ccb0a",
+    "ship_data_statistics.json": "6203bb1e27d91059009193acfbfa047ffa8fa9a5cd4df69b1205ce6c3f202cd5",
+    "ship_data_template.json": "3eb4fb260011bcb4b40867afc79759a84080b916e2f1de3e3480bc724f368978",
+    "task_data_template.json": "05b7b94d04d6d9ce98e8825f263607e9d56657b8b3db36baf6d4851e30b86095"
+  }
+}

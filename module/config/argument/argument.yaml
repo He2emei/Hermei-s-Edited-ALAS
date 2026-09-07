@@ -372,6 +372,7 @@ Commission:
     > shortest
   DoMajorCommission: false
 Tactical:
+  OptimizeBooks: false
   TacticalFilter: |-
     SameT4 > SameT3 > SameT2 > SameT1
     > BlueT2 > YellowT2 > RedT2
@@ -780,6 +781,13 @@ OpsiHazard1Leveling:
   YellowCoinsPreserve: 10000
   MeowfficerCallThreshold: 3000
   MeowfficerMonthEndThreshold: 200
+
+OpsiTraining:
+  Enable: false
+  CheckIntervalMinutes: 60
+  LastCheck:
+    value: 0
+    display: hide
 
 # =================== Island ====================
 
