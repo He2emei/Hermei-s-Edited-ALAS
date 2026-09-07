@@ -200,6 +200,7 @@ class GeneratedConfig:
     Commission_DoMajorCommission = False
 
     # Group `Tactical`
+    Tactical_OptimizeBooks = False
     Tactical_TacticalFilter = 'SameT4 > SameT3 > SameT2 > SameT1\n> BlueT2 > YellowT2 > RedT2\n> BlueT3 > YellowT3 > RedT3\n> BlueT4 > YellowT4 > RedT4\n> BlueT1 > YellowT1 > RedT1\n> first'
     Tactical_RapidTrainingSlot = 'do_not_use'  # do_not_use, slot_1, slot_2, slot_3, slot_4
 
@@ -459,6 +460,11 @@ class GeneratedConfig:
     OpsiHazard1Leveling_YellowCoinsPreserve = 10000
     OpsiHazard1Leveling_MeowfficerCallThreshold = 3000
     OpsiHazard1Leveling_MeowfficerMonthEndThreshold = 200
+
+    # Group `OpsiTraining`
+    OpsiTraining_Enable = False
+    OpsiTraining_CheckIntervalMinutes = 60
+    OpsiTraining_LastCheck = 0
 
     # Group `IslandProduction`
     IslandProduction_HardFloorItems = '{}'

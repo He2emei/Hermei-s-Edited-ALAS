@@ -11,13 +11,18 @@ from module.exception import ScriptError
 from module.handler.assets import GET_MISSION, MISSION_POPUP_ACK, MISSION_POPUP_GO, POPUP_CANCEL, POPUP_CONFIRM
 from module.logger import logger
 from module.map.map_grids import SelectedGrids
-from module.ocr.ocr import DigitCounter, Duration, Ocr
+from module.ocr.ocr import Digit, DigitCounter, Duration, Ocr
 from module.retire.assets import DOCK_CHECK, DOCK_EMPTY, SHIP_CONFIRM
-from module.retire.dock import CARD_GRIDS, CARD_LEVEL_GRIDS, Dock
+from module.retire.card_geometry import dock_cards
+from module.retire.dock import CARD_GRIDS, CARD_LEVEL_GRIDS, DOCK_SCROLL, Dock
 from module.tactical.assets import *
 from module.ui.assets import (BACK_ARROW, REWARD_CHECK, REWARD_GOTO_TACTICAL, TACTICAL_CHECK)
 from module.ui.page import page_reward
 from module.ui_white.assets import REWARD_2_WHITE, REWARD_GOTO_TACTICAL_WHITE
+from module.tactical.book_planner import (
+    plan_books,
+    remaining_from_projected_counter,
+)
 
 SKILL_GRIDS = ButtonGrid(origin=(315, 140), delta=(621, 132), button_shape=(621, 119), grid_shape=(1, 3), name='SKILL')
 if server.server != 'jp':
@@ -101,6 +106,63 @@ class ExpOnSkillSelect(Ocr):
 
 SKILL_EXP = ExpOnBookSelect(buttons=OCR_SKILL_EXP)
 BOOKS_GRID = ButtonGrid(origin=(213, 292), delta=(147, 117), button_shape=(98, 98), grid_shape=(6, 2))
+BOOK_COUNT_GRID = ButtonGrid(origin=(258, 347), delta=(147, 117), button_shape=(53, 51), grid_shape=(6, 2))
+BOOK_COUNT_OCR = Digit(BOOK_COUNT_GRID.buttons, letter=(255, 255, 255), threshold=64,
+                      name='TACTICAL_BOOK_COUNT')
+PROJECTED_MAX = object()
+
+
+class ProjectedSkillExpOcr(Ocr):
+    """Read the selected-book preview without discarding its green bonus."""
+
+    def __init__(self):
+        super().__init__(OCR_SKILL_EXP, alphabet='0123456789/', name='PROJECTED_SKILL_EXP')
+        self.max_ocr = Ocr(OCR_SKILL_EXP, alphabet='0123456789/MAX',
+                           name='PROJECTED_SKILL_MAX')
+
+    def pre_process(self, image):
+        r, g, b = cv2.split(image)
+        image = cv2.max(cv2.max(r, g), b)
+        image = 255 - image
+        if server.server == 'en':
+            length = 46
+        elif server.server == 'jp':
+            length = 55
+        else:
+            length = 42
+        return image_left_strip(image, threshold=105, length=length)
+
+    @staticmethod
+    def _green_value(image, button):
+        area = button.area if isinstance(button, Button) else button
+        roi = crop(image, area, copy=False)
+        hsv = rgb2hsv(roi)
+        mask = cv2.inRange(hsv, (60, 50, 50), (180, 100, 100))
+        columns = np.where(np.mean(mask, axis=0) > 0.5)[0]
+        if not len(columns):
+            return 0
+        left = max(0, columns[0] - 4)
+        right = min(roi.shape[1], columns[-1] + 5)
+        green = np.repeat(mask[:, left:right, None], 3, axis=2)
+        result = Digit([], letter=(255, 255, 255), threshold=64,
+                       name='PROJECTED_SKILL_GREEN').ocr([green], direct_ocr=True)
+        return result[0] if isinstance(result, list) else result
+
+    def ocr(self, image, direct_ocr=False):
+        raw = super().ocr(image, direct_ocr=direct_ocr)
+        max_raw = self.max_ocr.ocr(image, direct_ocr=direct_ocr)
+        if 'MAX' in max_raw.upper().replace(' ', ''):
+            return PROJECTED_MAX
+        match = re.search(r'(\d+)/(\d+)', raw)
+        if not match:
+            logger.warning(f'Unexpected projected skill OCR: {raw}')
+            return None
+        white_current = SKILL_EXP.ocr(image)[0]
+        green = self._green_value(image, self._buttons)
+        return white_current, green, int(match.group(2))
+
+
+PROJECTED_SKILL_EXP = ProjectedSkillExpOcr()
 BOOK_FILTER = Filter(
     regex=re.compile(
         '(same)?'
@@ -200,6 +262,9 @@ class RewardTacticalClass(Dock):
     tactical_finish = []
     dock_select_index = 0
 
+    def _tactical_book_optimization_enabled(self):
+        return bool(getattr(self.config, 'Tactical_OptimizeBooks', False))
+
     def _tactical_books_get(self, skip_first_screenshot=True):
         """
         Get books. Handle loadings, wait 10 times at max.
@@ -214,6 +279,7 @@ class RewardTacticalClass(Dock):
             out: TACTICAL_CLASS_START
         """
         prev = SelectedGrids([])
+        self._tactical_book_signature = None
         for n in range(1, 16):
             if skip_first_screenshot:
                 skip_first_screenshot = False
@@ -225,19 +291,36 @@ class RewardTacticalClass(Dock):
                 logger.info('Not in TACTICAL_CLASS_START anymore, exit')
                 return False
 
-            books = SelectedGrids([Book(self.device.image, button) for button in BOOKS_GRID.buttons]).select(valid=True)
+            all_books = [Book(self.device.image, button) for button in BOOKS_GRID.buttons]
+            if self._tactical_book_optimization_enabled():
+                counts = BOOK_COUNT_OCR.ocr(self.device.image)
+                if not isinstance(counts, list):
+                    counts = [counts]
+                for book, count in zip(all_books, counts):
+                    book.count = count if 1 <= count <= 99999 else 0
+            books = SelectedGrids(all_books).select(valid=True)
             self.books = books
+            if self._tactical_book_optimization_enabled():
+                genres = {book.genre for book in books if book.exp}
+                self.tactical_skill_genre = genres.pop() if len(genres) == 1 else None
             logger.attr('Book_count', books.count)
             logger.attr('Books', str(books))
 
             # End
-            if books and books.count == prev.count:
-                return books
-            else:
-                prev = books
-                if n % 3 == 0:
-                    self.device.sleep(3)
-                continue
+            if books:
+                if self._tactical_book_optimization_enabled():
+                    signature = tuple((book.genre, book.tier, book.count, book.exp) for book in books)
+                    previous_signature = getattr(self, '_tactical_book_signature', None)
+                    if signature == previous_signature:
+                        return books
+                    self._tactical_book_signature = signature
+                elif books.count == prev.count:
+                    return books
+
+            prev = books
+            if n % 3 == 0:
+                self.device.sleep(3)
+            continue
 
         logger.warning('No book found.')
         raise ScriptError('No book found, after 15 attempts.')
@@ -319,6 +402,66 @@ class RewardTacticalClass(Dock):
         logger.hr('Tactical books choose', level=2)
         if not self._tactical_books_get():
             return False
+
+        if self._tactical_book_optimization_enabled():
+            selected = next((book for book in self.books
+                             if book.check_selected(self.device.image)), None)
+            if selected is None:
+                logger.warning('Tactical book optimization cancelled: selected book is unknown')
+                self.device.click(TACTICAL_CLASS_CANCEL)
+                return False
+
+            projected = PROJECTED_SKILL_EXP.ocr(self.device.image)
+            if projected is PROJECTED_MAX:
+                candidates = [book for book in self.books
+                              if book.exp and book.genre == self.tactical_skill_genre]
+                if not candidates:
+                    logger.warning('Tactical book optimization cancelled: same-color stock is unknown')
+                    self.device.click(TACTICAL_CLASS_CANCEL)
+                    return False
+                smallest = min(candidates, key=lambda item: item.exp_value)
+                logger.warning('Projected skill preview is MAX; trying smallest same-color book')
+                self._tactical_book_select(smallest)
+                if not self._tactical_books_get(skip_first_screenshot=False):
+                    logger.warning('Tactical book optimization cancelled: refreshed stock is unavailable')
+                    self.device.click(TACTICAL_CLASS_CANCEL)
+                    return False
+                selected = next((book for book in self.books
+                                 if book.check_selected(self.device.image)), None)
+                if selected is None:
+                    logger.warning('Tactical book optimization cancelled: refreshed selection is unknown')
+                    self.device.click(TACTICAL_CLASS_CANCEL)
+                    return False
+                projected = PROJECTED_SKILL_EXP.ocr(self.device.image)
+                if projected is PROJECTED_MAX:
+                    self._tactical_book_select(selected)
+                    self.device.click(TACTICAL_CLASS_START)
+                    return True
+            if projected is None or projected is PROJECTED_MAX:
+                logger.warning('Tactical book optimization cancelled: projected skill OCR is invalid')
+                self.device.click(TACTICAL_CLASS_CANCEL)
+                return False
+            remaining = remaining_from_projected_counter(*projected, selected.exp_value)
+            plan = plan_books(
+                remaining,
+                self.books,
+                required_genre=getattr(self, 'tactical_skill_genre', None),
+            ) if remaining is not None else None
+            if plan is None or not plan.books:
+                reason = 'invalid skill XP OCR' if plan is None else plan.reason
+                logger.warning(f'Tactical book optimization cancelled: {reason}')
+                self.device.click(TACTICAL_CLASS_CANCEL)
+                return False
+            book = plan.books[0]
+            logger.info(
+                f'Tactical book plan: {len(plan.books)} course(s), '
+                f'{plan.total_xp} XP, overflow {plan.overflow}, '
+                f'{plan.total_hours} hours, complete={plan.complete}'
+            )
+            self._tactical_book_select(book)
+            logger.info(f'_tactical_books_choose -> {TACTICAL_CLASS_START}')
+            self.device.click(TACTICAL_CLASS_START)
+            return True
 
         self.device.click_record_clear()
         # Ensure first book is focused
@@ -414,8 +557,14 @@ class RewardTacticalClass(Dock):
             out: page_reward
         """
         logger.hr('Tactical class receive', level=1)
+        self.dock_select_index = 0
+        self.tactical_dock_page_count = 1
+        self.tactical_dock_page_fingerprints = set()
+        self.tactical_dock_expect_new_page = False
+        self.tactical_dock_filters_initialized = False
         received = False
-        study_finished = not self.config.AddNewStudent_Enable
+        student_enabled = self.config.AddNewStudent_Enable
+        study_finished = not student_enabled
         book_empty = False
         # tactical cards can't be loaded that fast, confirm if it's empty.
         empty_confirm = Timer(0.6, count=2).start()
@@ -536,6 +685,10 @@ class RewardTacticalClass(Dock):
                     if self._tactical_skill_choose():
                         pass
                     else:
+                        if self._tactical_advance_ship_candidate():
+                            self.device.click(BACK_ARROW)
+                            self.interval_reset([TACTICAL_CHECK, DOCK_CHECK, SKILL_CONFIRM])
+                            continue
                         study_finished = True
                         self.device.click(BACK_ARROW)
                 else:
@@ -623,37 +776,65 @@ class RewardTacticalClass(Dock):
 
         return True
 
-    def select_suitable_ship(self):
-        logger.hr(f'Select suitable ship')
+    def _tactical_advance_ship_candidate(self):
+        """Advance once after an all-MAX skill page, with a hard bound."""
+        next_index = self.dock_select_index + 1
+        if next_index >= len(getattr(self, 'tactical_dock_buttons', ())):
+            if server.server != 'cn':
+                logger.info('No more visible ship candidates after all skills were MAX')
+                return False
+            if getattr(self, 'tactical_dock_page_count', 1) >= 40:
+                logger.info('No more tactical dock pages after all skills were MAX')
+                return False
+            logger.info('Visible tactical dock page exhausted; next selection will scroll')
+        self.dock_select_index = next_index
+        logger.info(f'Advance to tactical ship candidate {next_index}')
+        return True
 
-        # Set if favorite from config
+    @staticmethod
+    def _tactical_available_ship_indices(levels, start=0):
+        """Return the contiguous loaded card range, excluding empty/locked slots."""
+        first_ship = next((i for i, level in enumerate(levels) if level > 0), len(levels))
+        first_empty = next(
+            (i for i, level in enumerate(levels[first_ship:], first_ship) if level == 0),
+            len(levels),
+        )
+        return range(max(start, first_ship), first_empty)
+
+    @staticmethod
+    def _tactical_dock_page_fingerprint(image):
+        """Fingerprint only the visible dock card area, excluding the scrollbar."""
+        card_area = crop(image, (90, 70, 1235, 510), copy=False)
+        return hash(card_area[::8, ::8].tobytes())
+
+    def _tactical_initialize_dock_filters(self):
+        """Apply AddNewStudent dock filters once per tactical run.
+
+        Reapplying the filter after an all-MAX skill page can return the dock to
+        its first viewport while dock_select_index still refers to the current
+        viewport. Keep the filter state stable while advancing candidates.
+        """
+        if getattr(self, 'tactical_dock_filters_initialized', False):
+            return
+
         self.dock_favourite_set(enable=self.config.AddNewStudent_Favorite, wait_loading=False)
-
-        # reset filter; naturally skip meta ships this way
         self.dock_filter_set(
             faction=[v for k, v in self.dock_filter.settings if k == 'faction' and v not in ['all', 'meta']]
         )
+        self.tactical_dock_filters_initialized = True
+
+    def select_suitable_ship(self):
+        logger.hr(f'Select suitable ship')
+
+        # Set favorite and reset filter only on the first dock entry of this run.
+        # Reapplying it after an all-MAX candidate can reset scrolling to the
+        # top while dock_select_index still belongs to the previous viewport.
+        self._tactical_initialize_dock_filters()
 
         # No ship in dock
         if self.appear(DOCK_EMPTY, offset=(30, 30)):
             logger.info('Dock is empty or favorite ships is empty')
             return False
-
-        # Ship cards may slow to show, like:
-        # [0, 0, 120, 120, 120, 120, 0, 0, 0, 0, 0, 0, 0, 0]
-        # [12, 0, 0, 120, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
-        # Wait until they turn into
-        # [120, 120, 120, 120, 120, 120, 120, 120, 120, 120, 120, 120, 120, 120]
-        level_ocr = LevelOcr(CARD_LEVEL_GRIDS.buttons, name='DOCK_LEVEL_OCR', threshold=64)
-        list_level = []
-        for _ in self.loop(timeout=1):
-            list_level = level_ocr.ocr(self.device.image)
-            first_ship = next((i for i, x in enumerate(list_level) if x > 0), len(list_level))
-            first_empty = next((i for i, x in enumerate(list_level) if x == 0), len(list_level))
-            if first_empty >= first_ship:
-                break
-        else:
-            logger.warning('Wait ship cards timeout')
 
         try:
             min_level = int(self.config.AddNewStudent_MinLevel)
@@ -664,15 +845,92 @@ class RewardTacticalClass(Dock):
             min_level = 1
         logger.attr('AddNewStudent_MinLevel', min_level)
 
-        should_select_button = None
-        for button, level in list(zip(CARD_GRIDS.buttons, list_level))[self.dock_select_index:]:
-            # Select ship LV > 1 only
-            if level >= min_level:
-                should_select_button = button
+        if server.server != 'cn':
+            actual_buttons = CARD_GRIDS.buttons
+            level_ocr = LevelOcr(CARD_LEVEL_GRIDS.buttons, name='DOCK_LEVEL_OCR', threshold=64)
+            list_level = []
+            for _ in self.loop(timeout=1):
+                list_level = level_ocr.ocr(self.device.image)
+                available = self._tactical_available_ship_indices(list_level)
+                if available.start < available.stop:
+                    break
+            else:
+                logger.warning('Wait ship cards timeout')
+                return False
+            self.tactical_dock_buttons = actual_buttons
+            candidate_indices = self._tactical_available_ship_indices(
+                list_level, self.dock_select_index
+            )
+            should_select_button = next(
+                (actual_buttons[index]
+                 for index in candidate_indices
+                 if list_level[index] >= min_level),
+                None,
+            )
+            if should_select_button is None:
+                logger.info(f'No ships with level >= {min_level} in dock')
+                return False
+        else:
+            should_select_button = None
+            actual_buttons = None
+
+        page_iterations = range(40) if server.server == 'cn' else (None,)
+        for _ in page_iterations:
+            if server.server != 'cn':
+                break
+            list_level = []
+            for _ in self.loop(timeout=1):
+                actual_buttons = dock_cards(self.device.image)
+                level_buttons = [button.crop((77, 5, 138, 27), name='DOCK_LEVEL_OCR')
+                                 for button in actual_buttons]
+                if not level_buttons:
+                    continue
+                level_ocr = LevelOcr(level_buttons, name='DOCK_LEVEL_OCR', threshold=64)
+                list_level = level_ocr.ocr(self.device.image)
+                available = self._tactical_available_ship_indices(list_level)
+                if available.start < available.stop:
+                    break
+            else:
+                logger.warning('Wait ship cards timeout')
+                return False
+
+            self.tactical_dock_buttons = actual_buttons
+            fingerprint = self._tactical_dock_page_fingerprint(self.device.image)
+            if self.tactical_dock_expect_new_page and fingerprint in self.tactical_dock_page_fingerprints:
+                logger.info('Dock page repeated after scroll, stop')
+                return False
+            self.tactical_dock_page_fingerprints.add(fingerprint)
+            self.tactical_dock_expect_new_page = False
+
+            candidate_indices = self._tactical_available_ship_indices(
+                list_level, self.dock_select_index
+            )
+            should_select_button = next(
+                (actual_buttons[index]
+                 for index in candidate_indices
+                 if list_level[index] >= min_level),
+                None,
+            )
+            if should_select_button is not None:
                 break
 
-        if should_select_button is None:
-            logger.info(f'No ships with level >= {min_level} in dock')
+            if not DOCK_SCROLL.appear(main=self) or DOCK_SCROLL.at_bottom(main=self):
+                logger.info(f'No ships with level >= {min_level} before dock bottom')
+                return False
+            if self.tactical_dock_page_count >= 40:
+                logger.info('Reached tactical dock page limit')
+                return False
+            if not DOCK_SCROLL.next_page(main=self, page=0.45, skip_first_screenshot=False):
+                logger.info('Dock did not advance to another page')
+                return False
+            self.device.sleep(0.6)
+            self.device.screenshot()
+            self.tactical_dock_page_count += 1
+            self.tactical_dock_expect_new_page = True
+            self.dock_select_index = 0
+
+        else:
+            logger.info('Reached tactical dock page limit')
             return False
 
         # select a ship
