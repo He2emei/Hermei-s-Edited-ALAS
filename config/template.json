@@ -1271,6 +1271,7 @@
       "ServerUpdate": "00:00"
     },
     "Tactical": {
+      "OptimizeBooks": false,
       "TacticalFilter": "SameT4 > SameT3 > SameT2 > SameT1\n> BlueT2 > YellowT2 > RedT2\n> BlueT3 > YellowT3 > RedT3\n> BlueT4 > YellowT4 > RedT4\n> BlueT1 > YellowT1 > RedT1\n> first",
       "RapidTrainingSlot": "do_not_use"
     },
@@ -1932,6 +1933,11 @@
     "OpsiFleet": {
       "Fleet": 1,
       "Submarine": false
+    },
+    "OpsiTraining": {
+      "Enable": false,
+      "CheckIntervalMinutes": 60,
+      "LastCheck": 0
     },
     "Storage": {
       "Storage": {}
