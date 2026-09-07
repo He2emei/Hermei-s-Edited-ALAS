@@ -1,0 +1,1922 @@
+{
+  "source": "AzurLaneTools/AzurLaneData CN/sharecfgdata/task_data_template.json",
+  "retrieved": "2026-09-08",
+  "tasks": {
+    "皇家先锋技术测试I": {
+      "kind": "experience",
+      "sub_type": 1041,
+      "target_id": [
+        [
+          2,
+          1
+        ],
+        [
+          2,
+          2
+        ],
+        [
+          2,
+          3
+        ],
+        [
+          2,
+          18
+        ],
+        [
+          2,
+          19
+        ],
+        [
+          2,
+          20
+        ]
+      ]
+    },
+    "大型技术理论I": {
+      "kind": "passive",
+      "sub_type": 110,
+      "target_id": "0"
+    },
+    "巡洋技术突破I": {
+      "kind": "material",
+      "sub_type": 1000,
+      "target_id": "18013"
+    },
+    "皇家先锋技术测试II": {
+      "kind": "experience",
+      "sub_type": 1041,
+      "target_id": [
+        [
+          2,
+          1
+        ],
+        [
+          2,
+          2
+        ],
+        [
+          2,
+          3
+        ],
+        [
+          2,
+          18
+        ],
+        [
+          2,
+          19
+        ],
+        [
+          2,
+          20
+        ]
+      ]
+    },
+    "大型技术理论II": {
+      "kind": "passive",
+      "sub_type": 110,
+      "target_id": "0"
+    },
+    "巡洋技术突破II": {
+      "kind": "material",
+      "sub_type": 1000,
+      "target_id": "18013"
+    },
+    "海王星舰体塑造I": {
+      "kind": "material",
+      "sub_type": 1002,
+      "target_id": "1"
+    },
+    "海王星舰体塑造II": {
+      "kind": "material",
+      "sub_type": 1000,
+      "target_id": "20001"
+    },
+    "皇家主力技术测试I": {
+      "kind": "experience",
+      "sub_type": 1041,
+      "target_id": [
+        [
+          2,
+          4
+        ],
+        [
+          2,
+          5
+        ],
+        [
+          2,
+          6
+        ],
+        [
+          2,
+          7
+        ],
+        [
+          2,
+          9
+        ],
+        [
+          2,
+          10
+        ],
+        [
+          2,
+          12
+        ],
+        [
+          2,
+          13
+        ],
+        [
+          2,
+          21
+        ]
+      ]
+    },
+    "战列技术突破I": {
+      "kind": "material",
+      "sub_type": 1000,
+      "target_id": "18022"
+    },
+    "皇家主力技术测试II": {
+      "kind": "experience",
+      "sub_type": 1041,
+      "target_id": [
+        [
+          2,
+          4
+        ],
+        [
+          2,
+          5
+        ],
+        [
+          2,
+          6
+        ],
+        [
+          2,
+          7
+        ],
+        [
+          2,
+          9
+        ],
+        [
+          2,
+          10
+        ],
+        [
+          2,
+          12
+        ],
+        [
+          2,
+          13
+        ],
+        [
+          2,
+          21
+        ],
+        [
+          6,
+          4
+        ],
+        [
+          6,
+          5
+        ],
+        [
+          6,
+          6
+        ],
+        [
+          6,
+          7
+        ],
+        [
+          6,
+          9
+        ],
+        [
+          6,
+          10
+        ],
+        [
+          6,
+          12
+        ],
+        [
+          6,
+          13
+        ],
+        [
+          6,
+          21
+        ]
+      ]
+    },
+    "战列技术突破II": {
+      "kind": "material",
+      "sub_type": 1000,
+      "target_id": "18023"
+    },
+    "君主舰体塑造I": {
+      "kind": "material",
+      "sub_type": 1002,
+      "target_id": "1"
+    },
+    "君主舰体塑造II": {
+      "kind": "material",
+      "sub_type": 1000,
+      "target_id": "20001"
+    },
+    "重樱先锋技术测试I": {
+      "kind": "experience",
+      "sub_type": 1041,
+      "target_id": [
+        [
+          3,
+          1
+        ],
+        [
+          3,
+          2
+        ],
+        [
+          3,
+          3
+        ],
+        [
+          3,
+          18
+        ],
+        [
+          3,
+          19
+        ],
+        [
+          3,
+          20
+        ]
+      ]
+    },
+    "重樱先锋技术测试II": {
+      "kind": "experience",
+      "sub_type": 1041,
+      "target_id": [
+        [
+          3,
+          1
+        ],
+        [
+          3,
+          2
+        ],
+        [
+          3,
+          3
+        ],
+        [
+          3,
+          18
+        ],
+        [
+          3,
+          19
+        ],
+        [
+          3,
+          20
+        ]
+      ]
+    },
+    "峦的舰体塑造I": {
+      "kind": "material",
+      "sub_type": 1002,
+      "target_id": "1"
+    },
+    "峦的舰体塑造II": {
+      "kind": "material",
+      "sub_type": 1000,
+      "target_id": "20001"
+    },
+    "重樱主力技术测试I": {
+      "kind": "experience",
+      "sub_type": 1041,
+      "target_id": [
+        [
+          3,
+          4
+        ],
+        [
+          3,
+          5
+        ],
+        [
+          3,
+          6
+        ],
+        [
+          3,
+          7
+        ],
+        [
+          3,
+          9
+        ],
+        [
+          3,
+          10
+        ],
+        [
+          3,
+          12
+        ],
+        [
+          3,
+          13
+        ],
+        [
+          3,
+          21
+        ]
+      ]
+    },
+    "重樱主力技术测试II": {
+      "kind": "experience",
+      "sub_type": 1041,
+      "target_id": [
+        [
+          3,
+          4
+        ],
+        [
+          3,
+          5
+        ],
+        [
+          3,
+          6
+        ],
+        [
+          3,
+          7
+        ],
+        [
+          3,
+          9
+        ],
+        [
+          3,
+          10
+        ],
+        [
+          3,
+          12
+        ],
+        [
+          3,
+          13
+        ],
+        [
+          3,
+          21
+        ]
+      ]
+    },
+    "侌的舰体塑造I": {
+      "kind": "material",
+      "sub_type": 1002,
+      "target_id": "1"
+    },
+    "侌的舰体塑造II": {
+      "kind": "material",
+      "sub_type": 1000,
+      "target_id": "20001"
+    },
+    "铁血先锋技术测试I": {
+      "kind": "experience",
+      "sub_type": 1041,
+      "target_id": [
+        [
+          4,
+          1
+        ],
+        [
+          4,
+          2
+        ],
+        [
+          4,
+          3
+        ],
+        [
+          4,
+          18
+        ],
+        [
+          4,
+          19
+        ],
+        [
+          4,
+          20
+        ]
+      ]
+    },
+    "铁血先锋技术测试II": {
+      "kind": "experience",
+      "sub_type": 1041,
+      "target_id": [
+        [
+          4,
+          1
+        ],
+        [
+          4,
+          2
+        ],
+        [
+          4,
+          3
+        ],
+        [
+          4,
+          18
+        ],
+        [
+          4,
+          19
+        ],
+        [
+          4,
+          20
+        ]
+      ]
+    },
+    "{namecode:439}舰体塑造I": {
+      "kind": "material",
+      "sub_type": 1002,
+      "target_id": "1"
+    },
+    "{namecode:439}舰体塑造II": {
+      "kind": "material",
+      "sub_type": 1000,
+      "target_id": "20001"
+    },
+    "白鹰先锋技术测试I": {
+      "kind": "experience",
+      "sub_type": 1041,
+      "target_id": [
+        [
+          1,
+          1
+        ],
+        [
+          1,
+          2
+        ],
+        [
+          1,
+          3
+        ],
+        [
+          1,
+          18
+        ],
+        [
+          1,
+          19
+        ],
+        [
+          1,
+          20
+        ]
+      ]
+    },
+    "白鹰先锋技术测试II": {
+      "kind": "experience",
+      "sub_type": 1041,
+      "target_id": [
+        [
+          1,
+          1
+        ],
+        [
+          1,
+          2
+        ],
+        [
+          1,
+          3
+        ],
+        [
+          1,
+          18
+        ],
+        [
+          1,
+          19
+        ],
+        [
+          1,
+          20
+        ]
+      ]
+    },
+    "路易九世舰体塑造I": {
+      "kind": "material",
+      "sub_type": 1002,
+      "target_id": "1"
+    },
+    "路易九世舰体塑造II": {
+      "kind": "material",
+      "sub_type": 1000,
+      "target_id": "20001"
+    },
+    "先锋技术突破I": {
+      "kind": "material",
+      "sub_type": 1000,
+      "target_id": "18013"
+    },
+    "先锋技术突破II": {
+      "kind": "material",
+      "sub_type": 1000,
+      "target_id": "18013"
+    },
+    "西雅图舰体塑造I": {
+      "kind": "material",
+      "sub_type": 1002,
+      "target_id": "1"
+    },
+    "西雅图舰体塑造II": {
+      "kind": "material",
+      "sub_type": 1000,
+      "target_id": "20001"
+    },
+    "白鹰主力技术测试I": {
+      "kind": "experience",
+      "sub_type": 1041,
+      "target_id": [
+        [
+          1,
+          4
+        ],
+        [
+          1,
+          5
+        ],
+        [
+          1,
+          6
+        ],
+        [
+          1,
+          7
+        ],
+        [
+          1,
+          9
+        ],
+        [
+          1,
+          10
+        ],
+        [
+          1,
+          12
+        ],
+        [
+          1,
+          13
+        ],
+        [
+          1,
+          21
+        ]
+      ]
+    },
+    "主力技术突破I": {
+      "kind": "material",
+      "sub_type": 1000,
+      "target_id": "18023"
+    },
+    "白鹰主力技术测试II": {
+      "kind": "experience",
+      "sub_type": 1041,
+      "target_id": [
+        [
+          1,
+          4
+        ],
+        [
+          1,
+          5
+        ],
+        [
+          1,
+          6
+        ],
+        [
+          1,
+          7
+        ],
+        [
+          1,
+          9
+        ],
+        [
+          1,
+          10
+        ],
+        [
+          1,
+          12
+        ],
+        [
+          1,
+          13
+        ],
+        [
+          1,
+          21
+        ]
+      ]
+    },
+    "主力技术突破II": {
+      "kind": "material",
+      "sub_type": 1000,
+      "target_id": "18023"
+    },
+    "佐治亚舰体塑造I": {
+      "kind": "material",
+      "sub_type": 1002,
+      "target_id": "1"
+    },
+    "佐治亚舰体塑造II": {
+      "kind": "material",
+      "sub_type": 1000,
+      "target_id": "20001"
+    },
+    "苝舰体塑造I": {
+      "kind": "material",
+      "sub_type": 1002,
+      "target_id": "1"
+    },
+    "苝舰体塑造II": {
+      "kind": "material",
+      "sub_type": 1000,
+      "target_id": "20001"
+    },
+    "猉舰体塑造I": {
+      "kind": "material",
+      "sub_type": 1002,
+      "target_id": "1"
+    },
+    "猉舰体塑造II": {
+      "kind": "material",
+      "sub_type": 1000,
+      "target_id": "20001"
+    },
+    "铁血主力技术测试I": {
+      "kind": "experience",
+      "sub_type": 1041,
+      "target_id": [
+        [
+          4,
+          4
+        ],
+        [
+          4,
+          5
+        ],
+        [
+          4,
+          6
+        ],
+        [
+          4,
+          7
+        ],
+        [
+          4,
+          9
+        ],
+        [
+          4,
+          10
+        ],
+        [
+          4,
+          12
+        ],
+        [
+          4,
+          13
+        ],
+        [
+          4,
+          21
+        ]
+      ]
+    },
+    "铁血主力技术测试II": {
+      "kind": "experience",
+      "sub_type": 1041,
+      "target_id": [
+        [
+          4,
+          4
+        ],
+        [
+          4,
+          5
+        ],
+        [
+          4,
+          6
+        ],
+        [
+          4,
+          7
+        ],
+        [
+          4,
+          9
+        ],
+        [
+          4,
+          10
+        ],
+        [
+          4,
+          12
+        ],
+        [
+          4,
+          13
+        ],
+        [
+          4,
+          21
+        ]
+      ]
+    },
+    "{namecode:440}舰体塑造I": {
+      "kind": "material",
+      "sub_type": 1002,
+      "target_id": "1"
+    },
+    "{namecode:440}舰体塑造II": {
+      "kind": "material",
+      "sub_type": 1000,
+      "target_id": "20001"
+    },
+    "加斯科涅舰体塑造I": {
+      "kind": "material",
+      "sub_type": 1002,
+      "target_id": "1"
+    },
+    "加斯科涅舰体塑造II": {
+      "kind": "material",
+      "sub_type": 1000,
+      "target_id": "20001"
+    },
+    "柴郡舰体塑造I": {
+      "kind": "material",
+      "sub_type": 1002,
+      "target_id": "1"
+    },
+    "柴郡舰体塑造II": {
+      "kind": "material",
+      "sub_type": 1000,
+      "target_id": "20001"
+    },
+    "德雷克舰体塑造I": {
+      "kind": "material",
+      "sub_type": 1002,
+      "target_id": "1"
+    },
+    "德雷克舰体塑造II": {
+      "kind": "material",
+      "sub_type": 1000,
+      "target_id": "20001"
+    },
+    "{namecode:479}舰体塑造I": {
+      "kind": "material",
+      "sub_type": 1002,
+      "target_id": "1"
+    },
+    "{namecode:479}舰体塑造II": {
+      "kind": "material",
+      "sub_type": 1000,
+      "target_id": "20001"
+    },
+    "{namecode:486}舰体塑造I": {
+      "kind": "material",
+      "sub_type": 1002,
+      "target_id": "1"
+    },
+    "{namecode:486}舰体塑造II": {
+      "kind": "material",
+      "sub_type": 1000,
+      "target_id": "20001"
+    },
+    "香槟舰体塑造I": {
+      "kind": "material",
+      "sub_type": 1002,
+      "target_id": "1"
+    },
+    "香槟舰体塑造II": {
+      "kind": "material",
+      "sub_type": 1000,
+      "target_id": "20001"
+    },
+    "安克雷奇舰体塑造I": {
+      "kind": "material",
+      "sub_type": 1002,
+      "target_id": "1"
+    },
+    "安克雷奇舰体塑造II": {
+      "kind": "material",
+      "sub_type": 1000,
+      "target_id": "20001"
+    },
+    "鹫舰体塑造I": {
+      "kind": "material",
+      "sub_type": 1002,
+      "target_id": "1"
+    },
+    "鹫舰体塑造II": {
+      "kind": "material",
+      "sub_type": 1000,
+      "target_id": "20001"
+    },
+    "{namecode:480}舰体塑造I": {
+      "kind": "material",
+      "sub_type": 1002,
+      "target_id": "1"
+    },
+    "{namecode:480}舰体塑造II": {
+      "kind": "material",
+      "sub_type": 1000,
+      "target_id": "20001"
+    },
+    "{namecode:481}舰体塑造I": {
+      "kind": "material",
+      "sub_type": 1002,
+      "target_id": "1"
+    },
+    "{namecode:481}舰体塑造II": {
+      "kind": "material",
+      "sub_type": 1000,
+      "target_id": "20001"
+    },
+    "马可波罗舰体塑造I": {
+      "kind": "material",
+      "sub_type": 1002,
+      "target_id": "1"
+    },
+    "马可波罗舰体塑造II": {
+      "kind": "material",
+      "sub_type": 1000,
+      "target_id": "20001"
+    },
+    "普利茅斯舰体塑造I": {
+      "kind": "material",
+      "sub_type": 1002,
+      "target_id": "1"
+    },
+    "普利茅斯舰体塑造II": {
+      "kind": "material",
+      "sub_type": 1000,
+      "target_id": "20001"
+    },
+    "{namecode:484}舰体塑造I": {
+      "kind": "material",
+      "sub_type": 1002,
+      "target_id": "1"
+    },
+    "{namecode:484}舰体塑造II": {
+      "kind": "material",
+      "sub_type": 1000,
+      "target_id": "20001"
+    },
+    "东煌先锋技术测试I": {
+      "kind": "experience",
+      "sub_type": 1041,
+      "target_id": [
+        [
+          5,
+          1
+        ],
+        [
+          5,
+          2
+        ],
+        [
+          5,
+          3
+        ],
+        [
+          5,
+          18
+        ],
+        [
+          5,
+          19
+        ],
+        [
+          5,
+          20
+        ]
+      ]
+    },
+    "东煌先锋技术测试II": {
+      "kind": "experience",
+      "sub_type": 1041,
+      "target_id": [
+        [
+          5,
+          1
+        ],
+        [
+          5,
+          2
+        ],
+        [
+          5,
+          3
+        ],
+        [
+          5,
+          18
+        ],
+        [
+          5,
+          19
+        ],
+        [
+          5,
+          20
+        ]
+      ]
+    },
+    "滨江舰体塑造I": {
+      "kind": "material",
+      "sub_type": 1002,
+      "target_id": "1"
+    },
+    "滨江舰体塑造II": {
+      "kind": "material",
+      "sub_type": 1000,
+      "target_id": "20001"
+    },
+    "撒丁主力技术测试I": {
+      "kind": "experience",
+      "sub_type": 1041,
+      "target_id": [
+        [
+          6,
+          4
+        ],
+        [
+          6,
+          5
+        ],
+        [
+          6,
+          6
+        ],
+        [
+          6,
+          7
+        ],
+        [
+          6,
+          9
+        ],
+        [
+          6,
+          10
+        ],
+        [
+          6,
+          12
+        ],
+        [
+          6,
+          13
+        ],
+        [
+          6,
+          21
+        ],
+        [
+          7,
+          4
+        ],
+        [
+          7,
+          5
+        ],
+        [
+          7,
+          6
+        ],
+        [
+          7,
+          7
+        ],
+        [
+          7,
+          9
+        ],
+        [
+          7,
+          10
+        ],
+        [
+          7,
+          12
+        ],
+        [
+          7,
+          13
+        ],
+        [
+          7,
+          21
+        ]
+      ]
+    },
+    "契卡洛夫舰体塑造I": {
+      "kind": "material",
+      "sub_type": 1002,
+      "target_id": "1"
+    },
+    "契卡洛夫舰体塑造II": {
+      "kind": "material",
+      "sub_type": 1000,
+      "target_id": "20001"
+    },
+    "鸢尾主力技术测试I": {
+      "kind": "experience",
+      "sub_type": 1041,
+      "target_id": [
+        [
+          8,
+          4
+        ],
+        [
+          8,
+          5
+        ],
+        [
+          8,
+          6
+        ],
+        [
+          8,
+          7
+        ],
+        [
+          8,
+          9
+        ],
+        [
+          8,
+          10
+        ],
+        [
+          8,
+          12
+        ],
+        [
+          8,
+          13
+        ],
+        [
+          8,
+          21
+        ],
+        [
+          9,
+          4
+        ],
+        [
+          9,
+          5
+        ],
+        [
+          9,
+          6
+        ],
+        [
+          9,
+          7
+        ],
+        [
+          9,
+          9
+        ],
+        [
+          9,
+          10
+        ],
+        [
+          9,
+          12
+        ],
+        [
+          9,
+          13
+        ],
+        [
+          9,
+          21
+        ]
+      ]
+    },
+    "鸢尾先锋技术测试II": {
+      "kind": "experience",
+      "sub_type": 1041,
+      "target_id": [
+        [
+          8,
+          1
+        ],
+        [
+          8,
+          2
+        ],
+        [
+          8,
+          3
+        ],
+        [
+          8,
+          18
+        ],
+        [
+          8,
+          19
+        ],
+        [
+          8,
+          20
+        ],
+        [
+          9,
+          1
+        ],
+        [
+          9,
+          2
+        ],
+        [
+          9,
+          3
+        ],
+        [
+          9,
+          18
+        ],
+        [
+          9,
+          19
+        ],
+        [
+          9,
+          20
+        ]
+      ]
+    },
+    "布雷斯特舰体塑造I": {
+      "kind": "material",
+      "sub_type": 1002,
+      "target_id": "1"
+    },
+    "布雷斯特舰体塑造II": {
+      "kind": "material",
+      "sub_type": 1000,
+      "target_id": "20001"
+    },
+    "奇尔沙治舰体塑造I": {
+      "kind": "material",
+      "sub_type": 1002,
+      "target_id": "1"
+    },
+    "奇尔沙治舰体塑造II": {
+      "kind": "material",
+      "sub_type": 1000,
+      "target_id": "20001"
+    },
+    "{namecode:292}舰体塑造I": {
+      "kind": "material",
+      "sub_type": 1002,
+      "target_id": "1"
+    },
+    "{namecode:292}舰体塑造II": {
+      "kind": "material",
+      "sub_type": 1000,
+      "target_id": "20001"
+    },
+    "{namecode:518}舰体塑造I": {
+      "kind": "material",
+      "sub_type": 1002,
+      "target_id": "1"
+    },
+    "{namecode:518}舰体塑造II": {
+      "kind": "material",
+      "sub_type": 1000,
+      "target_id": "20001"
+    },
+    "{namecode:521}舰体塑造I": {
+      "kind": "material",
+      "sub_type": 1002,
+      "target_id": "1"
+    },
+    "{namecode:521}舰体塑造II": {
+      "kind": "material",
+      "sub_type": 1000,
+      "target_id": "20001"
+    },
+    "鸢尾主力技术测试II": {
+      "kind": "experience",
+      "sub_type": 1041,
+      "target_id": [
+        [
+          8,
+          4
+        ],
+        [
+          8,
+          5
+        ],
+        [
+          8,
+          6
+        ],
+        [
+          8,
+          7
+        ],
+        [
+          8,
+          9
+        ],
+        [
+          8,
+          10
+        ],
+        [
+          8,
+          12
+        ],
+        [
+          8,
+          13
+        ],
+        [
+          8,
+          21
+        ],
+        [
+          9,
+          4
+        ],
+        [
+          9,
+          5
+        ],
+        [
+          9,
+          6
+        ],
+        [
+          9,
+          7
+        ],
+        [
+          9,
+          9
+        ],
+        [
+          9,
+          10
+        ],
+        [
+          9,
+          12
+        ],
+        [
+          9,
+          13
+        ],
+        [
+          9,
+          21
+        ]
+      ]
+    },
+    "弗兰德尔舰体塑造I": {
+      "kind": "material",
+      "sub_type": 1002,
+      "target_id": "1"
+    },
+    "弗兰德尔舰体塑造II": {
+      "kind": "material",
+      "sub_type": 1000,
+      "target_id": "20001"
+    },
+    "哈尔福德舰体塑造I": {
+      "kind": "material",
+      "sub_type": 1002,
+      "target_id": "1"
+    },
+    "哈尔福德舰体塑造II": {
+      "kind": "material",
+      "sub_type": 1000,
+      "target_id": "20001"
+    },
+    "{namecode:299}舰体塑造I": {
+      "kind": "material",
+      "sub_type": 1002,
+      "target_id": "1"
+    },
+    "{namecode:299}舰体塑造II": {
+      "kind": "material",
+      "sub_type": 1000,
+      "target_id": "20001"
+    },
+    "撒丁先锋技术测试I": {
+      "kind": "experience",
+      "sub_type": 1041,
+      "target_id": [
+        [
+          6,
+          1
+        ],
+        [
+          6,
+          2
+        ],
+        [
+          6,
+          3
+        ],
+        [
+          6,
+          18
+        ],
+        [
+          6,
+          19
+        ],
+        [
+          6,
+          20
+        ]
+      ]
+    },
+    "撒丁先锋技术测试II": {
+      "kind": "experience",
+      "sub_type": 1041,
+      "target_id": [
+        [
+          6,
+          1
+        ],
+        [
+          6,
+          2
+        ],
+        [
+          6,
+          3
+        ],
+        [
+          6,
+          18
+        ],
+        [
+          6,
+          19
+        ],
+        [
+          6,
+          20
+        ]
+      ]
+    },
+    "那不勒斯舰体塑造I": {
+      "kind": "material",
+      "sub_type": 1002,
+      "target_id": "1"
+    },
+    "那不勒斯舰体塑造II": {
+      "kind": "material",
+      "sub_type": 1000,
+      "target_id": "20001"
+    },
+    "北联主力技术测试I": {
+      "kind": "experience",
+      "sub_type": 1041,
+      "target_id": [
+        [
+          6,
+          4
+        ],
+        [
+          6,
+          5
+        ],
+        [
+          6,
+          6
+        ],
+        [
+          6,
+          7
+        ],
+        [
+          6,
+          9
+        ],
+        [
+          6,
+          10
+        ],
+        [
+          6,
+          12
+        ],
+        [
+          6,
+          13
+        ],
+        [
+          6,
+          21
+        ],
+        [
+          7,
+          4
+        ],
+        [
+          7,
+          5
+        ],
+        [
+          7,
+          6
+        ],
+        [
+          7,
+          7
+        ],
+        [
+          7,
+          9
+        ],
+        [
+          7,
+          10
+        ],
+        [
+          7,
+          12
+        ],
+        [
+          7,
+          13
+        ],
+        [
+          7,
+          21
+        ]
+      ]
+    },
+    "北联主力技术测试II": {
+      "kind": "experience",
+      "sub_type": 1041,
+      "target_id": [
+        [
+          6,
+          4
+        ],
+        [
+          6,
+          5
+        ],
+        [
+          6,
+          6
+        ],
+        [
+          6,
+          7
+        ],
+        [
+          6,
+          9
+        ],
+        [
+          6,
+          10
+        ],
+        [
+          6,
+          12
+        ],
+        [
+          6,
+          13
+        ],
+        [
+          6,
+          21
+        ],
+        [
+          7,
+          4
+        ],
+        [
+          7,
+          5
+        ],
+        [
+          7,
+          6
+        ],
+        [
+          7,
+          7
+        ],
+        [
+          7,
+          9
+        ],
+        [
+          7,
+          10
+        ],
+        [
+          7,
+          12
+        ],
+        [
+          7,
+          13
+        ],
+        [
+          7,
+          21
+        ]
+      ]
+    },
+    "纳希莫夫海军上将舰体塑造I": {
+      "kind": "material",
+      "sub_type": 1002,
+      "target_id": "1"
+    },
+    "纳希莫夫海军上将舰体塑造II": {
+      "kind": "material",
+      "sub_type": 1000,
+      "target_id": "20001"
+    },
+    "鸢尾先锋技术测试I": {
+      "kind": "experience",
+      "sub_type": 1041,
+      "target_id": [
+        [
+          8,
+          1
+        ],
+        [
+          8,
+          2
+        ],
+        [
+          8,
+          3
+        ],
+        [
+          8,
+          18
+        ],
+        [
+          8,
+          19
+        ],
+        [
+          8,
+          20
+        ],
+        [
+          9,
+          1
+        ],
+        [
+          9,
+          2
+        ],
+        [
+          9,
+          3
+        ],
+        [
+          9,
+          18
+        ],
+        [
+          9,
+          19
+        ],
+        [
+          9,
+          20
+        ]
+      ]
+    },
+    "贝亚德舰体塑造I": {
+      "kind": "material",
+      "sub_type": 1002,
+      "target_id": "1"
+    },
+    "贝亚德舰体塑造II": {
+      "kind": "material",
+      "sub_type": 1000,
+      "target_id": "20001"
+    },
+    "堪萨斯舰体塑造I": {
+      "kind": "material",
+      "sub_type": 1002,
+      "target_id": "1"
+    },
+    "堪萨斯舰体塑造II": {
+      "kind": "material",
+      "sub_type": 1000,
+      "target_id": "20001"
+    },
+    "{namecode:550}舰体塑造I": {
+      "kind": "material",
+      "sub_type": 1002,
+      "target_id": "1"
+    },
+    "{namecode:550}舰体塑造II": {
+      "kind": "material",
+      "sub_type": 1000,
+      "target_id": "20001"
+    },
+    "维托里奥·库尼贝尔蒂舰体塑造I": {
+      "kind": "material",
+      "sub_type": 1002,
+      "target_id": "1"
+    },
+    "维托里奥·库尼贝尔蒂舰体塑造II": {
+      "kind": "material",
+      "sub_type": 1000,
+      "target_id": "20001"
+    },
+    "北联先锋技术测试I": {
+      "kind": "experience",
+      "sub_type": 1041,
+      "target_id": [
+        [
+          7,
+          1
+        ],
+        [
+          7,
+          2
+        ],
+        [
+          7,
+          3
+        ],
+        [
+          7,
+          18
+        ],
+        [
+          7,
+          19
+        ],
+        [
+          7,
+          20
+        ]
+      ]
+    },
+    "北联先锋技术测试II": {
+      "kind": "experience",
+      "sub_type": 1041,
+      "target_id": [
+        [
+          7,
+          1
+        ],
+        [
+          7,
+          2
+        ],
+        [
+          7,
+          3
+        ],
+        [
+          7,
+          18
+        ],
+        [
+          7,
+          19
+        ],
+        [
+          7,
+          20
+        ]
+      ]
+    },
+    "迪米特里·顿斯科伊舰体塑造I": {
+      "kind": "material",
+      "sub_type": 1002,
+      "target_id": "1"
+    },
+    "迪米特里·顿斯科伊舰体塑造II": {
+      "kind": "material",
+      "sub_type": 1000,
+      "target_id": "20001"
+    },
+    "郁金先锋技术测试I": {
+      "kind": "experience",
+      "sub_type": 1041,
+      "target_id": [
+        [
+          11,
+          1
+        ],
+        [
+          11,
+          2
+        ],
+        [
+          11,
+          3
+        ],
+        [
+          11,
+          18
+        ],
+        [
+          11,
+          19
+        ],
+        [
+          11,
+          20
+        ],
+        [
+          4,
+          1
+        ],
+        [
+          4,
+          2
+        ],
+        [
+          4,
+          3
+        ],
+        [
+          4,
+          18
+        ],
+        [
+          4,
+          19
+        ],
+        [
+          4,
+          20
+        ],
+        [
+          6,
+          1
+        ],
+        [
+          6,
+          2
+        ],
+        [
+          6,
+          3
+        ],
+        [
+          6,
+          18
+        ],
+        [
+          6,
+          19
+        ],
+        [
+          6,
+          20
+        ]
+      ]
+    },
+    "郁金先锋技术测试II": {
+      "kind": "experience",
+      "sub_type": 1041,
+      "target_id": [
+        [
+          11,
+          1
+        ],
+        [
+          11,
+          2
+        ],
+        [
+          11,
+          3
+        ],
+        [
+          11,
+          18
+        ],
+        [
+          11,
+          19
+        ],
+        [
+          11,
+          20
+        ],
+        [
+          4,
+          1
+        ],
+        [
+          4,
+          2
+        ],
+        [
+          4,
+          3
+        ],
+        [
+          4,
+          18
+        ],
+        [
+          4,
+          19
+        ],
+        [
+          4,
+          20
+        ],
+        [
+          6,
+          1
+        ],
+        [
+          6,
+          2
+        ],
+        [
+          6,
+          3
+        ],
+        [
+          6,
+          18
+        ],
+        [
+          6,
+          19
+        ],
+        [
+          6,
+          20
+        ]
+      ]
+    },
+    "金狮舰体塑造I": {
+      "kind": "material",
+      "sub_type": 1002,
+      "target_id": "1"
+    },
+    "金狮舰体塑造II": {
+      "kind": "material",
+      "sub_type": 1000,
+      "target_id": "20001"
+    }
+  }
+}
