@@ -350,11 +350,6 @@ class MapOperation(MysteryHandler, FleetPreparation, Retirement, FastForwardHand
             prep_button = MAP_PREPARATION
         elif self.appear(MAP_PREPARATION_HARD, offset=(20, 20)):
             prep_button = MAP_PREPARATION_HARD
-        # CN text rendering can score just below the default 0.85 threshold.
-        # Keep the fallback local to this button and protect it with color matching.
-        elif self.config.SERVER == 'cn' and self.match_template_color(
-                MAP_PREPARATION, offset=(20, 20), similarity=0.8):
-            prep_button = MAP_PREPARATION
         else:
             self.map_clear_percentage_prev = -1
             self.map_clear_percentage_timer.reset()
