@@ -2,6 +2,10 @@ import os
 import sys
 import unittest
 
+# Preserve the real modules, including Image's plugin registry, when the WebUI
+# import temporarily installs its lightweight PIL shim.
+_pil_modules = {name: module for name, module in sys.modules.items()
+                if name in ('PIL', 'PIL.Image')}
 from module.webui.process_manager import ProcessManager
 from module.webui.fake_pil_module import remove_fake_pil_module
 
@@ -9,6 +13,7 @@ from module.webui.fake_pil_module import remove_fake_pil_module
 # process_manager intentionally installs a lightweight PIL shim for WebUI
 # startup. Do not leak that import-side effect into unrelated tests.
 remove_fake_pil_module()
+sys.modules.update(_pil_modules)
 
 
 class InvalidStream:
