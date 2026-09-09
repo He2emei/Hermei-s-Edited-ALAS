@@ -8,6 +8,7 @@ from module.logger import logger
 from module.notify.napcat import send_notification
 from module.reward.assets import *
 from module.reward.coin_resource import CoinResourceStatus, read_coin_storage
+from module.reward.exp_books import check_exp_book_warning
 from module.ui.navbar import Navbar
 from module.ui.page import page_main, page_mission, page_reward
 from module.ui.ui import UI
@@ -356,6 +357,10 @@ class Reward(UI):
             oil=self.config.Reward_CollectOil,
             coin=self.config.Reward_CollectCoin,
             exp=self.config.Reward_CollectExp)
+        try:
+            check_exp_book_warning(self.config, self.device)
+        except Exception as exc:
+            logger.warning(f'Experience book warning check failed: {exc}')
         self.ui_goto(page_main)
         self.reward_mission(daily=self.config.Reward_CollectMission,
                             weekly=self.config.Reward_CollectWeeklyMission)

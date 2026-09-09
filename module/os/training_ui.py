@@ -22,6 +22,8 @@ from module.ui.assets import BACK_ARROW
 from module.ui.page import page_dock
 
 CATALOG = json.loads(Path(__file__).with_name('ship_training_catalog.json').read_text(encoding='utf-8'))['ships']
+for _name, _data in json.loads(Path(__file__).with_name('ship_training_overrides.json').read_text(encoding='utf-8'))['ships'].items():
+    CATALOG.setdefault(_name, _data)
 FACTIONS = {1: '白鹰', 2: '皇家', 3: '重樱', 4: '铁血', 5: '东煌', 6: '撒丁帝国',
             7: '北联', 8: '自由鸢尾', 9: '维希教廷', 10: '郁金王国', 11: '晶石联盟',
             96: '飓风', 97: 'META'}
@@ -92,7 +94,7 @@ class TrainingShipInspector(Awaken):
             data = CATALOG[name]
             faction = FACTIONS.get(data['faction'], '联动' if data['faction'] >= 100 else '')
             ship_type = data['type']
-            side = 'main' if ship_type in (4, 5, 6, 7, 10, 12, 13, 21, 24) else 'vanguard' if ship_type in (1, 2, 3, 18, 19, 22, 23) else ''
+            side = 'main' if ship_type in (4, 5, 6, 7, 10, 12, 13, 21, 24) else 'vanguard' if ship_type in (1, 2, 3, 18, 19, 22, 23) else 'submarine' if ship_type in (8, 17) else ''
             if not side or not faction:
                 continue
             values = cv2.matchTemplate(crop(self.device.image, (285, 57, 425, 90)), star, cv2.TM_CCOEFF_NORMED)
@@ -153,14 +155,15 @@ class TrainingShipInspector(Awaken):
             raise RequestHumanTakeover('Fourth fleet anchors differ from 英仙座 / 伊吹; no changes allowed')
         return ships
 
-    def find_candidates(self, side, factions, excluded, needed=2, available=None):
+    def find_candidates(self, side, factions, excluded, needed=2, available=None, scroll=DOCK_SCROLL):
         """Inspect in dock order. Never select/remove a deployed ship here."""
         self.ui_ensure(page_dock)
         self.dock_favourite_set(False)
         self.dock_sort_method_dsc_set(True)
         selected_factions = [FILTER_FACTIONS[f] for f in sorted(factions)] if factions else 'all'
-        self.dock_filter_set(index=side, faction=selected_factions)
-        DOCK_SCROLL.set_top(main=self)
+        dock_side = 'ss' if side == 'submarine' else side
+        self.dock_filter_set(index=dock_side, faction=selected_factions)
+        scroll.set_top(main=self)
         found, seen = [], set(excluded)
         for _ in range(40):
             self.device.screenshot()
@@ -194,8 +197,8 @@ class TrainingShipInspector(Awaken):
                 self.wait_until_appear(DOCK_CHECK, offset=(20, 20))
                 if len(found) >= needed:
                     return found
-            if DOCK_SCROLL.at_bottom(main=self):
+            if scroll.at_bottom(main=self):
                 break
-            DOCK_SCROLL.next_page(main=self, page=0.45)
+            scroll.next_page(main=self, page=0.45)
             self.device.sleep(0.6)
         return found
