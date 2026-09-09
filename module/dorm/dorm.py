@@ -617,13 +617,16 @@ class RewardDorm(UI):
             out: page_dorm
         """
         if not self.config.Dorm_Feed and not self.config.Dorm_Collect \
-                and not self.config.BuyFurniture_Enable:
+                and not self.config.BuyFurniture_Enable and not getattr(self.config, 'DormTraining_Enable', False):
             self.config.Scheduler_Enable = False
             self.config.task_stop()
 
         self.dorm_run(feed=self.config.Dorm_Feed,
                       collect=self.config.Dorm_Collect,
                       buy_furniture=self.config.BuyFurniture_Enable)
+
+        from module.dorm.training import maintain_dorm_if_due
+        maintain_dorm_if_due(self.config, self.device)
 
         # Scheduler
         ships = self.get_dorm_ship_amount()

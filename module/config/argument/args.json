@@ -7071,6 +7071,18 @@
         "value": "20000 > 10000 > 5000 > 3000 > 2000 > 1000"
       }
     },
+    "DormTraining": {
+      "Enable": {
+        "type": "checkbox",
+        "value": false
+      },
+      "LastCheck": {
+        "type": "datetime",
+        "value": "2020-01-01 00:00:00",
+        "validate": "datetime",
+        "display": "disabled"
+      }
+    },
     "BuyFurniture": {
       "Enable": {
         "type": "checkbox",
@@ -7331,6 +7343,33 @@
       "CollectWeeklyMission": {
         "type": "checkbox",
         "value": true
+      }
+    },
+    "ExpBookWarning": {
+      "Enable": {
+        "type": "checkbox",
+        "value": false
+      },
+      "Threshold": {
+        "type": "input",
+        "value": 2900
+      },
+      "LastCheck": {
+        "type": "datetime",
+        "value": "2020-01-01 00:00:00",
+        "validate": "datetime",
+        "display": "disabled"
+      },
+      "LastCount": {
+        "type": "input",
+        "value": -1,
+        "display": "disabled"
+      },
+      "LastNotification": {
+        "type": "datetime",
+        "value": "2020-01-01 00:00:00",
+        "validate": "datetime",
+        "display": "disabled"
       }
     },
     "CoinOverflowWarning": {
@@ -7652,6 +7691,10 @@
       "HardStage": {
         "type": "input",
         "value": "11-4"
+      },
+      "BalanceBlueprints": {
+        "type": "checkbox",
+        "value": false
       },
       "HardFleet": {
         "type": "select",
