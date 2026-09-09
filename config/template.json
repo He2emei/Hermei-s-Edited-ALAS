@@ -1326,6 +1326,10 @@
       "Feed": true,
       "FeedFilter": "20000 > 10000 > 5000 > 3000 > 2000 > 1000"
     },
+    "DormTraining": {
+      "Enable": false,
+      "LastCheck": "2020-01-01 00:00:00"
+    },
     "BuyFurniture": {
       "Enable": false,
       "BuyOption": "all",
@@ -1403,6 +1407,13 @@
       "CollectMission": true,
       "CollectWeeklyMission": true
     },
+    "ExpBookWarning": {
+      "Enable": false,
+      "Threshold": 2900,
+      "LastCheck": "2020-01-01 00:00:00",
+      "LastCount": -1,
+      "LastNotification": "2020-01-01 00:00:00"
+    },
     "CoinOverflowWarning": {
       "Enable": true,
       "StorageThreshold": 1.0,
@@ -1470,6 +1481,7 @@
     },
     "Hard": {
       "HardStage": "11-4",
+      "BalanceBlueprints": false,
       "HardFleet": 1
     },
     "Storage": {
