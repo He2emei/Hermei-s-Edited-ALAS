@@ -1609,6 +1609,20 @@
       "help": "Dorm.FeedFilter.help"
     }
   },
+  "DormTraining": {
+    "_info": {
+      "name": "寮の潜水艦訓練",
+      "help": "1階の潜水艦と空き枠だけを管理し、既存の非潜水艦を保持して2階は変更しません。通常艦は限界突破完了が必要です。潜水艦は上限100、105、110、115で覚醒し、120まで育成します。認知覚醒ユニットIIは使用しません。"
+    },
+    "Enable": {
+      "name": "寮の潜水艦訓練を有効化",
+      "help": "確認済みのCN 1280×720 UIでのみ使用し、確認は1日1回までです。"
+    },
+    "LastCheck": {
+      "name": "寮訓練の最終確認時刻",
+      "help": "最後に正常確認できた時刻を実行時に記録します。"
+    }
+  },
   "BuyFurniture": {
     "_info": {
       "name": "BuyFurniture._info.name",
@@ -1751,6 +1765,32 @@
     "CollectWeeklyMission": {
       "name": "Reward.CollectWeeklyMission.name",
       "help": "Reward.CollectWeeklyMission.help"
+    }
+  },
+  "ExpBookWarning": {
+    "_info": {
+      "name": "T1経験値教科書の警告",
+      "help": "T1経験値教科書の在庫を1日1回まで確実に読み取り、自動使用はしません。"
+    },
+    "Enable": {
+      "name": "経験値教科書の警告を有効化",
+      "help": "在庫がしきい値を厳密に超えた場合だけ通知します。"
+    },
+    "Threshold": {
+      "name": "経験値教科書の警告しきい値",
+      "help": "デフォルトは2900。在庫数がこの値を厳密に超えた場合だけ通知します。容量は3000です。"
+    },
+    "LastCheck": {
+      "name": "経験値教科書の最終確認時刻",
+      "help": "最後に正常読み取りできた時刻を記録します。読み取り失敗は成功扱いにしません。"
+    },
+    "LastCount": {
+      "name": "経験値教科書の最終在庫数",
+      "help": "最後に正常読み取りできたT1経験値教科書の数をキャッシュし、通知失敗時は同日に再試行できます。"
+    },
+    "LastNotification": {
+      "name": "経験値教科書の最終通知時刻",
+      "help": "通知成功後は同日に再通知しません。"
     }
   },
   "CoinOverflowWarning": {
@@ -2362,6 +2402,10 @@
     "HardStage": {
       "name": "Hard.HardStage.name",
       "help": "Hard.HardStage.help"
+    },
+    "BalanceBlueprints": {
+      "name": "改造図の在庫バランス",
+      "help": "章番号を維持し、金改造図の在庫に応じて選択します：1駆逐、2巡洋、3戦艦、4空母。同数の場合は設定済みの海域を優先します。"
     },
     "HardFleet": {
       "name": "Hard.HardFleet.name",

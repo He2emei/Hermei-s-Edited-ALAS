@@ -1,0 +1,12 @@
+{
+  "source": "CN client detail and dorm roster screenshots verified 2026-09-10; https://wiki.biligame.com/blhx/U-2501 corroborates type, faction and rarity. The fetched game-data snapshot lacks this ship; no internal group ID is assumed.",
+  "ships": {
+    "U-2501": {
+      "rarity": 6,
+      "faction": 4,
+      "type": 8,
+      "max_stars": 6,
+      "group": null
+    }
+  }
+}

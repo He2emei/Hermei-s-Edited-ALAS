@@ -1609,6 +1609,20 @@
       "help": "Generally does not need to be modified or re-arranged but can do so if desired"
     }
   },
+  "DormTraining": {
+    "_info": {
+      "name": "Dorm Submarine Training",
+      "help": "Manage submarines and empty slots on the first floor only; preserve existing non-submarines and leave the second floor unchanged. Ordinary ships must be fully limit broken. Submarines may awaken at caps 100, 105, 110, or 115 up to level 120 without using Cognitive Chips II."
+    },
+    "Enable": {
+      "name": "Enable Dorm Submarine Training",
+      "help": "Use only with the verified CN 1280×720 UI; check at most once per day."
+    },
+    "LastCheck": {
+      "name": "Dorm Training Last Check",
+      "help": "Runtime timestamp of the last reliable check."
+    }
+  },
   "BuyFurniture": {
     "_info": {
       "name": "Event furniture Settings",
@@ -1751,6 +1765,32 @@
     "CollectWeeklyMission": {
       "name": "Collect Weekly Mission Rewards",
       "help": ""
+    }
+  },
+  "ExpBookWarning": {
+    "_info": {
+      "name": "T1 Experience Book Warning",
+      "help": "Read the T1 experience book inventory reliably at most once per day; never use books automatically."
+    },
+    "Enable": {
+      "name": "Enable Experience Book Warning",
+      "help": "Notify only when the inventory is strictly above the threshold."
+    },
+    "Threshold": {
+      "name": "Experience Book Warning Threshold",
+      "help": "Default 2900; notify only when the count is strictly greater than this value. Capacity is 3000."
+    },
+    "LastCheck": {
+      "name": "Experience Book Last Check",
+      "help": "Runtime timestamp of the last reliable read; a failed read is not marked successful."
+    },
+    "LastCount": {
+      "name": "Experience Book Last Count",
+      "help": "Cached count from the last reliable T1 read; notification failures may retry the same day."
+    },
+    "LastNotification": {
+      "name": "Experience Book Last Notification",
+      "help": "Do not send another notification on the same day after a successful notification."
     }
   },
   "CoinOverflowWarning": {
@@ -2362,6 +2402,10 @@
     "HardStage": {
       "name": "Hard Stage",
       "help": "11-4, 12-2, 12-4, and etc."
+    },
+    "BalanceBlueprints": {
+      "name": "Balance Retrofit Blueprints by Inventory",
+      "help": "Keep the chapter unchanged and select the map by gold retrofit blueprint stock: 1 destroyer, 2 cruiser, 3 battleship, 4 carrier. The configured map wins ties."
     },
     "HardFleet": {
       "name": "Hard Fleet",
