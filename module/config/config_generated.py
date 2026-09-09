@@ -229,6 +229,10 @@ class GeneratedConfig:
     Dorm_Feed = True
     Dorm_FeedFilter = '20000 > 10000 > 5000 > 3000 > 2000 > 1000'
 
+    # Group `DormTraining`
+    DormTraining_Enable = False
+    DormTraining_LastCheck = datetime.datetime(2020, 1, 1, 0, 0)
+
     # Group `BuyFurniture`
     BuyFurniture_Enable = False
     BuyFurniture_BuyOption = 'all'  # set, all
@@ -266,6 +270,13 @@ class GeneratedConfig:
     Reward_CollectExp = True
     Reward_CollectMission = True
     Reward_CollectWeeklyMission = True
+
+    # Group `ExpBookWarning`
+    ExpBookWarning_Enable = False
+    ExpBookWarning_Threshold = 2900
+    ExpBookWarning_LastCheck = datetime.datetime(2020, 1, 1, 0, 0)
+    ExpBookWarning_LastCount = -1
+    ExpBookWarning_LastNotification = datetime.datetime(2020, 1, 1, 0, 0)
 
     # Group `CoinOverflowWarning`
     CoinOverflowWarning_Enable = True
@@ -379,6 +390,7 @@ class GeneratedConfig:
 
     # Group `Hard`
     Hard_HardStage = '11-4'
+    Hard_BalanceBlueprints = False
     Hard_HardFleet = 1  # 1, 2
 
     # Group `Exercise`
