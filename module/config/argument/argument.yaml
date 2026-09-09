@@ -444,6 +444,11 @@ Dorm:
   Collect: true
   Feed: true
   FeedFilter: 20000 > 10000 > 5000 > 3000 > 2000 > 1000
+DormTraining:
+  Enable: false
+  LastCheck:
+    value: 2020-01-01 00:00:00
+    display: disabled
 BuyFurniture:
   Enable: false
   BuyOption:
@@ -485,6 +490,18 @@ Reward:
   CollectExp: true
   CollectMission: true
   CollectWeeklyMission: true
+ExpBookWarning:
+  Enable: false
+  Threshold: 2900
+  LastCheck:
+    value: 2020-01-01 00:00:00
+    display: disabled
+  LastCount:
+    value: -1
+    display: disabled
+  LastNotification:
+    value: 2020-01-01 00:00:00
+    display: disabled
 CoinOverflowWarning:
   Enable: true
   StorageThreshold: 1.0
@@ -677,6 +694,7 @@ Daily:
     option: [ 1, 2, 3, 4, 5, 6 ]
 Hard:
   HardStage: 11-4
+  BalanceBlueprints: false
   HardFleet:
     value: 1
     option: [ 1, 2 ]

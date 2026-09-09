@@ -6,6 +6,7 @@ from module.handler.fast_forward import to_map_file_name
 from module.hard.assets import *
 from module.logger import logger
 from module.ocr.ocr import Digit
+from module.hard.selection import select_hard_stage
 
 OCR_HARD_REMAIN = Digit(OCR_HARD_REMAIN, letter=(123, 227, 66), threshold=128, alphabet='0123')
 
@@ -16,7 +17,15 @@ class CampaignHard(CampaignRun):
 
     def run(self):
         logger.hr('Campaign hard', level=1)
-        name = to_map_file_name(self.config.Hard_HardStage)
+        selected_stage = self.config.Hard_HardStage
+        if getattr(self.config, 'Hard_BalanceBlueprints', False):
+            from module.storage.training_inventory import TrainingInventory
+
+            counts = TrainingInventory(self.config, self.device).read_counts(
+                ['destroyer', 'cruiser', 'battleship', 'carrier'])
+            selected_stage = select_hard_stage(selected_stage, counts)
+            logger.info(f'Hard blueprint balance selected {selected_stage}: {counts}')
+        name = to_map_file_name(selected_stage)
         self.config.override(
             Campaign_Mode='hard',
             Campaign_UseFleetLock=True,
@@ -36,7 +45,7 @@ class CampaignHard(CampaignRun):
         self.device.screenshot()
         self.campaign.device.image = self.device.image
         self.campaign.ensure_campaign_ui(
-            name=self.config.Hard_HardStage,
+            name=selected_stage,
             mode='hard'
         )
 
