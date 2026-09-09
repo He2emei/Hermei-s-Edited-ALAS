@@ -67,7 +67,7 @@ def _valid_candidate(candidate):
         return 'ship identity is unknown'
     if candidate.faction not in CANONICAL_FACTIONS:
         return 'ship faction is unknown'
-    if candidate.position not in ('main', 'vanguard'):
+    if candidate.position not in ('main', 'vanguard', 'submarine'):
         return 'ship position is unknown'
     if not isinstance(candidate.is_rainbow, bool):
         return 'rainbow flag is unknown'
