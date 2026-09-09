@@ -212,6 +212,7 @@ Reward:
     Dorm:
       - Scheduler
       - Dorm
+      - DormTraining
       - BuyFurniture
     Meowfficer:
       - Scheduler
@@ -224,6 +225,7 @@ Reward:
     Reward:
       - Scheduler
       - Reward
+      - ExpBookWarning
       - CoinOverflowWarning
     Awaken:
       - Scheduler
