@@ -75,6 +75,59 @@ class TacticalBookPlannerTest(unittest.TestCase):
         self.assertEqual([counts[i] for i in (0, 1, 2, 3, 6, 9)],
                          [4, 10, 217, 456, 497, 249])
 
+    def test_projected_skill_ocr_recognizes_terminal_x_preview(self):
+        import numpy as np
+        from module.tactical import tactical_class as tactical
+
+        projected_ocr = tactical.ProjectedSkillExpOcr()
+        with patch.object(tactical.Ocr, 'ocr',
+                          side_effect=['47001100/5800', 'X']), \
+                patch.object(tactical.SKILL_EXP, 'ocr',
+                             return_value=(4700, 5800)), \
+                patch.object(tactical.cv2, 'inRange',
+                             return_value=np.full((18, 180), 255, dtype=np.uint8)), \
+                patch.object(tactical.Digit, 'ocr', return_value=[1100]):
+            self.assertIs(tactical.PROJECTED_MAX, projected_ocr.ocr(
+                np.zeros((220, 1000, 3), dtype=np.uint8)))
+
+    def test_projected_skill_ocr_keeps_nonterminal_and_invalid_previews_rejected(self):
+        import numpy as np
+        from module.tactical import tactical_class as tactical
+
+        projected_ocr = tactical.ProjectedSkillExpOcr()
+        with patch.object(tactical.Ocr, 'ocr',
+                          side_effect=['47001000/5800', 'X']), \
+                patch.object(tactical.SKILL_EXP, 'ocr',
+                             return_value=(4700, 5800)), \
+                patch.object(tactical.cv2, 'inRange',
+                             return_value=np.full((18, 180), 255, dtype=np.uint8)), \
+                patch.object(tactical.Digit, 'ocr', return_value=[1000]):
+            self.assertEqual((4700, 1000, 5800), projected_ocr.ocr(
+                np.zeros((220, 1000, 3), dtype=np.uint8)))
+
+        with patch.object(tactical.Ocr, 'ocr', side_effect=['invalid', 'X']):
+            self.assertIsNone(projected_ocr.ocr(object()))
+
+    def test_projected_skill_ocr_does_not_mark_invalid_numeric_caps_as_max(self):
+        import numpy as np
+        from module.tactical import tactical_class as tactical
+
+        image = np.zeros((220, 1000, 3), dtype=np.uint8)
+        cases = (
+            ('33001100/4400', (3300, 4400), 1100),  # exact sum, non-final total
+            ('58001/5800', (5800, 5800), 1),       # final total, overfull white
+            ('0/5800', (-1, 5800), 5801),          # final total, negative white
+        )
+        for raw, skill_exp, green in cases:
+            projected_ocr = tactical.ProjectedSkillExpOcr()
+            with self.subTest(raw=raw), \
+                    patch.object(tactical.Ocr, 'ocr', side_effect=[raw, 'X']), \
+                    patch.object(tactical.SKILL_EXP, 'ocr', return_value=skill_exp), \
+                    patch.object(tactical.cv2, 'inRange',
+                                 return_value=np.full((18, 180), 255, dtype=np.uint8)), \
+                    patch.object(tactical.Digit, 'ocr', return_value=[green]):
+                self.assertIsNot(tactical.PROJECTED_MAX, projected_ocr.ocr(image))
+
     def test_optimizer_cancels_when_fresh_books_have_no_same_color(self):
         from module.tactical import tactical_class as tactical
 
@@ -158,6 +211,66 @@ class TacticalBookPlannerTest(unittest.TestCase):
         self.assertEqual(refreshes['count'], 2)
         self.assertIs(runner.chosen, big)
         self.assertEqual(runner.clicked, 'start')
+
+    def test_max_preview_probes_smallest_same_color_then_plans_after_refresh(self):
+        from module.tactical import tactical_class as tactical
+
+        selected_big = book(4, genre=1, count=1)
+        smallest = book(1, genre=1, count=1)
+        planned = book(3, genre=1, count=1)
+        fresh_smallest = book(1, genre=1, count=1)
+        fresh_smallest.exp_value = 150
+        fresh_planned = book(3, genre=1, count=1)
+        selected = {'book': selected_big}
+        selected_items = []
+        selected_big.check_selected = lambda image: selected['book'] is selected_big
+        smallest.check_selected = lambda image: selected['book'] is smallest
+        fresh_smallest.check_selected = lambda image: selected['book'] is fresh_smallest
+        fresh_planned.check_selected = lambda image: selected['book'] is fresh_planned
+        refreshes = []
+
+        def refresh(*, skip_first_screenshot=True):
+            refreshes.append(skip_first_screenshot)
+            if len(refreshes) == 2:
+                selected['book'] = fresh_smallest
+                runner.books = [fresh_smallest, fresh_planned]
+            return True
+
+        def choose(item):
+            selected['book'] = item
+            selected_items.append(item)
+            runner.chosen = item
+
+        runner = tactical.RewardTacticalClass.__new__(tactical.RewardTacticalClass)
+        runner.config = SimpleNamespace(Tactical_OptimizeBooks=True)
+        runner.device = SimpleNamespace(image=object(), click=lambda button: setattr(runner, 'clicked', button))
+        runner.books = [selected_big, smallest, planned]
+        runner.tactical_skill_genre = 1
+        runner._tactical_books_get = refresh
+        runner._tactical_book_optimization_enabled = lambda: True
+        runner._tactical_book_select = choose
+        projected = iter([tactical.PROJECTED_MAX, (4700, 150, 5800)])
+        with patch.object(tactical, 'PROJECTED_SKILL_EXP',
+                          SimpleNamespace(ocr=lambda image: next(projected))), \
+                patch.object(tactical, 'plan_books', wraps=tactical.plan_books) as plan_spy, \
+                patch.object(tactical, 'TACTICAL_CLASS_START', 'start'):
+            self.assertTrue(runner._tactical_books_choose())
+        self.assertEqual(refreshes, [True, False])
+        self.assertIs(selected_items[0], smallest)
+        self.assertIs(runner.chosen, fresh_planned)
+        self.assertIs(selected_items[1], fresh_planned)
+        self.assertEqual(plan_spy.call_args[0][0], 1100)
+        self.assertEqual(runner.clicked, 'start')
+
+    def test_committed_capped_and_small_preview_ocr_fixtures(self):
+        import cv2 as cv
+        from module.tactical.tactical_class import PROJECTED_MAX, PROJECTED_SKILL_EXP
+
+        root = Path(__file__).parent / 'fixtures' / 'tactical'
+        capped = cv.cvtColor(cv.imread(str(root / 'tactical-capped-preview.png')), cv.COLOR_BGR2RGB)
+        small = cv.cvtColor(cv.imread(str(root / 'tactical-small-preview.png')), cv.COLOR_BGR2RGB)
+        self.assertIs(PROJECTED_MAX, PROJECTED_SKILL_EXP.ocr(capped))
+        self.assertEqual((4700, 150, 5800), PROJECTED_SKILL_EXP.ocr(small))
 
     def test_all_max_advances_in_screen_order_with_bound(self):
         from module.tactical import tactical_class as tactical
