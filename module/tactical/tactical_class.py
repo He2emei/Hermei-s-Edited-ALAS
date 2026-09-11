@@ -159,7 +159,15 @@ class ProjectedSkillExpOcr(Ocr):
             return None
         white_current = SKILL_EXP.ocr(image)[0]
         green = self._green_value(image, self._buttons)
-        return white_current, green, int(match.group(2))
+        total = int(match.group(2))
+        # CN keeps a numeric NEXT counter at level 10 and clips the green
+        # bonus to the remaining XP (e.g. 4700+1100/5800 for a 3000-XP book).
+        # Probe a smaller same-color book, just as for a literal MAX preview;
+        # the clipped bonus cannot be used to reconstruct the selected book XP.
+        if total == 5800 and 0 <= white_current < total and green > 0 \
+                and white_current + green == total:
+            return PROJECTED_MAX
+        return white_current, green, total
 
 
 PROJECTED_SKILL_EXP = ProjectedSkillExpOcr()
