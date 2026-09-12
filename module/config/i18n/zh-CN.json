@@ -1027,6 +1027,18 @@
       "fleet1_standby_fleet2_all": "一队待机二队全清"
     }
   },
+  "EventFleet": {
+    "_info": {
+      "name": "活动舰队设置",
+      "help": "活动舰队准备流程使用的设置。"
+    },
+    "AutoPrepare": {
+      "name": "自动准备活动舰队",
+      "help": "仅国服1280×720：C图第一队一艘主力加唐斯/卡辛并待机，第二队复制活动任务设置的普通第二编队；D/SP使用推荐补满。活动开荒逐图递增时，B3接C1、D3完成后启用每日SP。",
+      "True": "True",
+      "False": "False"
+    }
+  },
   "Submarine": {
     "_info": {
       "name": "潜艇设置",
