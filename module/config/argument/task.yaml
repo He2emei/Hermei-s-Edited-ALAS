@@ -80,6 +80,7 @@ Event:
       - Campaign
       - StopCondition
       - Fleet
+      - EventFleet
       - Submarine
       - Emotion
       - HpControl
@@ -89,6 +90,7 @@ Event:
       - Campaign
       - StopCondition
       - Fleet
+      - EventFleet
       - Submarine
       - Emotion
       - HpControl
@@ -156,6 +158,7 @@ EventDaily:
       - Campaign
       - StopCondition
       - Fleet
+      - EventFleet
       - Submarine
       - Emotion
       - HpControl
@@ -166,6 +169,7 @@ EventDaily:
       - Campaign
       - StopCondition
       - Fleet
+      - EventFleet
       - Submarine
       - Emotion
       - HpControl
@@ -175,6 +179,7 @@ EventDaily:
       - Campaign
       - StopCondition
       - Fleet
+      - EventFleet
       - Submarine
       - Emotion
       - HpControl
