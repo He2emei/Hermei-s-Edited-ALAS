@@ -104,6 +104,9 @@ class GeneratedConfig:
     Fleet_Fleet2Step = 2  # 2, 3, 4, 5
     Fleet_FleetOrder = 'fleet1_mob_fleet2_boss'  # fleet1_mob_fleet2_boss, fleet1_boss_fleet2_mob, fleet1_all_fleet2_standby, fleet1_standby_fleet2_all
 
+    # Group `EventFleet`
+    EventFleet_AutoPrepare = False  # True, False
+
     # Group `Submarine`
     Submarine_Fleet = 0  # 0, 1, 2
     Submarine_Mode = 'do_not_use'  # do_not_use, hunt_only, boss_only, hunt_and_boss, every_combat
