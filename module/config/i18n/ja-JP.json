@@ -1027,6 +1027,18 @@
       "fleet1_standby_fleet2_all": "fleet1_standby_fleet2_all"
     }
   },
+  "EventFleet": {
+    "_info": {
+      "name": "イベント艦隊設定",
+      "help": "イベント艦隊準備フローで使用する設定です。"
+    },
+    "AutoPrepare": {
+      "name": "イベント艦隊を自動準備",
+      "help": "中国版1280×720専用。Cは第1艦隊に主力1隻とダウンズ/カッシンを配置して待機、第2艦隊はイベント設定の通常第2編成をコピー。D/SPは推奨編成を使用。イベントの次ステージ移行が有効ならB3からC1へ進み、D3完了後に毎日SPを有効化します。",
+      "True": "True",
+      "False": "False"
+    }
+  },
   "Submarine": {
     "_info": {
       "name": "Submarine._info.name",

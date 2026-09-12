@@ -2258,6 +2258,16 @@
         ]
       }
     },
+    "EventFleet": {
+      "AutoPrepare": {
+        "type": "checkbox",
+        "value": false,
+        "option": [
+          true,
+          false
+        ]
+      }
+    },
     "Submarine": {
       "Fleet": {
         "type": "select",
@@ -2650,6 +2660,16 @@
           "fleet1_boss_fleet2_mob",
           "fleet1_all_fleet2_standby",
           "fleet1_standby_fleet2_all"
+        ]
+      }
+    },
+    "EventFleet": {
+      "AutoPrepare": {
+        "type": "checkbox",
+        "value": false,
+        "option": [
+          true,
+          false
         ]
       }
     },
@@ -5249,6 +5269,16 @@
         ]
       }
     },
+    "EventFleet": {
+      "AutoPrepare": {
+        "type": "checkbox",
+        "value": false,
+        "option": [
+          true,
+          false
+        ]
+      }
+    },
     "Submarine": {
       "Fleet": {
         "type": "select",
@@ -5661,6 +5691,16 @@
         ]
       }
     },
+    "EventFleet": {
+      "AutoPrepare": {
+        "type": "checkbox",
+        "value": false,
+        "option": [
+          true,
+          false
+        ]
+      }
+    },
     "Submarine": {
       "Fleet": {
         "type": "select",
@@ -6060,6 +6100,16 @@
           "fleet1_boss_fleet2_mob",
           "fleet1_all_fleet2_standby",
           "fleet1_standby_fleet2_all"
+        ]
+      }
+    },
+    "EventFleet": {
+      "AutoPrepare": {
+        "type": "checkbox",
+        "value": false,
+        "option": [
+          true,
+          false
         ]
       }
     },
