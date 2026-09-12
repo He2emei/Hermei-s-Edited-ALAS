@@ -1027,6 +1027,18 @@
       "fleet1_standby_fleet2_all": "一隊待機二隊全清"
     }
   },
+  "EventFleet": {
+    "_info": {
+      "name": "活動艦隊設定",
+      "help": "活動艦隊準備流程使用的設定。"
+    },
+    "AutoPrepare": {
+      "name": "自動準備活動艦隊",
+      "help": "僅國服1280×720：C圖第一隊一艘主力加唐斯/卡辛並待機，第二隊複製活動任務設定的普通第二編隊；D/SP使用推薦補滿。活動開荒逐圖遞增時，B3接C1、D3完成後啟用每日SP。",
+      "True": "True",
+      "False": "False"
+    }
+  },
   "Submarine": {
     "_info": {
       "name": "潛艇設定",

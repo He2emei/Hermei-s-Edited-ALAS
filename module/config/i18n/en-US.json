@@ -1027,6 +1027,18 @@
       "fleet1_standby_fleet2_all": "fleet1_standby_fleet2_all"
     }
   },
+  "EventFleet": {
+    "_info": {
+      "name": "Event Fleet Settings",
+      "help": "Settings used by the event fleet preparation flow."
+    },
+    "AutoPrepare": {
+      "name": "Automatically Prepare Event Fleets",
+      "help": "CN 1280x720 only. C: one main ship plus Downes/Cassin on standby; fleet 2 copies Event's normal second formation. D/SP: recommend full fleets. With Event stage increase enabled, B3 continues to C1 and D3 hands off to daily SP.",
+      "True": "True",
+      "False": "False"
+    }
+  },
   "Submarine": {
     "_info": {
       "name": "Submarine Settings",
