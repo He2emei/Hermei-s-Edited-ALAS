@@ -62,6 +62,19 @@ class CampaignRun(CampaignEvent):
 
         config = copy.deepcopy(self.config).merge(self.module.Config())
         device = self.device
+        from module.event.fleet_preparation import event_fleet_stage
+        event_stage = event_fleet_stage(config)
+        if event_stage:
+            if event_stage.startswith('c'):
+                from module.event.fleet_source import EventFleetSource
+                source_index = self.config.cross_get('Event.Fleet.Fleet2', default=0)
+                config._event_source_roster = EventFleetSource(self.config, device).read(source_index)
+                logger.info(f'Event C source fleet {source_index}: {config._event_source_roster}')
+                config.override(Fleet_FleetOrder='fleet1_standby_fleet2_all',
+                                Fleet_Fleet1=1, Fleet_Fleet2=2)
+            else:
+                config.override(Fleet_FleetOrder='fleet1_mob_fleet2_boss',
+                                Fleet_Fleet1=1, Fleet_Fleet2=2)
         self.campaign = self.module.Campaign(config=config, device=device)
 
         return True
