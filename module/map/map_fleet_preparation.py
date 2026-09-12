@@ -349,6 +349,10 @@ class FleetPreparation(InfoHandler):
             in_use=SUBMARINE_IN_USE, hard_satisfied=SUBMARINE_HARD_SATIESFIED, main=self)
 
         # Check if ship is prepared in hard mode
+        from module.event.fleet_preparation import event_fleet_stage, EventFleetPreparation
+        if event_fleet_stage(self.config):
+            EventFleetPreparation(self).run(fleet_1, fleet_2, submarine)
+
         h1, h2, h3 = fleet_1.is_hard_satisfied(), fleet_2.is_hard_satisfied(), submarine.is_hard_satisfied()
         logger.info(f'Hard satisfied: Fleet_1: {h1}, Fleet_2: {h2}, Submarine: {h3}')
         if self.config.SERVER in ['cn', 'en', 'jp']:

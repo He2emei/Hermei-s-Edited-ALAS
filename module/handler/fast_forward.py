@@ -135,6 +135,13 @@ class FastForwardHandler(AutoSearchHandler):
     ]
     map_fleet_checked = False
 
+    EVENT_ABCD_STAGE_CHAIN = (
+        'A1', 'A2', 'A3',
+        'B1', 'B2', 'B3',
+        'C1', 'C2', 'C3',
+        'D1', 'D2', 'D3',
+    )
+
     def map_get_info(self):
         """
         Logs:
@@ -407,6 +414,39 @@ class FastForwardHandler(AutoSearchHandler):
 
         return name
 
+    def _event_abcd_next_stage(self, stage):
+        """Return the next available stage for the bounded ABCD event chain."""
+        if self.config.Scheduler_Command != 'Event' \
+                or not getattr(self.config, 'EventFleet_AutoPrepare', False):
+            return None
+
+        stage = to_map_input_name(stage)
+        if stage not in self.EVENT_ABCD_STAGE_CHAIN:
+            return None
+
+        existing = {to_map_input_name(name) for name in map_files(self.config.Campaign_Event)}
+        index = self.EVENT_ABCD_STAGE_CHAIN.index(stage) + 1
+        if index >= len(self.EVENT_ABCD_STAGE_CHAIN):
+            return stage
+
+        next_stage = self.EVENT_ABCD_STAGE_CHAIN[index]
+        if next_stage in existing:
+            return next_stage
+
+        logger.info(f'Event ABCD stage increase stops, new map {next_stage} does not exist')
+        return stage
+
+    def _event_sp_exists(self):
+        return 'SP' in {to_map_input_name(name) for name in map_files(self.config.Campaign_Event)}
+
+    def _handoff_event_sp(self):
+        """Move the bounded Event task to its SP task without copying fleet settings."""
+        self.config.cross_set(keys='EventSp.Campaign.Event', value=self.config.Campaign_Event)
+        self.config.cross_set(keys='EventSp.Campaign.Name', value='sp')
+        self.config.cross_set(keys='EventSp.EventFleet.AutoPrepare', value=True)
+        self.config.Scheduler_Enable = False
+        self.config.task_call('EventSp')
+
     def triggered_map_stop(self):
         """
         Returns:
@@ -438,6 +478,20 @@ class FastForwardHandler(AutoSearchHandler):
         """
         if self.config.StopCondition_StageIncrease:
             prev_stage = to_map_input_name(self.config.Campaign_Name)
+
+            bounded_next = self._event_abcd_next_stage(prev_stage)
+            if bounded_next is not None:
+                if bounded_next != prev_stage:
+                    logger.info(f'Stage {prev_stage} increases to {bounded_next}')
+                    self.config.Campaign_Name = bounded_next
+                elif prev_stage == 'D3' and self._event_sp_exists():
+                    logger.info('Event ABCD stages completed, handing off to EventSp')
+                    self._handoff_event_sp()
+                else:
+                    logger.info(f'Stage {prev_stage} cannot increase, stop at current stage')
+                    self.config.Scheduler_Enable = False
+                return
+
             next_stage = self.campaign_name_increase(prev_stage)
             if next_stage != prev_stage:
                 logger.info(f'Stage {prev_stage} increases to {next_stage}')
