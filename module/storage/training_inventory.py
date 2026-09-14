@@ -136,4 +136,8 @@ class TrainingInventory(StorageUI):
             after = INVENTORY_SCROLL.cal_position(main=self)
             if after <= before + 0.001:
                 raise RequestHumanTakeover('Inventory scan stopped before verified bottom')
+            # A verified page advance means the recorded scroll action made progress.
+            # Keep the device-level protection for a genuinely stuck scroll, while
+            # preventing a long but healthy inventory from accumulating history.
+            self.device.click_record_clear()
         raise RequestHumanTakeover('Inventory scan exceeded page bound')

@@ -1,4 +1,5 @@
 import unittest
+from collections import Counter, deque
 from datetime import datetime, timedelta
 from pathlib import Path
 from types import SimpleNamespace
@@ -6,6 +7,7 @@ from unittest.mock import Mock, patch
 
 from module.dorm.training import DormTraining, maintain_dorm_if_due
 from module.exception import RequestHumanTakeover
+from module.exception import GameTooManyClickError
 from module.os.training_policy import ShipCandidate
 from module.storage.training_inventory import ITEM_NAMES, TrainingInventory, item_position, parse_owned_count
 
@@ -94,6 +96,114 @@ class DormTrainingMockTest(unittest.TestCase):
 
 
 class TrainingInventoryMockTest(unittest.TestCase):
+    def test_long_inventory_scan_clears_verified_scroll_progress(self):
+        import numpy as np
+
+        class FakeDevice:
+            def __init__(self):
+                self.image = np.zeros((720, 1280, 3), dtype=np.uint8)
+                self.click_record = deque(maxlen=15)
+                self.clear_count = 0
+                self.max_recorded = 0
+
+            def screenshot(self):
+                return None
+
+            def sleep(self, _seconds):
+                return None
+
+            def swipe(self, _p1, _p2, name='SWIPE', **_kwargs):
+                self.click_record.append(str(name))
+                self.max_recorded = max(self.max_recorded, len(self.click_record))
+                if Counter(self.click_record).most_common(1)[0][1] >= 12:
+                    raise GameTooManyClickError('too many scrolls')
+
+            def click_record_clear(self):
+                self.clear_count += 1
+                self.click_record.clear()
+
+        class FakeScroll:
+            def __init__(self, device):
+                self.device = device
+                self.page = 0
+
+            def set_top(self, main):
+                self.page = 0
+
+            def at_bottom(self, main):
+                return self.page >= 20
+
+            def cal_position(self, main):
+                return self.page / 20
+
+            def next_page(self, main, page=0.45):
+                self.device.swipe(None, None, name='TrainingInventoryScroll')
+                self.page += 1
+
+        inventory = TrainingInventory.__new__(TrainingInventory)
+        inventory.config = SimpleNamespace(SERVER='cn')
+        inventory.device = FakeDevice()
+        inventory.ui_goto_storage = Mock()
+        inventory._storage_enter_material = Mock()
+        inventory._wait_until_storage_stable = Mock()
+        inventory._storage_in_material = Mock(return_value=True)
+        scroll = FakeScroll(inventory.device)
+
+        def find_book(_image, key):
+            return (400, 300) if scroll.page >= 13 else None
+
+        with patch('module.storage.training_inventory.INVENTORY_SCROLL', scroll), \
+                patch('module.storage.training_inventory.item_position', side_effect=find_book), \
+                patch.object(inventory, '_read_item', return_value=1957):
+            self.assertEqual(inventory.read_counts(['exp_book_t1']), {'exp_book_t1': 1957})
+
+        self.assertEqual(scroll.page, 13)
+        self.assertEqual(inventory.device.clear_count, 13)
+        self.assertLess(inventory.device.max_recorded, 12)
+
+    def test_inventory_scan_rejects_unverified_page_progress(self):
+        import numpy as np
+
+        class FakeDevice:
+            def __init__(self):
+                self.image = np.zeros((720, 1280, 3), dtype=np.uint8)
+                self.click_record_clear = Mock()
+
+            def screenshot(self):
+                return None
+
+            def sleep(self, _seconds):
+                return None
+
+            def swipe(self, _p1, _p2, name='SWIPE', **_kwargs):
+                return None
+
+        class StuckScroll:
+            def set_top(self, main):
+                return None
+
+            def at_bottom(self, main):
+                return False
+
+            def cal_position(self, main):
+                return 0.2
+
+            def next_page(self, main, page=0.45):
+                main.device.swipe(None, None, name='TrainingInventoryScroll')
+
+        inventory = TrainingInventory.__new__(TrainingInventory)
+        inventory.config = SimpleNamespace(SERVER='cn')
+        inventory.device = FakeDevice()
+        inventory.ui_goto_storage = Mock()
+        inventory._storage_enter_material = Mock()
+        inventory._wait_until_storage_stable = Mock()
+        inventory._storage_in_material = Mock(return_value=True)
+        with patch('module.storage.training_inventory.INVENTORY_SCROLL', StuckScroll()), \
+                patch('module.storage.training_inventory.item_position', return_value=None):
+            with self.assertRaises(RequestHumanTakeover):
+                inventory.read_counts(['exp_book_t1'])
+        inventory.device.click_record_clear.assert_not_called()
+
     def test_missing_item_at_verified_bottom_never_becomes_zero(self):
         import numpy as np
         inventory = TrainingInventory.__new__(TrainingInventory)
