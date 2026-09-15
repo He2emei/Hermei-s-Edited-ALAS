@@ -9517,10 +9517,18 @@
         "type": "input",
         "value": 60
       },
+      "ProtectedMainShip": {
+        "type": "input",
+        "value": "英仙座"
+      },
+      "ProtectedVanguardShip": {
+        "type": "input",
+        "value": "伊吹"
+      },
       "LastCheck": {
         "type": "input",
         "value": 0,
-        "display": "hide"
+        "display": "disabled"
       }
     },
     "Storage": {
