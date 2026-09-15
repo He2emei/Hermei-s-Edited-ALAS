@@ -479,6 +479,8 @@ class GeneratedConfig:
     # Group `OpsiTraining`
     OpsiTraining_Enable = False
     OpsiTraining_CheckIntervalMinutes = 60
+    OpsiTraining_ProtectedMainShip = '英仙座'
+    OpsiTraining_ProtectedVanguardShip = '伊吹'
     OpsiTraining_LastCheck = 0
 
     # Group `IslandProduction`

@@ -2774,6 +2774,14 @@
       "name": "檢查間隔（分鐘）",
       "help": "於侵蝕1搜索之間檢查，最短10分鐘。"
     },
+    "ProtectedMainShip": {
+      "name": "保護主力艦",
+      "help": "僅檢查第四艦隊1號位身份，不會替換1號位；必須填寫圖鑑中的精確艦名。"
+    },
+    "ProtectedVanguardShip": {
+      "name": "保護先鋒艦",
+      "help": "僅檢查第四艦隊4號位身份，不會替換4號位；必須填寫圖鑑中的精確艦名。"
+    },
     "LastCheck": {
       "name": "Last check",
       "help": ""
