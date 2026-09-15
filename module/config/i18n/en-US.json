@@ -2071,6 +2071,28 @@
       "help": "All options have been defined at <https://github.com/LmeSzinc/AzurLaneAutoScript/wiki/reward_shop_filter_string>\nHowever unlike other shops, only Chip and Array are supported\nALAS does not browse, scroll, or recognize any other items displayed besides those two"
     }
   },
+  "ShipyardAuto": {
+    "_info": {
+      "name": "Automatic shipyard catch-up",
+      "help": "CN 1280x720. Buy 10 PR and 10 DR per day including free uses, across eligible built ships. Retry insufficient coins in one hour. Fully upgraded fleets are checked the next day."
+    },
+    "Enable": {
+      "name": "Automatically choose ships",
+      "help": "Replaces fixed series and index. Owned blueprints do not count as coin purchases."
+    },
+    "UseExpBooks": {
+      "name": "Meet level gates with XP books",
+      "help": "Use the smallest previewed T1 quantity, then T2 if needed. No cognitive awakening."
+    },
+    "PrLastRun": {
+      "name": "PR daily completion",
+      "help": "Verified ten uses; day resets at 04:00."
+    },
+    "DrLastRun": {
+      "name": "DR daily completion",
+      "help": "Verified ten uses; day resets at 04:00."
+    }
+  },
   "ShipyardDr": {
     "_info": {
       "name": "DR Blueprints Purchase Settings",
