@@ -16,6 +16,8 @@ from module.os.training_ui import (
     FILTER_FACTIONS,
     TrainingShipInspector,
     catalog_name,
+    protected_fleet_anchors,
+    validate_protected_fleet,
 )
 from module.os.training import TrainingFleetManager
 
@@ -29,6 +31,44 @@ def candidate(name, faction='白鹰', position='main', level=90, cap=None):
 
 
 class TrainingUiReviewTest(unittest.TestCase):
+    def test_protected_fleet_defaults_preserve_existing_anchors(self):
+        self.assertEqual(
+            protected_fleet_anchors(SimpleNamespace()),
+            ('英仙座', '伊吹'),
+        )
+
+    def test_configured_protected_fleet_accepts_catalogued_position_matched_ships(self):
+        config = SimpleNamespace(
+            OpsiTraining_ProtectedMainShip='英仙座',
+            OpsiTraining_ProtectedVanguardShip='普利茅斯',
+        )
+        ships = {
+            1: candidate('英仙座'),
+            4: candidate('普利茅斯', position='vanguard'),
+        }
+        validate_protected_fleet(ships, config)
+
+    def test_protected_fleet_rejects_unknown_or_position_mismatched_config(self):
+        ships = {1: candidate('英仙座'), 4: candidate('伊吹', position='vanguard')}
+        for main_name, vanguard_name in (
+                ('', '伊吹'), ('未知舰船', '伊吹'), ('企业', '企业'), ('英仙座', '企业')):
+            config = SimpleNamespace(
+                OpsiTraining_ProtectedMainShip=main_name,
+                OpsiTraining_ProtectedVanguardShip=vanguard_name,
+            )
+            with self.subTest(main=main_name, vanguard=vanguard_name), \
+                    self.assertRaises(RequestHumanTakeover):
+                protected_fleet_anchors(config)
+
+    def test_protected_fleet_rejects_actual_anchor_mismatch(self):
+        config = SimpleNamespace(
+            OpsiTraining_ProtectedMainShip='英仙座',
+            OpsiTraining_ProtectedVanguardShip='伊吹',
+        )
+        ships = {1: candidate('企业'), 4: candidate('伊吹', position='vanguard')}
+        with self.assertRaises(RequestHumanTakeover):
+            validate_protected_fleet(ships, config)
+
     def test_only_rotation_slots_can_be_opened(self):
         inspector = TrainingFleetManager.__new__(TrainingFleetManager)
         inspector._is_selector = lambda: True
