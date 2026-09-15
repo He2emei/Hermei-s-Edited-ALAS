@@ -2774,6 +2774,14 @@
       "name": "Check interval (minutes)",
       "help": "Check between hazard-one searches, at least 10 minutes apart."
     },
+    "ProtectedMainShip": {
+      "name": "Protected main ship",
+      "help": "Only verifies fourth-fleet slot 1 and never replaces it; use an exact catalog name."
+    },
+    "ProtectedVanguardShip": {
+      "name": "Protected vanguard ship",
+      "help": "Only verifies fourth-fleet slot 4 and never replaces it; use an exact catalog name."
+    },
     "LastCheck": {
       "name": "Last check",
       "help": ""

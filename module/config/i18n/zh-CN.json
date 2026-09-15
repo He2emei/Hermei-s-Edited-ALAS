@@ -2774,6 +2774,14 @@
       "name": "检查间隔（分钟）",
       "help": "在侵蚀1两轮搜索之间检查，最短10分钟。"
     },
+    "ProtectedMainShip": {
+      "name": "保护主力舰",
+      "help": "仅校验第四舰队1号位身份，不会替换1号位；必须填写图鉴中的精确舰名。"
+    },
+    "ProtectedVanguardShip": {
+      "name": "保护先锋舰",
+      "help": "仅校验第四舰队4号位身份，不会替换4号位；必须填写图鉴中的精确舰名。"
+    },
     "LastCheck": {
       "name": "Last check",
       "help": ""

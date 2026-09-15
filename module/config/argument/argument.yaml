@@ -808,9 +808,11 @@ OpsiHazard1Leveling:
 OpsiTraining:
   Enable: false
   CheckIntervalMinutes: 60
+  ProtectedMainShip: 英仙座
+  ProtectedVanguardShip: 伊吹
   LastCheck:
     value: 0
-    display: hide
+    display: disabled
 
 # =================== Island ====================
 

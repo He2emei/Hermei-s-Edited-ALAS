@@ -61,6 +61,37 @@ def catalog_name(text):
     return matches[0] if len(matches) == 1 else None
 
 
+def protected_fleet_anchors(config):
+    """Return configured fourth-fleet anchors after exact catalog validation."""
+    main_name = getattr(config, 'OpsiTraining_ProtectedMainShip', '英仙座')
+    vanguard_name = getattr(config, 'OpsiTraining_ProtectedVanguardShip', '伊吹')
+    if not isinstance(main_name, str) or not main_name:
+        raise RequestHumanTakeover('Protected main ship name must be non-empty')
+    if not isinstance(vanguard_name, str) or not vanguard_name:
+        raise RequestHumanTakeover('Protected vanguard ship name must be non-empty')
+    if main_name == vanguard_name:
+        raise RequestHumanTakeover('Protected main and vanguard ships must differ')
+    for name, expected_side in ((main_name, 'main'), (vanguard_name, 'vanguard')):
+        data = CATALOG.get(name)
+        if data is None:
+            raise RequestHumanTakeover('Unknown protected ship: ' + name)
+        ship_type = data['type']
+        side = 'main' if ship_type in (4, 5, 6, 7, 10, 12, 13, 21, 24) else \
+            'vanguard' if ship_type in (1, 2, 3, 18, 19, 22, 23) else \
+            'submarine' if ship_type in (8, 17) else ''
+        if side != expected_side:
+            raise RequestHumanTakeover(
+                f'Protected ship {name} must be a {expected_side} ship')
+    return main_name, vanguard_name
+
+
+def validate_protected_fleet(ships, config):
+    main_name, vanguard_name = protected_fleet_anchors(config)
+    if ships[1].name != main_name or ships[4].name != vanguard_name:
+        raise RequestHumanTakeover(
+            f'Fourth fleet anchors differ from {main_name} / {vanguard_name}; no changes allowed')
+
+
 class TrainingShipInspector(Awaken):
     def _check_cn(self):
         if self.config.SERVER != 'cn' or self.device.image.shape[:2] != (720, 1280):
@@ -151,8 +182,7 @@ class TrainingShipInspector(Awaken):
                     break
             else:
                 raise RequestHumanTakeover('Could not return from ship details to OpSi map')
-        if ships[1].name != '英仙座' or ships[4].name != '伊吹':
-            raise RequestHumanTakeover('Fourth fleet anchors differ from 英仙座 / 伊吹; no changes allowed')
+        validate_protected_fleet(ships, self.config)
         return ships
 
     def find_candidates(self, side, factions, excluded, needed=2, available=None, scroll=DOCK_SCROLL):
