@@ -603,6 +603,15 @@ MeritShop:
 CoreShop:
   Filter: |-
     Array
+ShipyardAuto:
+  Enable: false
+  UseExpBooks: true
+  PrLastRun:
+    value: 2020-01-01 00:00:00
+    display: disabled
+  DrLastRun:
+    value: 2020-01-01 00:00:00
+    display: disabled
 ShipyardDr:
   ResearchSeries:
     value: 2

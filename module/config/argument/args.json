@@ -8226,6 +8226,28 @@
         "display": "hide"
       }
     },
+    "ShipyardAuto": {
+      "Enable": {
+        "type": "checkbox",
+        "value": false
+      },
+      "UseExpBooks": {
+        "type": "checkbox",
+        "value": true
+      },
+      "PrLastRun": {
+        "type": "datetime",
+        "value": "2020-01-01 00:00:00",
+        "validate": "datetime",
+        "display": "disabled"
+      },
+      "DrLastRun": {
+        "type": "datetime",
+        "value": "2020-01-01 00:00:00",
+        "validate": "datetime",
+        "display": "disabled"
+      }
+    },
     "ShipyardDr": {
       "ResearchSeries": {
         "type": "select",
