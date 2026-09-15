@@ -55,6 +55,10 @@ class AutoShipyard(AutoShipyardUI):
             raise RequestHumanTakeover('Shipyard price or daily limit changed before confirmation')
         logger.info(f'Shipyard purchase: {rarity} {name}, count={selected}, coins={cost}, previous={offsets}')
         self._shipyard_buy_confirm('BP_BUY')
+        # Finishing DEV replaces its selector with the Fate entry. Re-enter the
+        # current ship's panel before verifying zero selection and coin stock.
+        if not self.auto_enter():
+            raise RequestHumanTakeover('Shipyard confirmation left an unknown ship state')
         # The selector must reset and the exact displayed coin cost must be
         # deducted. No LastRun is written until the entire rarity reaches ten.
         current, _, remaining = self.auto_observe()
