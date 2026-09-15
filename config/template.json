@@ -1585,6 +1585,12 @@
       "FailureInterval": 30,
       "ServerUpdate": "04:00"
     },
+    "ShipyardAuto": {
+      "Enable": false,
+      "UseExpBooks": true,
+      "PrLastRun": "2020-01-01 00:00:00",
+      "DrLastRun": "2020-01-01 00:00:00"
+    },
     "ShipyardDr": {
       "ResearchSeries": 2,
       "ShipIndex": 0,
