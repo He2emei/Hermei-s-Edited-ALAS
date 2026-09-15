@@ -227,6 +227,10 @@ class RewardShipyard(ShipyardUI):
             in: Any page
             out: page_shipyard
         """
+        if self.config.ShipyardAuto_Enable:
+            from module.shipyard.auto import AutoShipyard
+            return AutoShipyard(self.config, self.device).run_auto()
+
         if self.config.Shipyard_BuyAmount <= 0 and self.config.ShipyardDr_BuyAmount <= 0:
             self.config.Scheduler_Enable = False
             self.config.task_stop()
