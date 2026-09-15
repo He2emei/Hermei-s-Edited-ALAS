@@ -2768,7 +2768,7 @@
     },
     "Enable": {
       "name": "Maintain fourth training fleet",
-      "help": "Use the current shipyard requirements. Preserve Perseus in slot 1 and Ibuki in slot 4. CN 1280x720 only; awaken ordinary ships to 110 and rainbow ships to 120, never use cognitive arrays."
+      "help": "Check the current shipyard project and preserve fleet 4 slots 1/4 using the configured protected ship names; only rotate slots 2/3/5/6. CN 1280x720 only. Awakening stops at 110 for ordinary ships and 120 for rainbow ships; never uses Cognitive Arrays."
     },
     "CheckIntervalMinutes": {
       "name": "Check interval (minutes)",
