@@ -25,6 +25,7 @@ class ShipyardAutoGuardTest(unittest.TestCase):
         obj._day = server_day(datetime.now())
         obj.device = SimpleNamespace(click_record_clear=Mock())
         obj._shipyard_buy_confirm = Mock()
+        obj.auto_enter = Mock(return_value=True)
         obj.auto_set_amount = lambda target: target
         return obj
 
@@ -56,6 +57,16 @@ class ShipyardAutoGuardTest(unittest.TestCase):
         obj = self.harness()
         obj.auto_observe = Mock(side_effect=[(9, 6000, 6283), (0, 0, 283)])
         self.assertEqual(obj._confirm_purchase('DR', '吾妻', (0,), 9), (9,))
+
+    def test_finishing_development_reenters_fate_before_reading_coin_stock(self):
+        obj = self.harness()
+        readings = [(2, 1200, 9000), (0, 0, 7800)]
+        def observe():
+            if len(readings) == 1:
+                obj.auto_enter.assert_called_once()
+            return readings.pop(0)
+        obj.auto_observe = observe
+        self.assertEqual(obj._confirm_purchase('PR', '海王星', (8,), 2), (10,))
 
     def test_new_settings_are_generated_and_timestamps_are_read_only(self):
         args = json.loads((ROOT / 'module/config/argument/args.json').read_text(encoding='utf-8'))
