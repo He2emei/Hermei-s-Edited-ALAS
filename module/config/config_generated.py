@@ -331,6 +331,12 @@ class GeneratedConfig:
     # Group `CoreShop`
     CoreShop_Filter = 'Array'
 
+    # Group `ShipyardAuto`
+    ShipyardAuto_Enable = False
+    ShipyardAuto_UseExpBooks = True
+    ShipyardAuto_PrLastRun = datetime.datetime(2020, 1, 1, 0, 0)
+    ShipyardAuto_DrLastRun = datetime.datetime(2020, 1, 1, 0, 0)
+
     # Group `ShipyardDr`
     ShipyardDr_ResearchSeries = 2  # 2, 3, 4, 5
     ShipyardDr_ShipIndex = 0  # 0, 1, 2, 3, 4, 5, 6
