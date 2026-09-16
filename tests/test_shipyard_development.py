@@ -140,6 +140,28 @@ class ShipyardDevelopmentPolicyTest(unittest.TestCase):
         self.assertTrue(any(ShipyardDevelopment._is_known_material_title(title)
                             for title in titles))
 
+    def test_stage_lost_to_the_countdown_still_parses(self):
+        # Live log 2026-09-17 01:53: ``铁血先锋技术测试l69:54:13`` reaches the
+        # inspector as ``铁血先锋技术测试`` once the countdown is trimmed.
+        title = normalise_cn_task_title('铁血先锋技术测试169:54:13')
+        self.assertEqual(title, '铁血先锋技术测试')
+        self.assertTrue(ShipyardDevelopment._is_technical_title(title))
+        requirement = ShipyardDevelopment._parse_requirement(title)
+        self.assertEqual(requirement, parse_training_requirement('铁血先锋技术测试I'))
+        self.assertEqual(requirement.position, 'vanguard')
+
+    def test_pending_requirement_accepts_a_lost_stage(self):
+        tasks = [DevelopmentTask(1, normalise_cn_task_title('铁血先锋技术测试169:54:13'), False, 130)]
+        self.assertEqual(ShipyardDevelopment._pending_requirement(tasks),
+                         parse_training_requirement('铁血先锋技术测试I'))
+
+    def test_ship_name_ocr_noise_does_not_abort_the_guard(self):
+        from module.shipyard.development_assets import ship_name_similarity
+        # Live log 2026-09-17 01:37: the working label was read back as
+        # ``利克昕舒尔茨弋`` right after a header click.
+        self.assertGreaterEqual(ship_name_similarity('利克昕舒尔茨弋', '菲利克斯·舒尔茨'), 0.6)
+        self.assertLess(ship_name_similarity('加斯科涅', '菲利克斯·舒尔茨'), 0.6)
+
     def test_header_scan_uses_relocated_rows(self):
         class Fake(ShipyardDevelopment):
             def _detect_header_ys(self):
