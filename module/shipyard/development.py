@@ -10,6 +10,7 @@ from module.exception import ScriptError
 from module.logger import logger
 from module.ocr.ocr import Ocr
 from module.shipyard.development_assets import (
+    HULL_SCULPT_ANCHOR,
     SHIP_NAME_AREA,
     SUPPORTED_SIZE,
     TASK_ACTION_LABELS,
@@ -17,6 +18,7 @@ from module.shipyard.development_assets import (
     TASK_SCAN_ROWS,
     normalise_cn_task_title,
     task_header_button,
+    task_identity,
     task_title_area,
 )
 from module.shipyard.ui import ShipyardUI
@@ -163,9 +165,12 @@ class ShipyardDevelopment(ShipyardUI):
         previous = None
         for _ in range(3):
             visible = self._scan_visible_tasks(self._detect_header_ys())
-            fingerprint = tuple((t.title, t.complete, t.header_y) for t in visible)
+            fingerprint = tuple((task_identity(t.title), t.complete, t.header_y) for t in visible)
             for task in visible:
-                seen[task.title] = task
+                # Rows are keyed by identity, not by raw text: two scans of the
+                # same row may differ in a dropped character, and a duplicate
+                # key would send the inspector after a title that never exists.
+                seen[task_identity(task.title)] = task
             if len(seen) >= 8 or fingerprint == previous:
                 break
             previous = fingerprint
@@ -175,7 +180,7 @@ class ShipyardDevelopment(ShipyardUI):
             self._scroll_task_list(direction=1)
         visible = self._scan_visible_tasks(self._detect_header_ys())
         for task in visible:
-            seen[task.title] = task
+            seen[task_identity(task.title)] = task
         if not seen:
             raise ScriptError('Shipyard task list OCR/state is unknown')
         return list(seen.values())
@@ -213,10 +218,10 @@ class ShipyardDevelopment(ShipyardUI):
 
     def _locate_visible_task(self, title):
         """Find a title on the current frame; never reuse historical y data."""
-        wanted = normalise_cn_task_title(title)
+        wanted = task_identity(title)
         for _ in range(8):
             for header_y in self._detect_header_ys():
-                if normalise_cn_task_title(self._ocr_task_title(header_y)) == wanted:
+                if task_identity(self._ocr_task_title(header_y)) == wanted:
                     return DevelopmentTask(0, title, False, header_y)
             self._scroll_task_list()
         raise ScriptError(f'Material task is not visible: {title}')
@@ -253,7 +258,7 @@ class ShipyardDevelopment(ShipyardUI):
                 continue
             if self._shipyard_in_ui():
                 for current in self._scan_visible_tasks():
-                    if normalise_cn_task_title(current.title) == normalise_cn_task_title(title) and current.complete:
+                    if task_identity(current.title) == task_identity(title) and current.complete:
                         self._collapse_any_expanded_header()
                         return True
         raise ScriptError('Development material submission did not return to shipyard')
@@ -266,7 +271,7 @@ class ShipyardDevelopment(ShipyardUI):
         for _ in range(2):
             tasks = self._read_all_tasks()
             for task in tasks:
-                if not task.complete and TASK_CATALOG.get(task.title, {}).get('kind') == 'experience' \
+                if not task.complete and self._catalog_kind(task.title) == 'experience' \
                         and not self._is_technical_title(task.title):
                     raise ScriptError(f'Unsupported technical task requirement: {task.title}')
             unknown_incomplete = [
@@ -274,7 +279,7 @@ class ShipyardDevelopment(ShipyardUI):
                 if not self._is_technical_title(task.title)
                 and not task.complete
                 and not self._is_known_material_title(task.title)
-                and normalise_cn_task_title(task.title) not in TASK_CATALOG
+                and self._catalog_kind(task.title) is None
             ]
             if unknown_incomplete:
                 raise ScriptError(f'Unknown shipyard task OCR: {unknown_incomplete[0].title}')
@@ -309,5 +314,27 @@ class ShipyardDevelopment(ShipyardUI):
             return False
 
     @staticmethod
-    def _is_known_material_title(title):
-        return TASK_CATALOG.get(normalise_cn_task_title(title), {}).get('kind') == 'material'
+    def _catalog_kind(title):
+        """Look a title up in the catalog, tolerating a stage the timer ate.
+
+        A locked row prints ``先锋技术突破I`` and its countdown as one string, and
+        the stage stroke next to the clock digits is sometimes read as part of
+        the countdown.  Trying the bare title with each stage suffix keeps a
+        known task known instead of turning it into an unknown one.
+        """
+        normalised = normalise_cn_task_title(title)
+        for candidate in (normalised, f'{normalised}I', f'{normalised}II'):
+            entry = TASK_CATALOG.get(candidate)
+            if entry:
+                return entry.get('kind')
+        return None
+
+    @classmethod
+    def _is_known_material_title(cls, title):
+        kind = cls._catalog_kind(title)
+        if kind is not None:
+            return kind == 'material'
+        # A ship released after the catalog snapshot still carries the same
+        # hull-sculpting tasks, and the development panel only lists the ship
+        # that is being developed, so the ship name itself decides nothing.
+        return HULL_SCULPT_ANCHOR in normalise_cn_task_title(title)
