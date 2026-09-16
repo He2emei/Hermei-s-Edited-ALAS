@@ -5,7 +5,12 @@ import cv2
 
 from module.exception import ScriptError
 from module.ocr.ocr import Ocr
-from module.shipyard.development_assets import SUPPORTED_SIZE, task_title_area
+from module.shipyard.development_assets import (
+    SUPPORTED_SIZE,
+    normalise_cn_task_title,
+    task_identity,
+    task_title_area,
+)
 from module.shipyard.development import DevelopmentTask, ShipyardDevelopment
 from module.os.training_policy import parse_training_requirement
 
@@ -63,6 +68,77 @@ class ShipyardDevelopmentPolicyTest(unittest.TestCase):
         self.assertTrue(ShipyardDevelopment._is_known_material_title('柴郡舰体塑造II'))
         self.assertFalse(ShipyardDevelopment._is_known_material_title('大型技术理论I其他'))
         self.assertFalse(ShipyardDevelopment._is_known_material_title('经验材料'))
+
+    def test_countdown_printed_on_the_title_line_is_removed(self):
+        # Live CN development panel, 2026-09-16: every locked row prints its
+        # countdown on the title line, right-aligned, and the longest titles
+        # run straight into it without a separator.
+        observed = {
+            '大型技术理论I23:33:43': '大型技术理论I',
+            '先锋技术突破I47:33:43': '先锋技术突破I',
+            '铁血先锋技术测试II71:33:43': '铁血先锋技术测试II',
+            '大型技术理论II95:33:43': '大型技术理论II',
+            '先锋技术突破‖119:33:43': '先锋技术突破II',
+            '菲利克斯·舒尔茨舰体塑造143:33:43': '菲利克斯·舒尔茨舰体塑造',
+            '大型技术理论l23:54:44': '大型技术理论I',
+            '先锋技术突破I:54:43': '先锋技术突破I',
+            '铁血先锋技术测试ll1:54:43': '铁血先锋技术测试II',
+            '利克斯·舒尔茨舰体塑造|143:54:43': '利克斯·舒尔茨舰体塑造I',
+            '柴郡舰体塑造I': '柴郡舰体塑造I',
+            '铁血先锋技术测试I': '铁血先锋技术测试I',
+        }
+        for raw, expected in observed.items():
+            with self.subTest(raw=raw):
+                self.assertEqual(normalise_cn_task_title(raw), expected)
+
+    def test_locked_technical_rows_still_produce_a_requirement(self):
+        tasks = [
+            DevelopmentTask(1, normalise_cn_task_title('铁血先锋技术测试I'), True, 130),
+            DevelopmentTask(4, normalise_cn_task_title('铁血先锋技术测试II95:33:43'), False, 340),
+        ]
+        self.assertEqual(ShipyardDevelopment._pending_requirement(tasks),
+                         parse_training_requirement('铁血先锋技术测试II'))
+
+    def test_ship_missing_from_the_catalog_is_still_hull_material(self):
+        # 菲利克斯·舒尔茨 was released after the 2026-09-08 catalog snapshot.
+        self.assertTrue(ShipyardDevelopment._is_known_material_title('菲利克斯·舒尔茨舰体塑造'))
+        self.assertTrue(ShipyardDevelopment._is_known_material_title('菲利克斯·舒尔茨舰体塑造I'))
+        self.assertFalse(ShipyardDevelopment._is_known_material_title('菲利克斯·舒尔茨'))
+
+    def test_stage_swallowed_by_the_countdown_stays_known(self):
+        # A locked 先锋技术突破I can lose its stage stroke to the countdown digits.
+        self.assertEqual(ShipyardDevelopment._catalog_kind('先锋技术突破'), 'material')
+        self.assertTrue(ShipyardDevelopment._is_known_material_title('先锋技术突破'))
+        self.assertIsNone(ShipyardDevelopment._catalog_kind('菲利克斯·舒尔茨'))
+
+    def test_one_row_seen_twice_keeps_one_identity(self):
+        self.assertEqual(task_identity('菲利克斯·舒尔茨舰体塑造I143:33:43'),
+                         task_identity('利克斯·舒尔茨舰体塑造143:33:43'))
+        self.assertNotEqual(task_identity('菲利克斯·舒尔茨舰体塑造I'),
+                            task_identity('菲利克斯·舒尔茨舰体塑造II'))
+
+    def test_locked_rows_from_live_evidence_carry_no_countdown(self):
+        path = (Path(__file__).parents[2] / 'code_workflow' / 'evidence' / '2026-09-16'
+                / 'shipyard-alas-locked-timer.png')
+        if not path.exists():
+            self.skipTest('2026-09-16 locked-row evidence is not present in this checkout')
+        from types import SimpleNamespace
+        image = cv2.imread(str(path), cv2.IMREAD_COLOR)
+        self.assertIsNotNone(image)
+        image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+        self.assertEqual((image.shape[1], image.shape[0]), SUPPORTED_SIZE)
+        obj = object.__new__(ShipyardDevelopment)
+        obj.device = SimpleNamespace(image=image)
+        titles = [task.title for task in obj._scan_visible_tasks()]
+        self.assertIn('大型技术理论I', titles)
+        self.assertIn('铁血先锋技术测试I', titles)
+        # The longest title loses a stroke to the countdown, so only the
+        # hull-sculpting anchor is asserted here.
+        self.assertTrue(any('舰体塑' in title for title in titles))
+        self.assertFalse(any(':' in title or any(char.isdigit() for char in title)
+                             for title in titles))
+        self.assertTrue(any(ShipyardDevelopment._is_known_material_title(title)
+                            for title in titles))
 
     def test_header_scan_uses_relocated_rows(self):
         class Fake(ShipyardDevelopment):
