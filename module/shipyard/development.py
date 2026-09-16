@@ -17,6 +17,7 @@ from module.shipyard.development_assets import (
     TASK_LIST_AREA,
     TASK_SCAN_ROWS,
     normalise_cn_task_title,
+    ship_name_similarity,
     task_header_button,
     task_identity,
     task_title_area,
@@ -186,12 +187,29 @@ class ShipyardDevelopment(ShipyardUI):
         return list(seen.values())
 
     @staticmethod
+    def _parse_requirement(title):
+        """Parse a technical requirement, tolerating a stage OCR dropped.
+
+        A locked row shares its line with the countdown, and the stage stroke
+        sitting next to the clock digits is regularly read as part of them
+        (``铁血先锋技术测试l69:54:13`` -> ``铁血先锋技术测试``).  The faction and
+        position do not depend on the stage, so recovering one still yields the
+        requirement the shipyard actually asks for.
+        """
+        normalised = normalise_cn_task_title(title)
+        for candidate in (normalised, f'{normalised}I', f'{normalised}II'):
+            try:
+                return parse_training_requirement(candidate)
+            except ValueError:
+                continue
+        return None
+
+    @staticmethod
     def _pending_requirement(tasks):
         parsed = []
         for task in tasks:
-            try:
-                requirement = parse_training_requirement(task.title)
-            except ValueError:
+            requirement = ShipyardDevelopment._parse_requirement(task.title)
+            if requirement is None:
                 continue
             parsed.append((task, requirement))
 
@@ -292,7 +310,8 @@ class ShipyardDevelopment(ShipyardUI):
                 submitted = False
                 for task in material_tasks:
                     submitted |= self._submit_material_task(task.title)
-                if self._read_ship_name() != ship_name:
+                current_name = self._read_ship_name()
+                if current_name != ship_name and ship_name_similarity(current_name, ship_name) < 0.6:
                     raise ScriptError('Working ship changed during material submission')
                 if submitted:
                     continue
@@ -307,11 +326,7 @@ class ShipyardDevelopment(ShipyardUI):
 
     @staticmethod
     def _is_technical_title(title):
-        try:
-            parse_training_requirement(title)
-            return True
-        except ValueError:
-            return False
+        return ShipyardDevelopment._parse_requirement(title) is not None
 
     @staticmethod
     def _catalog_kind(title):
