@@ -93,6 +93,33 @@ def task_identity(title):
     return normalised, 0
 
 
+_CJK_ONLY = re.compile(r'[^\u4e00-\u9fff]')
+
+
+def ship_name_similarity(left, right):
+    """Longest common subsequence ratio of two readings of a ship name.
+
+    The working-project label is short, and cnocr regularly drops or mangles a
+    single character (``菲利克斯·舒尔茨`` read as ``利克昕舒尔茨``).  An exact
+    comparison would abort a whole task over that noise, so the guard compares
+    how much of the two readings still agrees.
+    """
+    a = _CJK_ONLY.sub('', left or '')
+    b = _CJK_ONLY.sub('', right or '')
+    if not a or not b:
+        return 0.0
+    previous = [0] * (len(b) + 1)
+    for char_a in a:
+        current = [0]
+        for index, char_b in enumerate(b, 1):
+            if char_a == char_b:
+                current.append(previous[index - 1] + 1)
+            else:
+                current.append(max(previous[index], current[index - 1]))
+        previous = current
+    return previous[-1] / max(len(a), len(b))
+
+
 def task_title_area(header_y):
     return (TASK_TITLE_X[0], header_y + 21, TASK_TITLE_X[1], header_y + 48)
 
