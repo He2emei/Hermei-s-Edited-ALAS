@@ -166,12 +166,12 @@ class ShipyardDevelopment(ShipyardUI):
         previous = None
         for _ in range(3):
             visible = self._scan_visible_tasks(self._detect_header_ys())
-            fingerprint = tuple((task_identity(t.title), t.complete, t.header_y) for t in visible)
+            fingerprint = tuple((self._task_key(t.title), t.complete, t.header_y) for t in visible)
             for task in visible:
                 # Rows are keyed by identity, not by raw text: two scans of the
                 # same row may differ in a dropped character, and a duplicate
                 # key would send the inspector after a title that never exists.
-                seen[task_identity(task.title)] = task
+                seen[self._task_key(task.title)] = task
             if len(seen) >= 8 or fingerprint == previous:
                 break
             previous = fingerprint
@@ -197,7 +197,11 @@ class ShipyardDevelopment(ShipyardUI):
         requirement the shipyard actually asks for.
         """
         normalised = normalise_cn_task_title(title)
-        for candidate in (normalised, f'{normalised}I', f'{normalised}II'):
+        candidates = [normalised, f'{normalised}I', f'{normalised}II']
+        # A stray character left by a misread countdown also has to be trimmed.
+        candidates += [normalised[:length]
+                       for length in range(len(normalised) - 1, max(1, len(normalised) - 3), -1)]
+        for candidate in candidates:
             try:
                 return parse_training_requirement(candidate)
             except ValueError:
@@ -236,10 +240,10 @@ class ShipyardDevelopment(ShipyardUI):
 
     def _locate_visible_task(self, title):
         """Find a title on the current frame; never reuse historical y data."""
-        wanted = task_identity(title)
+        wanted = self._task_key(title)
         for _ in range(8):
             for header_y in self._detect_header_ys():
-                if task_identity(self._ocr_task_title(header_y)) == wanted:
+                if self._task_key(self._ocr_task_title(header_y)) == wanted:
                     return DevelopmentTask(0, title, False, header_y)
             self._scroll_task_list()
         raise ScriptError(f'Material task is not visible: {title}')
@@ -276,7 +280,7 @@ class ShipyardDevelopment(ShipyardUI):
                 continue
             if self._shipyard_in_ui():
                 for current in self._scan_visible_tasks():
-                    if task_identity(current.title) == task_identity(title) and current.complete:
+                    if self._task_key(current.title) == self._task_key(title) and current.complete:
                         self._collapse_any_expanded_header()
                         return True
         raise ScriptError('Development material submission did not return to shipyard')
@@ -329,20 +333,44 @@ class ShipyardDevelopment(ShipyardUI):
         return ShipyardDevelopment._parse_requirement(title) is not None
 
     @staticmethod
-    def _catalog_kind(title):
-        """Look a title up in the catalog, tolerating a stage the timer ate.
+    def _catalog_key(title):
+        """Return the catalogue key a reading belongs to, or None.
 
-        A locked row prints ``先锋技术突破I`` and its countdown as one string, and
-        the stage stroke next to the clock digits is sometimes read as part of
-        the countdown.  Trying the bare title with each stage suffix keeps a
-        known task known instead of turning it into an unknown one.
+        Two kinds of damage are tolerated.  The stage stroke next to the clock
+        digits is sometimes read as part of the countdown, so the bare title is
+        retried with each stage suffix.  And cnocr occasionally renders the
+        countdown's leading digits as a Han character (``先锋技术突破I89:37:17``
+        reaches the inspector as ``先锋技术突破I仍:37:17``), which leaves a stray
+        character behind once the timer is trimmed; the longest catalogue key
+        the reading starts with is accepted for that case.
         """
         normalised = normalise_cn_task_title(title)
         for candidate in (normalised, f'{normalised}I', f'{normalised}II'):
-            entry = TASK_CATALOG.get(candidate)
-            if entry:
-                return entry.get('kind')
+            if candidate in TASK_CATALOG:
+                return candidate
+        for length in range(len(normalised) - 1, max(1, len(normalised) - 3), -1):
+            candidate = normalised[:length]
+            if candidate in TASK_CATALOG:
+                return candidate
         return None
+
+    @classmethod
+    def _catalog_kind(cls, title):
+        key = cls._catalog_key(title)
+        return TASK_CATALOG[key].get('kind') if key else None
+
+    @classmethod
+    def _task_key(cls, title):
+        """Stable key for one task row across noisy readings of it.
+
+        Rows are matched and de-duplicated by this key rather than by the raw
+        text, so ``先锋技术突破I``, ``先锋技术突破I仍`` and ``先锋技术突破I47:33:43``
+        all describe the same row instead of three different ones.
+        """
+        key = cls._catalog_key(title)
+        if key is not None:
+            return 'catalog', key
+        return task_identity(title)
 
     @classmethod
     def _is_known_material_title(cls, title):
