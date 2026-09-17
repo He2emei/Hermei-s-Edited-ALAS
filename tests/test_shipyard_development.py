@@ -162,6 +162,24 @@ class ShipyardDevelopmentPolicyTest(unittest.TestCase):
         self.assertGreaterEqual(ship_name_similarity('利克昕舒尔茨弋', '菲利克斯·舒尔茨'), 0.6)
         self.assertLess(ship_name_similarity('加斯科涅', '菲利克斯·舒尔茨'), 0.6)
 
+    def test_countdown_digits_read_as_a_han_character_stay_known(self):
+        # Live log 2026-09-18 05:54: the countdown ``89:37:17`` was read as
+        # ``仍:37:17``, leaving 先锋技术突破I仍 once the timer was trimmed.
+        title = normalise_cn_task_title('先锋技术突破I仍:37:17')
+        self.assertEqual(title, '先锋技术突破I仍')
+        self.assertEqual(ShipyardDevelopment._catalog_kind(title), 'material')
+        self.assertTrue(ShipyardDevelopment._is_known_material_title(title))
+        self.assertEqual(ShipyardDevelopment._task_key(title),
+                         ShipyardDevelopment._task_key('先锋技术突破I'))
+        self.assertEqual(ShipyardDevelopment._task_key('先锋技术突破I仍'),
+                         ShipyardDevelopment._task_key('先锋技术突破I89:37:17'))
+
+    def test_stray_character_does_not_break_a_technical_row(self):
+        title = normalise_cn_task_title('铁血先锋技术测试I仍:37:17')
+        self.assertTrue(ShipyardDevelopment._is_technical_title(title))
+        self.assertEqual(ShipyardDevelopment._parse_requirement(title),
+                         parse_training_requirement('铁血先锋技术测试I'))
+
     def test_header_scan_uses_relocated_rows(self):
         class Fake(ShipyardDevelopment):
             def _detect_header_ys(self):
