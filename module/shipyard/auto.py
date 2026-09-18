@@ -124,6 +124,15 @@ class AutoShipyard(AutoShipyardUI):
                     # scheduler (live 2026-09-19 04:38: the pass died with
                     # "Request human takeover" while scanning for a level target).
                     logger.warning(f'Shipyard level target {name} deferred: {error}')
+                    # The book dialog is still open when book_counts fails, and
+                    # the next task would then start on a page it cannot detect
+                    # ("Game page unknown", live 2026-09-19 04:46).  Close it
+                    # before returning to the shipyard.
+                    if self._book_dialog():
+                        try:
+                            self._book_click(986, 132, 'SHIPYARD_BOOK_CLOSE')
+                        except RequestHumanTakeover:
+                            pass
                     self.ui_ensure(page_shipyard)
                     return 'level'
                 if not met:
