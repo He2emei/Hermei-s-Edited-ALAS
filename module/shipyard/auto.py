@@ -4,7 +4,11 @@ from datetime import datetime
 from module.exception import RequestHumanTakeover
 from module.logger import logger
 from module.os.training_ui import CATALOG
-from module.shipyard.assets import SHIPYARD_RESEARCH_COMPLETE
+from module.shipyard.assets import (
+    SHIPYARD_MINUS_DEV,
+    SHIPYARD_MINUS_FATE,
+    SHIPYARD_RESEARCH_COMPLETE,
+)
 from module.shipyard.auto_policy import infer_purchase_offsets, purchase_cost, safe_purchase_amount, server_day
 from module.shipyard.auto_ui import AutoShipyardUI, panel_text, panel_next_cost, required_level
 from module.shipyard.leveling import ShipyardLeveler
@@ -67,6 +71,18 @@ class AutoShipyard(AutoShipyardUI):
         self.device.click_record_clear()
         return tuple(i + selected for i in offsets)
 
+    def _quantity_controls_visible(self):
+        """The minus/plus row exists only while the project can be adjusted.
+
+        A project that has not been researched far enough shows a 开始研究 button
+        instead, and none of the shipyard templates match that panel (verified
+        against the archived frames of 2026-09-19).  Waiting for the controls
+        that never appear is what produced GameStuckError, twice a minute, until
+        the guard stopped restarting the scheduler.
+        """
+        return self.appear(SHIPYARD_MINUS_DEV, offset=(20, 20)) \
+            or self.appear(SHIPYARD_MINUS_FATE, offset=(20, 20))
+
     def _use_owned(self, index):
         """Do not count existing blueprints as free coin catch-up purchases."""
         for _ in range(40):
@@ -108,6 +124,10 @@ class AutoShipyard(AutoShipyardUI):
                 continue
             if self.auto_full():
                 return 'full'
+            if not self._quantity_controls_visible():
+                # Nothing can be selected on this panel, so there is no catch-up
+                # to do and no amount to set.
+                return 'unbuilt'
             if not self._use_owned(index):
                 if required_level(self.device.image, self.auto_fate()):
                     continue
