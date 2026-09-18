@@ -114,8 +114,15 @@ class ShipyardDevelopmentPolicyTest(unittest.TestCase):
     def test_one_row_seen_twice_keeps_one_identity(self):
         self.assertEqual(task_identity('菲利克斯·舒尔茨舰体塑造I143:33:43'),
                          task_identity('利克斯·舒尔茨舰体塑造143:33:43'))
-        self.assertNotEqual(task_identity('菲利克斯·舒尔茨舰体塑造I'),
-                            task_identity('菲利克斯·舒尔茨舰体塑造II'))
+        # The stage stroke is regularly lost to the countdown next to it, so both
+        # stages of one ship share an identity.  Keying on the stage made the
+        # inspector hunt for 舰体塑造II while the panel kept reading 舰体塑造, and
+        # it aborted with "Material task is not visible" (live log 2026-09-18
+        # 18:43).
+        self.assertEqual(task_identity('菲利克斯·舒尔茨舰体塑造I'),
+                         task_identity('利克斯·舒尔茨舰体塑造II'))
+        self.assertNotEqual(task_identity('柴郡舰体塑造I'),
+                            task_identity('大型技术理论I'))
 
     def test_locked_rows_from_live_evidence_carry_no_countdown(self):
         path = (Path(__file__).parents[2] / 'code_workflow' / 'evidence' / '2026-09-16'
