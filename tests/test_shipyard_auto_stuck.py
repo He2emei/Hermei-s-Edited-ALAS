@@ -4,6 +4,7 @@ from unittest import mock
 
 from module.shipyard.assets import SHIPYARD_MINUS_DEV, SHIPYARD_MINUS_FATE
 from module.shipyard.auto import AutoShipyard
+from module.exception import RequestHumanTakeover
 
 
 class ShipyardUnstartedProjectTest(unittest.TestCase):
@@ -80,6 +81,36 @@ class ShipyardUnstartedProjectTest(unittest.TestCase):
         # The owned-blueprint path is reached exactly once, then the candidate
         # reports retry; it must not fall through to the quantity controls again.
         self.assertEqual(calls, [1])
+
+    def test_unreadable_level_target_defers_instead_of_stopping_the_pass(self):
+        """One bad level target must not end the whole daily catch-up.
+
+        Live 2026-09-19 04:38: the Shipyard pass died with "Request human
+        takeover" while scanning the dock for a level target, which stopped the
+        scheduler and, with it, every later task in the queue.
+        """
+
+        class Fake(AutoShipyard):
+            def auto_enter(self):
+                return True
+
+            def auto_fate(self):
+                return False
+
+            def auto_full(self):
+                return False
+
+            def ui_ensure(self, page):
+                return None
+
+        fake = Fake.__new__(Fake)
+        fake.device = SimpleNamespace(image=None)
+        fake.config = SimpleNamespace(ShipyardAuto_UseExpBooks=True)
+        with mock.patch('module.shipyard.auto.required_level', return_value=10), \
+                mock.patch('module.shipyard.auto.ShipyardLeveler') as leveler:
+            leveler.return_value.meet_level.side_effect = RequestHumanTakeover(
+                'dock filter does not surface the level target')
+            self.assertEqual(fake._candidate(4, 1, '埃吉尔', 'DR', True), 'level')
 
 
 if __name__ == '__main__':

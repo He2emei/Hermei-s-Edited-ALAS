@@ -114,7 +114,19 @@ class AutoShipyard(AutoShipyardUI):
                 if not allow_level or not self.config.ShipyardAuto_UseExpBooks:
                     return 'level'
                 leveler = ShipyardLeveler(self.config, self.device)
-                if not leveler.meet_level(name, gate):
+                try:
+                    met = leveler.meet_level(name, gate)
+                except RequestHumanTakeover as error:
+                    # Levelling one ship is optional work inside a daily catch-up
+                    # pass.  An unreadable gate, a target that the dock filter
+                    # does not surface, or a book preview that will not settle
+                    # must skip this ship instead of stopping the whole
+                    # scheduler (live 2026-09-19 04:38: the pass died with
+                    # "Request human takeover" while scanning for a level target).
+                    logger.warning(f'Shipyard level target {name} deferred: {error}')
+                    self.ui_ensure(page_shipyard)
+                    return 'level'
+                if not met:
                     self.ui_ensure(page_shipyard)
                     return 'books'
                 self.ui_ensure(page_shipyard)
