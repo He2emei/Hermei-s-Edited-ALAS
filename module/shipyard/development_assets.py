@@ -84,12 +84,19 @@ def task_identity(title):
 
     Two observations of the same row may differ in a dropped leading character
     or in a stage stroke swallowed by the countdown.  Grouping hull-sculpting
-    rows by anchor and stage keeps one row from being counted twice, which
-    would otherwise make the inspector look for a title that no longer exists.
+    rows by anchor keeps one row from being counted twice, which would
+    otherwise make the inspector look for a title that no longer exists.
+
+    The stage deliberately stays out of the hull-sculpting identity: the live
+    panel reads ``利克斯·舒尔茨舰体塑造`` as often as ``…塑造II``, and keying on
+    the stage made the inspector hunt for a title the panel never printed, then
+    abort with "Material task is not visible".  Both stages are the same kind of
+    material task, so one identity covers them and the remaining stage is
+    submitted on the next pass.
     """
     normalised = normalise_cn_task_title(title)
     if HULL_SCULPT_ANCHOR in normalised:
-        return HULL_SCULPT_ANCHOR, STAGE_TWO if normalised.endswith('II') else STAGE_ONE
+        return (HULL_SCULPT_ANCHOR,)
     return normalised, 0
 
 
