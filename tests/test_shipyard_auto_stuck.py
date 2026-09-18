@@ -103,6 +103,9 @@ class ShipyardUnstartedProjectTest(unittest.TestCase):
             def ui_ensure(self, page):
                 return None
 
+            def _book_dialog(self):
+                return False
+
         fake = Fake.__new__(Fake)
         fake.device = SimpleNamespace(image=None)
         fake.config = SimpleNamespace(ShipyardAuto_UseExpBooks=True)
