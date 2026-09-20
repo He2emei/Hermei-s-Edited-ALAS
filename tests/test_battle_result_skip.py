@@ -1,3 +1,4 @@
+import collections
 import unittest
 from contextlib import contextmanager
 from pathlib import Path
@@ -13,6 +14,7 @@ from module.combat.assets import BATTLE_STATUS_S
 from module.combat import battle_result
 from module.combat.battle_result import (battle_result_click_timer, handle_battle_result_screen,
                                          match_battle_result_button)
+from module.device.control import Control
 from module.handler.info_handler import InfoHandler
 from module.os_handler.enemy_searching import EnemySearchingHandler as OsEnemySearchingHandler
 from module.os_handler.map_event import MapEventHandler
@@ -45,6 +47,51 @@ def fresh_click_state():
         clear()
 
 
+class ClickContractDevice:
+    """A stand-in device that clicks through the real `Control.click()`.
+
+    `Control.click()` takes a Button, not a coordinate: it reads `button.button` and adds the button
+    to the click record of the device.  A stand-in whose `click()` also accepts a bare point hides
+    that contract, which is how a coordinate reached production and crashed the whole task with
+    `AttributeError: 'tuple' object has no attribute 'button'` (live 2026-09-21 05:52:59, dump
+    log/error/1789941179502).  The point of the click is recorded by `click_adb()`, the last step of
+    the real method.
+    """
+
+    click = Control.click
+
+    def __init__(self, image, on_click=None):
+        self.image = image
+        self.on_click = on_click
+        self.clicked = []
+        self.click_record = collections.deque(maxlen=20)
+        self.config = SimpleNamespace(Emulator_ControlMethod='ADB')
+
+    @property
+    def click_methods(self):
+        return {'ADB': self.click_adb}
+
+    def click_adb(self, x, y):
+        self.clicked.append((x, y))
+        if self.on_click is not None:
+            self.on_click()
+
+    def handle_control_check(self, button):
+        # Device.handle_control_check() clears the stuck record and adds the button to the click
+        # record, which is what a bare coordinate cannot serve.
+        self.stuck_record_clear()
+        self.click_record.append(str(button))
+
+    def stuck_record_clear(self):
+        pass
+
+    def click_record_clear(self):
+        self.click_record.clear()
+
+    def stuck_record_add(self, button):
+        pass
+
+
 class BattleResultFrameTest(unittest.TestCase):
     """The battle result screen that blocked GemsFarming on 2026-09-20.
 
@@ -58,9 +105,9 @@ class BattleResultFrameTest(unittest.TestCase):
     def image(self, name):
         return np.asarray(Image.open(EVIDENCE / (name + '.png')).convert('RGB'))
 
-    def app(self, name, click, in_combat=False):
+    def app(self, name, in_combat=False):
         return SimpleNamespace(
-            device=SimpleNamespace(image=self.image(name), click=click),
+            device=ClickContractDevice(self.image(name)),
             is_combat_executing=lambda: in_combat,
         )
 
@@ -84,56 +131,62 @@ class BattleResultFrameTest(unittest.TestCase):
         self.assertIsNone(match_battle_result_button(self.image('map-after-continue')))
 
     def test_result_screen_is_skipped_when_the_page_is_unknown(self):
-        clicked = []
-        app = self.app('result-s-1551', lambda point: clicked.append(point))
+        app = self.app('result-s-1551')
         with fresh_click_state():
             self.assertTrue(handle_battle_result_screen(app))
-            self.assertEqual(len(clicked), 1)
-            self.assert_in_area(clicked[0], SKIP_AREA)
+            self.assertEqual(len(app.device.clicked), 1)
+            self.assert_in_area(app.device.clicked[0], SKIP_AREA)
             # The click timer prevents a burst of clicks while the screen switches.
             self.assertFalse(handle_battle_result_screen(app))
-            self.assertEqual(len(clicked), 1)
+            self.assertEqual(len(app.device.clicked), 1)
+
+    def test_the_click_target_is_the_button_of_the_screen(self):
+        """The handler hands the Button to the device, and the click record sees it.
+
+        `Device.click()` reads `button.button` and registers the button, so a coordinate would both
+        crash here and leave the too-many-click guard of the device without a name to count.
+        """
+        app = self.app('result-s-1551')
+        with fresh_click_state():
+            self.assertTrue(handle_battle_result_screen(app))
+        self.assertEqual(list(app.device.click_record), ['BATTLE_STATUS_S'])
 
     def test_a_still_blocked_screen_is_retried_and_then_left_alone(self):
-        clicked = []
-        app = self.app('result-s-1551', lambda point: clicked.append(point))
+        app = self.app('result-s-1551')
         with fresh_click_state():
             for _ in range(battle_result.BATTLE_RESULT_MAX_ATTEMPT):
                 battle_result_click_timer.reset()
                 battle_result_click_timer._start = 0
                 self.assertTrue(handle_battle_result_screen(app))
-            self.assertEqual(len(clicked), battle_result.BATTLE_RESULT_MAX_ATTEMPT)
-            for point in clicked:
+            self.assertEqual(len(app.device.clicked), battle_result.BATTLE_RESULT_MAX_ATTEMPT)
+            for point in app.device.clicked:
                 self.assert_in_area(point, SKIP_AREA)
             # After the attempts are spent the page poll reports the page instead of clicking on.
             battle_result_click_timer.reset()
             battle_result_click_timer._start = 0
             self.assertFalse(handle_battle_result_screen(app))
-            self.assertEqual(len(clicked), battle_result.BATTLE_RESULT_MAX_ATTEMPT)
+            self.assertEqual(len(app.device.clicked), battle_result.BATTLE_RESULT_MAX_ATTEMPT)
 
     def test_a_new_battle_gets_its_own_attempts(self):
-        clicked = []
-        app = self.app('result-s-1551', lambda point: clicked.append(point))
+        app = self.app('result-s-1551')
         with fresh_click_state():
             battle_result.battle_result_attempt = battle_result.BATTLE_RESULT_MAX_ATTEMPT
             # No click for longer than the stale timeout: this result screen is a new battle.
             battle_result.battle_result_clicked_at = 0.
             self.assertTrue(handle_battle_result_screen(app))
-            self.assertEqual(len(clicked), 1)
+            self.assertEqual(len(app.device.clicked), 1)
 
     def test_a_running_combat_is_never_clicked(self):
-        clicked = Mock()
-        app = self.app('result-s-1551', clicked, in_combat=True)
+        app = self.app('result-s-1551', in_combat=True)
         with fresh_click_state():
             self.assertFalse(handle_battle_result_screen(app))
-        clicked.assert_not_called()
+        self.assertEqual(app.device.clicked, [])
 
     def test_no_result_screen_means_no_click(self):
-        clicked = Mock()
-        app = self.app('map-after-continue', clicked)
+        app = self.app('map-after-continue')
         with fresh_click_state():
             self.assertFalse(handle_battle_result_screen(app))
-        clicked.assert_not_called()
+        self.assertEqual(app.device.clicked, [])
 
 
 class FakeMapEventApp:
@@ -144,9 +197,8 @@ class FakeMapEventApp:
     """
 
     def __init__(self, image, in_combat=False):
-        self.clicked = []
         self.in_combat = in_combat
-        self.device = SimpleNamespace(image=image, click=self.clicked.append)
+        self.device = ClickContractDevice(image)
         self.combat_probe = Mock(side_effect=self._in_combat)
 
     def _in_combat(self):
@@ -195,22 +247,15 @@ class QuitLoopApp:
     def __init__(self, result_frame, map_frame, limit=5000):
         self.frames = (result_frame, map_frame)
         self.limit = limit
-        self.clicked = []
         self.screenshots = 0
         self.interval_timer = {}
         self.map_is_threat_safe = True
         self._hot_fix_check_wait = Timer(6)
         self.config = SimpleNamespace(BUTTON_OFFSET=30, Campaign_Event='campaign_main')
-        self.device = SimpleNamespace(
-            image=result_frame,
-            click=self.click,
-            screenshot=self.screenshot,
-            stuck_record_add=lambda button: None,
-        )
+        self.device = ClickContractDevice(result_frame, on_click=self.leave_result_screen)
+        self.device.screenshot = self.screenshot
 
-    def click(self, button):
-        point = button.button if hasattr(button, 'button') else button
-        self.clicked.append(tuple(point))
+    def leave_result_screen(self):
         # The game leaves the result screen for the map once it is clicked.
         self.device.image = self.frames[1]
 
@@ -261,14 +306,14 @@ class OsMapEventResultScreenTest(unittest.TestCase):
         app = FakeMapEventApp(self.image('result-s-2308'))
         with fresh_click_state():
             self.assertTrue(MapEventHandler.handle_map_event(app))
-        self.assertEqual(len(app.clicked), 1)
-        self.assert_in_area(app.clicked[0], SKIP_AREA)
+        self.assertEqual(len(app.device.clicked), 1)
+        self.assert_in_area(app.device.clicked[0], SKIP_AREA)
 
     def test_map_event_leaves_a_map_frame_alone(self):
         app = FakeMapEventApp(self.image('map-after-continue'))
         with fresh_click_state():
             self.assertFalse(MapEventHandler.handle_map_event(app))
-        self.assertEqual(app.clicked, [])
+        self.assertEqual(app.device.clicked, [])
 
     def test_a_map_frame_never_probes_for_a_running_combat(self):
         # Combat.is_combat_executing() registers PAUSE in the stuck record of the device, which
@@ -282,15 +327,15 @@ class OsMapEventResultScreenTest(unittest.TestCase):
         app = FakeMapEventApp(self.image('result-s-2308'), in_combat=True)
         with fresh_click_state():
             self.assertFalse(MapEventHandler.handle_map_event(app))
-        self.assertEqual(app.clicked, [])
+        self.assertEqual(app.device.clicked, [])
 
     def test_the_quit_loop_ends_on_the_archived_frames(self):
         """os_auto_search_quit() reaches the map again instead of waiting for the stuck check."""
         app = QuitLoopApp(self.image('result-s-2308'), self.image('os-map-cleared'))
         with fresh_click_state():
             self.assertFalse(app.os_auto_search_quit())
-        self.assertEqual(len(app.clicked), 1)
-        self.assert_in_area(app.clicked[0], SKIP_AREA)
+        self.assertEqual(len(app.device.clicked), 1)
+        self.assert_in_area(app.device.clicked[0], SKIP_AREA)
         self.assertLess(app.screenshots, app.limit)
 
     def test_without_the_result_screen_handler_the_quit_loop_never_ends(self):
@@ -300,7 +345,7 @@ class OsMapEventResultScreenTest(unittest.TestCase):
                                         lambda app: False):
             with self.assertRaises(LoopLimitReached):
                 app.os_auto_search_quit()
-        self.assertEqual(app.clicked, [])
+        self.assertEqual(app.device.clicked, [])
 
     def test_the_os_map_frame_is_the_end_condition(self):
         """The map frame of the loop test really is an is_in_map() frame."""
