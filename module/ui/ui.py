@@ -2,6 +2,7 @@ from module.base.button import Button
 from module.base.decorator import run_once
 from module.base.timer import Timer
 from module.combat.assets import GET_ITEMS_1, GET_ITEMS_2, GET_SHIP
+from module.combat.battle_result import handle_battle_result_screen
 from module.exception import (GameNotRunningError, GamePageUnknownError,
                               RequestHumanTakeover)
 from module.exercise.assets import EXERCISE_PREPARATION
@@ -195,6 +196,11 @@ class UI(InfoHandler):
 
             # Unknown page but able to handle
             logger.info("Unknown ui page")
+            # A battle result screen is not a page, but it covers the screen until it is
+            # clicked away. It is left there when a scheduler restarts during a combat.
+            if handle_battle_result_screen(self):
+                timeout.reset()
+                continue
             if self.appear_then_click(GOTO_MAIN, offset=(30, 30), interval=2):
                 timeout.reset()
                 continue
