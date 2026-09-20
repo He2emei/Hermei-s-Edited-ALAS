@@ -55,7 +55,9 @@ def handle_battle_result_screen(app):
     is not reachable from the page detection of UI, and
     AutoSearchCombat.auto_search_combat_status() only reaches it when a low-emotion popup armed
     `_auto_search_status_confirm`. A result screen left over from a battle that no combat loop
-    finished therefore has no handler at all.
+    finished therefore has no handler at all, in the page poll as well as in the operation siren
+    map loops, which wait for is_in_map() and never click a result screen (live 2026-09-20 23:08:25,
+    OpsiHazard1Leveling in os_auto_search_quit, GameStuckError).
 
     The rank icon recognizes the screen and the button area of the same asset is the skip target,
     so no new template or screen layout is assumed here. The click is repeated
@@ -73,14 +75,17 @@ def handle_battle_result_screen(app):
     if not battle_result_click_timer.reached():
         return False
 
-    # A battle in progress is an unsupported start state as well, but never click into it.
-    in_combat = getattr(app, 'is_combat_executing', None)
-    if callable(in_combat) and in_combat():
-        return False
-
     button = match_battle_result_button(app.device.image)
     if button is None:
         battle_result_attempt = 0
+        return False
+
+    # A battle in progress is an unsupported start state as well, but never click into it.
+    # This probe is asked only once the screen is on the display, because Combat.is_combat_executing()
+    # registers PAUSE in the stuck record of the device, and a loop that never sees a result screen
+    # would otherwise lose its sixty second stuck check.
+    in_combat = getattr(app, 'is_combat_executing', None)
+    if callable(in_combat) and in_combat():
         return False
 
     # A screen that is still there long after the last click belongs to a new battle.
