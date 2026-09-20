@@ -2,6 +2,7 @@ from module.base.timer import Timer
 from module.campaign.campaign_status import CampaignStatus
 from module.combat.assets import *
 from module.combat.combat import Combat
+from module.combat.new_ship_page import handle_new_ship_page
 from module.exception import CampaignEnd
 from module.handler.assets import AUTO_SEARCH_MAP_OPTION_ON
 from module.logger import logger
@@ -312,6 +313,8 @@ class AutoSearchCombat(MapOperation, Combat, CampaignStatus):
 
             # Combat status
             if self.handle_get_ship():
+                continue
+            if handle_new_ship_page(self):
                 continue
             if self.handle_auto_search_map_option():
                 self._auto_search_status_confirm = False
