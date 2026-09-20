@@ -7,6 +7,7 @@ from module.combat.combat_auto import CombatAuto
 from module.combat.combat_manual import CombatManual
 from module.combat.hp_balancer import HPBalancer
 from module.combat.level import Level
+from module.combat.new_ship_page import handle_new_ship_page
 from module.combat.submarine import SubmarineCall
 from module.combat_ui.assets import *
 from module.handler.auto_search import AutoSearchHandler
@@ -587,6 +588,8 @@ class Combat(Level, HPBalancer, Retirement, SubmarineCall, CombatAuto, CombatMan
                 continue
             # Combat status
             if not exp_info and self.handle_get_ship(drop=drop):
+                continue
+            if handle_new_ship_page(self):
                 continue
             if self.handle_get_items(drop=drop):
                 continue
