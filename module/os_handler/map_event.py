@@ -1,5 +1,6 @@
 from module.base.timer import Timer
 from module.combat.assets import *
+from module.combat.battle_result import handle_battle_result_screen
 from module.exception import CampaignEnd
 from module.handler.assets import POPUP_CANCEL, POPUP_CONFIRM
 from module.logger import logger
@@ -112,6 +113,12 @@ class MapEventHandler(EnemySearchingHandler):
         Returns:
             str: Event that handled
         """
+        # A battle result screen is not a map event and it is not a page either, but every
+        # operation siren loop that waits for is_in_map() ends in GameStuckError while it stays
+        # on the display: auto search can be stopped while a battle is still running, and the
+        # result screen of that battle appears afterwards, when no combat loop is watching.
+        if handle_battle_result_screen(self):
+            return 'battle_result'
         if self.handle_map_get_items(drop=drop):
             return 'map_get_items'
         if self.handle_os_game_tips():
