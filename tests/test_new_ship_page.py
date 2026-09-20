@@ -1,8 +1,9 @@
+import collections
 import unittest
 from contextlib import contextmanager
 from pathlib import Path
 from types import SimpleNamespace
-from unittest.mock import Mock, patch
+from unittest.mock import patch
 
 import numpy as np
 from PIL import Image
@@ -13,6 +14,7 @@ from module.combat.auto_search_combat import AutoSearchCombat
 from module.combat.new_ship_page import (CONFIRM_BUTTON_COLOR, CONFIRM_SEARCH_AREA, confirm_ocr,
                                          find_confirm_button_area, handle_new_ship_page, is_confirm_label,
                                          match_new_ship_confirm)
+from module.device.control import Control
 
 ROOT = Path(__file__).parents[1]
 EVIDENCE = ROOT / 'tests/fixtures/new_ship_page'
@@ -42,6 +44,51 @@ class LoopLimitReached(Exception):
     """Raised by the stand-in device when a loop does not advance on its own."""
 
 
+class ClickContractDevice:
+    """A stand-in device that clicks through the real `Control.click()`.
+
+    `Control.click()` takes a Button, not a coordinate: it reads `button.button` and adds the button
+    to the click record of the device.  A stand-in whose `click()` also accepts a bare point hides
+    that contract, which is how a coordinate reached production and crashed the whole task with
+    `AttributeError: 'tuple' object has no attribute 'button'` (live 2026-09-21 05:52:59, dump
+    log/error/1789941179502).  The point of the click is recorded by `click_adb()`, the last step of
+    the real method.
+    """
+
+    click = Control.click
+
+    def __init__(self, image, on_click=None):
+        self.image = image
+        self.on_click = on_click
+        self.clicked = []
+        self.click_record = collections.deque(maxlen=20)
+        self.config = SimpleNamespace(Emulator_ControlMethod='ADB')
+
+    @property
+    def click_methods(self):
+        return {'ADB': self.click_adb}
+
+    def click_adb(self, x, y):
+        self.clicked.append((x, y))
+        if self.on_click is not None:
+            self.on_click()
+
+    def handle_control_check(self, button):
+        # Device.handle_control_check() clears the stuck record and adds the button to the click
+        # record, which is what a bare coordinate cannot serve.
+        self.stuck_record_clear()
+        self.click_record.append(str(button))
+
+    def stuck_record_clear(self):
+        pass
+
+    def click_record_clear(self):
+        self.click_record.clear()
+
+    def stuck_record_add(self, button):
+        pass
+
+
 class NewShipPageFrameTest(unittest.TestCase):
     """The `NEW SHIP ACQUIRED` page that blocked GemsFarming on 2026-09-21.
 
@@ -59,8 +106,8 @@ class NewShipPageFrameTest(unittest.TestCase):
     def image(self, name):
         return np.asarray(Image.open(EVIDENCE / (name + '.png')).convert('RGB'))
 
-    def app(self, name, click):
-        return SimpleNamespace(device=SimpleNamespace(image=self.image(name), click=click))
+    def app(self, name):
+        return SimpleNamespace(device=ClickContractDevice(self.image(name)))
 
     def assert_in_area(self, point, area):
         x, y = point
@@ -112,68 +159,76 @@ class NewShipPageFrameTest(unittest.TestCase):
         self.assertIsNone(match_new_ship_confirm(image))
 
     def test_the_page_is_clicked_once_and_then_left_alone(self):
-        clicked = []
-        app = self.app('new-ship-0304', lambda point: clicked.append(point))
+        app = self.app('new-ship-0304')
         with fresh_click_state():
             self.assertTrue(handle_new_ship_page(app))
-            self.assertEqual(len(clicked), 1)
-            self.assert_in_area(clicked[0], CONFIRM_AREA)
+            self.assertEqual(len(app.device.clicked), 1)
+            self.assert_in_area(app.device.clicked[0], CONFIRM_AREA)
             # The click timer prevents a burst of clicks while the page switches.
             self.assertFalse(handle_new_ship_page(app))
-            self.assertEqual(len(clicked), 1)
+            self.assertEqual(len(app.device.clicked), 1)
+
+    def test_the_click_target_is_the_button_of_the_page(self):
+        """The handler hands the Button to the device, and the click record sees it.
+
+        `Device.click()` reads `button.button` and registers the button, so a coordinate would both
+        crash here and leave the too-many-click guard of the device without a name to count.
+        """
+        app = self.app('new-ship-0304')
+        with fresh_click_state():
+            self.assertTrue(handle_new_ship_page(app))
+        self.assertEqual(list(app.device.click_record), ['NEW_SHIP_CONFIRM'])
 
     def test_a_still_blocked_page_is_retried_and_then_left_alone(self):
-        clicked = []
-        app = self.app('new-ship-0304', lambda point: clicked.append(point))
+        app = self.app('new-ship-0304')
         with fresh_click_state():
             for _ in range(new_ship_page.CONFIRM_MAX_ATTEMPT):
                 new_ship_page.confirm_click_timer.reset()
                 new_ship_page.confirm_click_timer._start = 0
                 self.assertTrue(handle_new_ship_page(app))
-            self.assertEqual(len(clicked), new_ship_page.CONFIRM_MAX_ATTEMPT)
-            for point in clicked:
+            self.assertEqual(len(app.device.clicked), new_ship_page.CONFIRM_MAX_ATTEMPT)
+            for point in app.device.clicked:
                 self.assert_in_area(point, CONFIRM_AREA)
             # After the attempts are spent the page is reported instead of being clicked on.
             new_ship_page.confirm_click_timer.reset()
             new_ship_page.confirm_click_timer._start = 0
             self.assertFalse(handle_new_ship_page(app))
-            self.assertEqual(len(clicked), new_ship_page.CONFIRM_MAX_ATTEMPT)
+            self.assertEqual(len(app.device.clicked), new_ship_page.CONFIRM_MAX_ATTEMPT)
 
     def test_a_new_page_gets_its_own_attempts(self):
-        clicked = []
-        app = self.app('new-ship-0304', lambda point: clicked.append(point))
+        app = self.app('new-ship-0304')
         with fresh_click_state():
             new_ship_page.confirm_attempt = new_ship_page.CONFIRM_MAX_ATTEMPT
             # No click for longer than the stale timeout: this page is a new battle.
             new_ship_page.confirm_clicked_at = 0.
             self.assertTrue(handle_new_ship_page(app))
-            self.assertEqual(len(clicked), 1)
+            self.assertEqual(len(app.device.clicked), 1)
 
     def test_a_page_of_another_screen_is_not_clicked(self):
-        clicked = Mock()
+        other = self.app('other-confirm-0727')
+        campaign_map = self.app('campaign-map')
         with fresh_click_state():
-            self.assertFalse(handle_new_ship_page(self.app('other-confirm-0727', clicked)))
-            self.assertFalse(handle_new_ship_page(self.app('campaign-map', clicked)))
-        clicked.assert_not_called()
+            self.assertFalse(handle_new_ship_page(other))
+            self.assertFalse(handle_new_ship_page(campaign_map))
+        self.assertEqual(other.device.clicked, [])
+        self.assertEqual(campaign_map.device.clicked, [])
 
 
-class StatusLoopDevice:
+class StatusLoopDevice(ClickContractDevice):
     """The device `auto_search_combat_status()` needs.
 
-    It serves the archived page, moves to the map when a click arrives, and stops the loop after
-    `limit` screenshots so a loop that cannot advance fails the test instead of spinning forever.
+    It clicks through the real `Control.click()`, serves the archived page, moves to the map when a
+    click arrives, and stops the loop after `limit` screenshots so a loop that cannot advance fails
+    the test instead of spinning forever.
     """
 
     def __init__(self, page_frame, map_frame, limit):
         self.frames = (page_frame, map_frame)
         self.limit = limit
-        self.image = page_frame
-        self.clicked = []
         self.screenshots = 0
+        super().__init__(page_frame, on_click=self.leave_new_ship_page)
 
-    def click(self, button):
-        point = button.button if hasattr(button, 'button') else button
-        self.clicked.append(tuple(point))
+    def leave_new_ship_page(self):
         # The game leaves the new ship page for the map once the confirm button is clicked.
         self.image = self.frames[1]
 
@@ -182,9 +237,6 @@ class StatusLoopDevice:
         if self.screenshots > self.limit:
             raise LoopLimitReached(f'no exit after {self.limit} screenshots')
         return self.image
-
-    def __getattr__(self, item):
-        return lambda *args, **kwargs: None
 
 
 class StatusLoopApp:
