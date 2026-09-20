@@ -14,7 +14,7 @@ import numpy as np
 
 from module.base.button import Button
 from module.base.timer import Timer
-from module.base.utils import color_similarity_2d, crop, random_rectangle_point
+from module.base.utils import color_similarity_2d, crop
 from module.logger import logger
 from module.ocr.ocr import Ocr
 
@@ -187,7 +187,10 @@ def handle_new_ship_page(app):
 
     The click is repeated CONFIRM_MAX_ATTEMPT times because a single click can be swallowed by the
     game, and then the page is left to the loop, which reports it through the stuck check as
-    before.
+    before.  The click target is the Button itself, because Device.click() takes a Button and
+    reads its `button` attribute; a coordinate of that area is not a click target and crashed the
+    task with `AttributeError: 'tuple' object has no attribute 'button'` (live 2026-09-21 05:52:59,
+    dump log/error/1789941179502).
 
     Args:
         app: Alas instance.
@@ -213,10 +216,11 @@ def handle_new_ship_page(app):
         logger.warning(f'Unable to skip the new ship page: {button}')
         return False
 
-    point = random_rectangle_point(button.button)
     confirm_attempt += 1
     confirm_clicked_at = time()
-    logger.info(f'Skip new ship page: {button}, click {point}, attempt {confirm_attempt}')
-    app.device.click(point)
+    logger.info(f'Skip new ship page: {button}, attempt {confirm_attempt}')
+    # Device.click() takes a Button, not a coordinate: it reads `button.button`, which is the
+    # button that was localized, and registers the button in the click record.
+    app.device.click(button)
     confirm_click_timer.reset()
     return True
