@@ -1,7 +1,6 @@
 from time import time
 
 from module.base.timer import Timer
-from module.base.utils import random_rectangle_point
 from module.combat.assets import BATTLE_STATUS_A, BATTLE_STATUS_B, BATTLE_STATUS_C, BATTLE_STATUS_D, BATTLE_STATUS_S
 from module.logger import logger
 
@@ -60,9 +59,12 @@ def handle_battle_result_screen(app):
     OpsiHazard1Leveling in os_auto_search_quit, GameStuckError).
 
     The rank icon recognizes the screen and the button area of the same asset is the skip target,
-    so no new template or screen layout is assumed here. The click is repeated
-    BATTLE_RESULT_MAX_ATTEMPT times because a single click can be swallowed by the game, and then
-    the screen is left to the page poll.
+    so no new template or screen layout is assumed here. The click target is the Button itself,
+    because Device.click() takes a Button and reads its `button` attribute; a coordinate of that
+    area is not a click target and crashed the task with `AttributeError: 'tuple' object has no
+    attribute 'button'` (live 2026-09-21 05:52:59, dump log/error/1789941179502). The click is
+    repeated BATTLE_RESULT_MAX_ATTEMPT times because a single click can be swallowed by the game,
+    and then the screen is left to the page poll.
 
     Args:
         app: Alas instance.
@@ -96,10 +98,11 @@ def handle_battle_result_screen(app):
         logger.warning(f'Unable to skip the battle result screen: {button}')
         return False
 
-    point = random_rectangle_point(button.button)
     battle_result_attempt += 1
     battle_result_clicked_at = time()
-    logger.info(f'Skip battle result: {button}, click {point}, attempt {battle_result_attempt}')
-    app.device.click(point)
+    logger.info(f'Skip battle result: {button}, attempt {battle_result_attempt}')
+    # Device.click() takes a Button, not a coordinate: it reads `button.button`, which is the
+    # clickable area of the result screen, and registers the button in the click record.
+    app.device.click(button)
     battle_result_click_timer.reset()
     return True
