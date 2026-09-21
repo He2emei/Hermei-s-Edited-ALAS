@@ -1,0 +1,289 @@
+"""Regression tests for the deployment dock scan that ran into the click guard.
+
+Dump 1789964411956 (2026-09-21 12:20:11, alas / OpsiHazard1Leveling, deployment
+dock slot 5, faction filter ``iron``):
+
+- ``DOCK_SCROLL`` is calibrated as (1239, 76, 1248, 641) while the scrollbar
+  track ends near y=626.  On the archived frame the thumb measures y 326..626,
+  so the highest position the scroll can report is
+  (400.0-150.5)/(565-301) = 0.9451.
+- ``Scroll.at_bottom()`` needs > 0.95 and ``Scroll.set(1.0)`` needs the position
+  to improve by ``drag_threshold`` = 0.05: the residual gap is 0.054924, so
+  neither of them ever fires.
+- ``TrainingFleetManager._scan_selection()`` therefore never saw the end of the
+  list, kept asking the scrollbar for position 1.0 and swiped 12 times.  Every
+  swipe is recorded by ``Device.click_record_add()``, so
+  ``Device.click_record_check()`` aborted the whole task with
+  ``GameTooManyClickError`` after 13 s of swiping.
+"""
+import collections
+import unittest
+from types import SimpleNamespace
+from unittest.mock import patch
+
+import numpy as np
+
+from module.base.button import Button
+from module.device.device import Device
+from module.exception import GameTooManyClickError, RequestHumanTakeover
+from module.os.training import TrainingFleetManager
+from module.os.training_policy import ShipCandidate
+from module.os.training_ui import (TrainingShipInspector, catalog_name,
+                                   reading_similarity, same_dock_page)
+from module.ui.scroll import Scroll
+
+# Positions measured on the crash frame: the thumb length, the calibrated
+# track and the highest position the scrollbar can report.
+THUMB_LENGTH = 301
+TRACK_END = 0.9450757575757576
+
+
+def card(name):
+    return Button((0, 0, 10, 10), (0, 0, 0), (0, 0, 10, 10), name=name)
+
+
+class Main:
+    """Minimal stand-in for ModuleBase: Scroll only needs ``device``."""
+
+    def __init__(self, device):
+        self.device = device
+
+
+class ProbeScroll(Scroll):
+    """A dock scrollbar whose position is reported from a model, not pixels."""
+
+    def __init__(self, position, end, page_step):
+        super().__init__((1239, 76, 1248, 641), (247, 211, 66), name='DOCK_SCROLL')
+        self.length = THUMB_LENGTH
+        self.position = position
+        self.end = end
+        self.page_step = page_step
+
+    def ready(self):
+        """Let every drag attempt run without waiting for the real timers."""
+        self.drag_interval = collections.namedtuple('_Timer', 'clear reset reached')(
+            lambda: None, lambda: None, lambda: True)
+        self.drag_timeout = collections.namedtuple('_Timer', 'reset reached')(
+            lambda: None, lambda: False)
+        return self
+
+    def cal_position(self, main):
+        return self.position
+
+
+class ProbeDevice:
+    """Device stub bound to the real click guard.
+
+    ``click_record*`` come from :class:`Device`, so a runaway scan fails through
+    exactly the check that ended the production task.
+    """
+
+    click_record_add = Device.click_record_add
+    click_record_check = Device.click_record_check
+    click_record_clear = Device.click_record_clear
+
+    def __init__(self, scroll, step):
+        self.scroll = scroll
+        self.step = step
+        self.image = None
+        self.click_record = collections.deque(maxlen=15)
+        self.swipes = []
+
+    def screenshot(self):
+        return None
+
+    def sleep(self, seconds):
+        return None
+
+    def click(self, button, control_check=True):
+        return None
+
+    def swipe(self, p1, p2, duration=(0.1, 0.2), name='SWIPE', distance_check=True):
+        # Control.swipe() records the control before dropping a short swipe,
+        # and the dock follows the finger, capped by the end of the list.
+        self.click_record_add(name)
+        self.click_record_check()
+        self.swipes.append(name)
+        if distance_check and np.linalg.norm(np.subtract(p1, p2)) < 10:
+            return
+        direction = 1 if p2[1] > p1[1] else -1
+        self.scroll.position = min(max(self.scroll.position + direction * self.step, 0.0),
+                                   self.scroll.end)
+
+
+class ScanManager(TrainingFleetManager):
+    """TrainingFleetManager whose dock OCR follows the probe position."""
+
+    def __init__(self, device, scroll, pages):
+        self.device = device
+        self.scroll = scroll
+        self.pages = pages
+
+    def _visible_names(self):
+        index = min(round(self.scroll.position / self.scroll.page_step), len(self.pages) - 1)
+        raw = list(self.pages[index])
+        self._raw_names = raw
+        self._visible_cards = [card(f'CARD_{i}') for i in range(len(raw))]
+        return [catalog_name(n) for n in raw]
+
+
+class ScrollStallTest(unittest.TestCase):
+    """Scroll.set() must give up on a position the scroll cannot reach."""
+
+    def test_scroll_stops_swiping_at_the_end_of_the_track(self):
+        scroll = ProbeScroll(position=TRACK_END, end=TRACK_END, page_step=TRACK_END).ready()
+        device = ProbeDevice(scroll, step=0.5)
+        dragged = scroll.set(1.0, main=Main(device))
+        self.assertEqual(dragged, scroll.stall_limit)
+        self.assertEqual(device.swipes, ['DOCK_SCROLL'] * scroll.stall_limit)
+        self.assertEqual(scroll.position, TRACK_END)
+
+    def test_scroll_still_reaches_a_position_inside_the_track(self):
+        scroll = ProbeScroll(position=0.0, end=TRACK_END, page_step=0.45).ready()
+        device = ProbeDevice(scroll, step=0.45)
+        dragged = scroll.set(0.45, main=Main(device))
+        self.assertEqual(dragged, 1)
+        self.assertAlmostEqual(scroll.position, 0.45)
+
+    def test_scroll_still_reaches_the_track_top(self):
+        scroll = ProbeScroll(position=TRACK_END, end=TRACK_END, page_step=0.45).ready()
+        device = ProbeDevice(scroll, step=0.45)
+        dragged = scroll.set(0.0, main=Main(device))
+        self.assertGreater(dragged, 0)
+        self.assertLess(dragged, scroll.stall_limit)
+        self.assertLess(abs(scroll.position), scroll.drag_threshold)
+
+    def test_the_probe_device_reproduces_the_click_guard(self):
+        # The stub is only useful if it aborts like the production device does.
+        scroll = ProbeScroll(position=TRACK_END, end=TRACK_END, page_step=TRACK_END).ready()
+        device = ProbeDevice(scroll, step=0.5)
+        main = Main(device)
+        with self.assertRaises(GameTooManyClickError):
+            for _ in range(20):
+                scroll.set(1.0, main=main)
+
+
+class DockPageReadingTest(unittest.TestCase):
+    """The repeated-page check has to tolerate cnocr noise."""
+
+    def test_readings_of_one_card_agree_despite_dropped_and_stray_characters(self):
+        for left, right in (
+                ('_德意志', '德意志'),
+                ('、珍珠号', '珍珠号_'),
+                ('斯佩伯爵海军上…', '斯佩伯爵海军上'),
+                ('反击', '反共'),
+                ('、英仙座', '英仙座'),
+                ('Z23', 'Z23'),
+        ):
+            with self.subTest(left=left, right=right):
+                self.assertGreaterEqual(reading_similarity(left, right), 0.5)
+
+    def test_unrelated_names_stay_below_the_page_threshold(self):
+        for left, right in (('Z20', 'Z46'), ('企业', '柴郡'), ('德意志', '希佩尔海军上将')):
+            with self.subTest(left=left, right=right):
+                self.assertLess(reading_similarity(left, right), 0.5)
+
+    def test_only_a_reading_of_the_same_cards_is_the_same_page(self):
+        page = ['_德意志', '希佩尔海军上将', 'Z23']
+        self.assertTrue(same_dock_page(page, ['德意志_', '希佩尔海军上将_', 'Z23']))
+        self.assertFalse(same_dock_page(page, ['企业', '柴郡', 'Z46']))
+        self.assertFalse(same_dock_page(page, page[:2]))
+        self.assertFalse(same_dock_page(page, []))
+        self.assertFalse(same_dock_page([], page))
+
+
+class DeploymentDockScanTest(unittest.TestCase):
+    """The scan has to end at the last page instead of swiping into the guard."""
+
+    def manager(self, pages, position, end, page_step, step):
+        scroll = ProbeScroll(position, end, page_step).ready()
+        device = ProbeDevice(scroll, step=step)
+        return ScanManager(device, scroll, pages), device, scroll
+
+    def scan(self, manager, scroll, target=None):
+        with patch('module.os.training.DOCK_SCROLL', scroll):
+            return manager._scan_selection(target)
+
+    def test_scan_collects_every_page_and_ends_at_the_track_end(self):
+        pages = [['德意志', '希佩尔海军上将', 'Z23'],
+                 ['Z19', '卡尔斯鲁厄', '柯尼斯堡'],
+                 ['罗恩', '美因茨', '埃尔宾']]
+        manager, device, scroll = self.manager(pages, position=0.0, end=TRACK_END,
+                                               page_step=TRACK_END / 2, step=TRACK_END / 2)
+        turns = []
+        real_next_page = scroll.next_page
+        scroll.next_page = lambda main, page=0.45: (turns.append(page),
+                                                    real_next_page(main=main, page=page))[1]
+        names = self.scan(manager, scroll)
+        self.assertEqual(names, {name for page in pages for name in page})
+        # One page turn per page read; the last one is the turn the dock cannot
+        # follow, which is how this loop learns where the list ends.
+        self.assertLessEqual(len(turns), len(pages))
+        self.assertLess(len(device.swipes), 12)
+
+    def test_scan_stops_on_a_repeated_page_read_with_ocr_noise(self):
+        # The thumb inches forward while the cards stay the same, so only the
+        # tolerant page comparison can tell that the dock is not advancing.
+        pages = [['德意志', '希佩尔海军上将', 'Z23'],
+                 ['德意志', '希佩尔海军上将', 'Z23']]
+        manager, device, scroll = self.manager(pages, position=0.87, end=TRACK_END,
+                                               page_step=TRACK_END, step=0.06)
+        turns = []
+        real_next_page = scroll.next_page
+        scroll.next_page = lambda main, page=0.45: (turns.append(page),
+                                                    real_next_page(main=main, page=page))[1]
+        readings = iter([['卡尔斯鲁厄', 'Z23', '德意志'],
+                         ['尔斯鲁厄', 'Z23', '德意志']])
+
+        def visible_names():
+            raw = list(next(readings, ['尔斯鲁厄', 'Z23', '德意志']))
+            manager._raw_names = raw
+            manager._visible_cards = [card(f'CARD_{i}') for i in range(len(raw))]
+            return [catalog_name(n) for n in raw]
+
+        manager._visible_names = visible_names
+        names = self.scan(manager, scroll)
+        # The dropped 卡 leaves the second reading unresolvable, so the exact
+        # comparison the scan used before sees a different page here.
+        self.assertEqual(names, {'卡尔斯鲁厄', 'Z23', '德意志'})
+        self.assertEqual(len(turns), 1)
+        self.assertLess(len(device.swipes), 12)
+
+    def test_scan_reports_a_missing_target_instead_of_swiping_forever(self):
+        pages = [['德意志', 'Z23']]
+        manager, device, scroll = self.manager(pages, position=TRACK_END, end=TRACK_END,
+                                               page_step=TRACK_END, step=0.0)
+        with self.assertRaises(RequestHumanTakeover):
+            self.scan(manager, scroll, target='企业')
+        self.assertLess(len(device.swipes), 12)
+
+    def test_candidate_scan_ends_when_the_dock_cannot_scroll_further(self):
+        # find_candidates() walks the same dock and has the same end condition.
+        scroll = ProbeScroll(position=TRACK_END, end=TRACK_END, page_step=TRACK_END).ready()
+        device = ProbeDevice(scroll, step=0.5)
+        inspector = TrainingShipInspector.__new__(TrainingShipInspector)
+        inspector.ui_ensure = lambda *args, **kwargs: None
+        inspector.dock_favourite_set = lambda *args, **kwargs: None
+        inspector.dock_sort_method_dsc_set = lambda *args, **kwargs: None
+        inspector.dock_filter_set = lambda *args, **kwargs: None
+        inspector.ship_info_enter = lambda *args, **kwargs: None
+        inspector.wait_until_appear = lambda *args, **kwargs: True
+        inspector.device = device
+        ship = ShipCandidate('德意志', '铁血', 'vanguard', 120, False, True, None, 120)
+        inspector.read_ship = lambda: ship
+        with patch('module.os.training_ui.DOCK_SCROLL.set_top'), \
+                patch('module.os.training_ui.dock_cards', return_value=[card('DOCK_CARD')]), \
+                patch('module.os.training_ui.LevelOcr') as level, \
+                patch('module.os.training_ui.Ocr') as ocr, \
+                patch('module.os.training_ui.decide_trainability',
+                      return_value=SimpleNamespace(allowed=True, reason='probe')):
+            level.return_value.ocr.return_value = [120]
+            ocr.return_value.ocr.return_value = ['德意志']
+            found = inspector.find_candidates('vanguard', frozenset(), set(), needed=2,
+                                              scroll=scroll)
+        self.assertEqual([candidate.name for candidate in found], ['德意志'])
+        self.assertLess(len(device.swipes), 12)
+
+
+if __name__ == '__main__':
+    unittest.main()
