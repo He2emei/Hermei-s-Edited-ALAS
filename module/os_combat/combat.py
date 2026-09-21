@@ -207,13 +207,33 @@ class Combat(Combat_, MapEventHandler):
 
         return False
 
+    # The rank letters of the post-battle settlement screen (大获全胜 S + the EXP list of the
+    # fleet + 确定).  Its rank letter is the recognition signal and the button of the same asset
+    # is the 确定 button, so recognition and localization both come from the asset itself.
+    # `Combat.handle_exp_info()` of the campaign loops clicks S/A/B of this screen since ever;
+    # here only C/D were wired up (dfd334736, "handle battle status C/D in auto search"), so an
+    # S/A/B ranked settlement screen had no handler at all and the auto search loop of the
+    # operation siren waited for the sixty second stuck check: live 2026-09-22 02:56:34 (dump
+    # log/error/1790016994804) plus 1789999429360, 1790004710224, 1790005453134 and 1790012911841
+    # in the same night, all `GameStuckError: Wait too long` from `auto_search_combat()`.
+    _auto_search_exp_info_buttons = (EXP_INFO_S, EXP_INFO_A, EXP_INFO_B, EXP_INFO_C, EXP_INFO_D)
+
     def handle_auto_search_exp_info(self):
-        if self.appear_then_click(EXP_INFO_C):
-            self.device.sleep((0.25, 0.5))
-            return True
-        if self.appear_then_click(EXP_INFO_D):
-            self.device.sleep((0.25, 0.5))
-            return True
+        """
+        Skip the post-battle settlement screen of an auto search battle.
+
+        The screen is not the map (`is_in_map()` fails on it) and it is not a page either, and
+        auto search does not advance it while it waits for 确定, so the loop that watches the
+        battle has to click it.  A single click can be swallowed by the game, so a screen that is
+        still there is clicked again on the next loop.
+
+        Returns:
+            bool: If clicked.
+        """
+        for button in self._auto_search_exp_info_buttons:
+            if self.appear_then_click(button):
+                self.device.sleep((0.25, 0.5))
+                return True
 
         return False
 
