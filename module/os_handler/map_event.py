@@ -90,6 +90,32 @@ class MapEventHandler(EnemySearchingHandler):
 
         return False
 
+    def handle_os_mission_page(self):
+        """
+        Close the operation info page (作战情报, the mission overview) that covers the map.
+
+        The map's `情报` button (the same button IN_MAP points at) opens this page, and the 2026-08
+        CN operation overview can also open it after a globe click (see os_globe_goto_map). The page
+        is not a page ui_get_current_page() knows, and it is not the map either: its background is
+        blurred, so is_in_map() fails while it is on the display. Every operation siren loop that
+        waits for the map therefore polls the map event buttons until the sixty second stuck check
+        of the device ends the task with `GameStuckError: Wait too long`: live 2026-08-29 (36 dumps
+        trapped in storage_enter()) and live 2026-09-21 23:06:47 OpsiMeowfficerFarming (dump
+        log/error/1790003207571), where the auto search loop of zone 144 polled for sixty seconds
+        after a stray click on that button opened the page.
+
+        MISSION_QUIT is the close button of the page, the same exit os_mission_quit() clicks, so no
+        new template or screen layout is assumed here. A page that is still there is clicked again
+        after the interval, which is what the other loops of this handler do as well.
+
+        Returns:
+            bool: If clicked.
+        """
+        if self.appear_then_click(MISSION_QUIT, offset=(20, 20), interval=2):
+            return True
+
+        return False
+
     def handle_ash_popup(self):
         name = 'ASH'
         # 2021.12.09
@@ -113,6 +139,10 @@ class MapEventHandler(EnemySearchingHandler):
         Returns:
             str: Event that handled
         """
+        # The operation info page is a definite state (its close button is a template match), and
+        # nothing else can be handled while it covers the map, so it is closed first.
+        if self.handle_os_mission_page():
+            return 'os_mission_page'
         # A battle result screen is not a map event and it is not a page either, but every
         # operation siren loop that waits for is_in_map() ends in GameStuckError while it stays
         # on the display: auto search can be stopped while a battle is still running, and the
