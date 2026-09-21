@@ -13,6 +13,12 @@ class Scroll:
     drag_threshold = 0.05
     edge_threshold = 0.05
     edge_add = (0.3, 0.5)
+    # A swipe that leaves the position unchanged means the scroll cannot move
+    # any further in that direction, usually because the requested position is
+    # past the end of the track.  Swiping on would never converge: every swipe
+    # is recorded by Device.click_record_check(), which aborts the whole task
+    # with GameTooManyClickError once 12 identical buttons pile up.
+    stall_limit = 3
 
     def __init__(self, area, color, is_vertical=True, name='Scroll'):
         """
@@ -135,6 +141,9 @@ class Scroll:
         self.drag_interval.clear()
         self.drag_timeout.reset()
         dragged = 0
+        stalled = 0
+        swiped_position = None
+        unobserved = False
         if position <= self.edge_threshold:
             random_range = np.subtract(0, self.edge_add)
         if position >= 1 - self.edge_threshold:
@@ -147,7 +156,19 @@ class Scroll:
                 main.device.screenshot()
 
             current = self.cal_position(main)
+            if unobserved:
+                # Judge the swipe this screenshot has just observed. A position
+                # that cannot be measured (thumb filling the track) also counts
+                # as no movement.
+                moved = np.isfinite(current) and np.isfinite(swiped_position) \
+                    and abs(current - swiped_position) >= self.drag_threshold
+                stalled = 0 if moved else stalled + 1
+                unobserved = False
             if abs(position - current) < self.drag_threshold:
+                break
+            if stalled >= self.stall_limit:
+                logger.warning(f'{self.name} stopped at {current}, '
+                               f'cannot reach {position}, assume scroll set')
                 break
             if self.length:
                 self.drag_timeout.reset()
@@ -164,6 +185,8 @@ class Scroll:
                 main.device.swipe(p1, p2, name=self.name, distance_check=distance_check)
                 self.drag_interval.reset()
                 dragged += 1
+                swiped_position = current
+                unobserved = True
 
         return dragged
 

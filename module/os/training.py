@@ -9,7 +9,8 @@ from module.logger import logger
 from module.ocr.ocr import Ocr
 from module.os.training_policy import ROTATION_SLOTS, decide_trainability, plan_rotation, should_awaken
 from module.os.training_ui import (TrainingShipInspector, DOCK_SCROLL,
-                                   FILTER_FACTIONS, catalog_name, point_button, dock_cards)
+                                   FILTER_FACTIONS, catalog_name, point_button, dock_cards,
+                                   same_dock_page)
 from module.retire.assets import DOCK_CHECK
 from module.retire.dock import OCR_DOCK_SELECTED
 from module.os_handler.port import PORT_CHECK
@@ -92,11 +93,15 @@ class TrainingFleetManager(TrainingShipInspector):
                  for b in self._visible_cards]
         if not areas:
             raise RequestHumanTakeover('Deployment dock cards are not identifiable')
-        return [catalog_name(n) for n in Ocr(areas, lang='cnocr', name='TrainingAvailableNames').ocr(self.device.image)]
+        # Keep the raw readings too: the scan compares them between screenshots
+        # to tell a page turn from a stuck swipe.
+        self._raw_names = Ocr(areas, lang='cnocr', name='TrainingAvailableNames').ocr(self.device.image)
+        return [catalog_name(n) for n in self._raw_names]
 
     def _scan_selection(self, target=None):
         names = set()
-        previous = None
+        previous_reading = None
+        position = None
         for _ in range(40):
             self.device.screenshot()
             visible = self._visible_names()
@@ -110,9 +115,28 @@ class TrainingFleetManager(TrainingShipInspector):
                     names.add(name)
                 if target is not None and name == target:
                     return button
-            if DOCK_SCROLL.at_bottom(main=self) or (tuple(visible) == previous and any(visible)):
+            current = DOCK_SCROLL.cal_position(main=self)
+            if current > 1 - DOCK_SCROLL.edge_threshold:
+                # Same judgement as DOCK_SCROLL.at_bottom(), on the position
+                # this round has already measured.
                 break
-            previous = tuple(visible)
+            if previous_reading is not None and not new_names \
+                    and same_dock_page(previous_reading, self._raw_names):
+                # The same cards are printed again. cnocr never reads a page
+                # twice the same way, so this is a tolerant comparison rather
+                # than an exact one.
+                logger.info('Deployment dock page repeated after scrolling, stop')
+                break
+            if position is not None and not (current - position >= DOCK_SCROLL.drag_threshold):
+                # The scrollbar does not advance any more. This is how the
+                # deployment dock ends: its thumb bottoms out at 0.945 of the
+                # calibrated track (the area runs past the end of the track),
+                # so at_bottom() never fires and Scroll.set() alone would keep
+                # swiping at an unreachable position until the click guard
+                # aborted the task.
+                logger.info('Deployment dock cannot scroll further, the list ends here')
+                break
+            previous_reading, position = self._raw_names, current
             DOCK_SCROLL.next_page(main=self, page=0.45)
             self.device.sleep(0.6)
         if target is not None:

@@ -45,6 +45,54 @@ def normalise_name(name):
     return re.sub(r'\s+', '', name).strip('_- .、，〉》〈《><')
 
 
+READING_NOISE = re.compile(r'[^0-9A-Za-z\u4e00-\u9fff]')
+
+
+def reading_similarity(left, right):
+    """Longest common subsequence ratio of two readings of one dock label.
+
+    cnocr keeps stray punctuation around a dock label and drops or replaces
+    single characters in it (``_德意志``, ``、珍珠号``, ``斯佩伯爵海军上…``,
+    ``反击`` read as ``反共``).  The dock scan only asks whether the same cards
+    are printed again, so it has to compare how much of the two readings still
+    agrees: an exact comparison makes every screenshot look like a new page,
+    which is how a dock at its end kept swiping until the click guard fired.
+    Ship identities themselves are still decided by the strict catalog lookup.
+
+    The reading keeps digits and latin letters, unlike the shipyard's
+    CJK-only ``ship_name_similarity()``: dock labels include ``Z23`` and
+    ``Z46``, whose CJK-only readings would be empty and never comparable.
+    """
+    a = READING_NOISE.sub('', left or '')
+    b = READING_NOISE.sub('', right or '')
+    if not a or not b:
+        return 0.0
+    previous = [0] * (len(b) + 1)
+    for char_a in a:
+        current = [0]
+        for index, char_b in enumerate(b, 1):
+            if char_a == char_b:
+                current.append(previous[index - 1] + 1)
+            else:
+                current.append(max(previous[index], current[index - 1]))
+        previous = current
+    return previous[-1] / max(len(a), len(b))
+
+
+def same_dock_page(previous, current, threshold=0.5):
+    """Whether two readings of the deployment dock show the same cards.
+
+    Card slots are compared one by one because both readings come from
+    ``dock_cards()`` on the same scroll position.  Every slot has to agree, so
+    a page that really turned (different ships in the slots) is never mistaken
+    for a repeated one.
+    """
+    if not previous or not current or len(previous) != len(current):
+        return False
+    return all(reading_similarity(left, right) >= threshold
+               for left, right in zip(previous, current))
+
+
 def catalog_name(text):
     name = normalise_name(text)
     # Exact cnocr substitution verified against the 2026-09-08 detail screenshot.
@@ -195,6 +243,7 @@ class TrainingShipInspector(Awaken):
         self.dock_filter_set(index=dock_side, faction=selected_factions)
         scroll.set_top(main=self)
         found, seen = [], set(excluded)
+        position = None
         for _ in range(40):
             self.device.screenshot()
             cards = dock_cards(self.device.image)
@@ -227,8 +276,16 @@ class TrainingShipInspector(Awaken):
                 self.wait_until_appear(DOCK_CHECK, offset=(20, 20))
                 if len(found) >= needed:
                     return found
-            if scroll.at_bottom(main=self):
+            current = scroll.cal_position(main=self)
+            if current > 1 - scroll.edge_threshold:
+                # Same judgement as scroll.at_bottom(), on this measurement.
                 break
+            if position is not None and not (current - position >= scroll.drag_threshold):
+                # The dock's thumb saturates below the calibrated track end, so
+                # a scrollbar that stops responding is the real end of the list.
+                logger.info('Dock cannot scroll further, the list ends here')
+                break
+            position = current
             scroll.next_page(main=self, page=0.45)
             self.device.sleep(0.6)
         return found
