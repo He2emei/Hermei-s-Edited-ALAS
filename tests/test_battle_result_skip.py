@@ -233,6 +233,7 @@ class QuitLoopApp:
     loop = ModuleBase.loop
     is_in_map = OsEnemySearchingHandler.is_in_map
     handle_map_event = MapEventHandler.handle_map_event
+    handle_os_mission_page = MapEventHandler.handle_os_mission_page
     handle_map_get_items = MapEventHandler.handle_map_get_items
     handle_os_game_tips = MapEventHandler.handle_os_game_tips
     handle_map_archives = MapEventHandler.handle_map_archives
