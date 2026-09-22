@@ -7,6 +7,7 @@ from module.exception import ScriptError
 from module.ocr.ocr import Ocr
 from module.shipyard.development_assets import (
     SUPPORTED_SIZE,
+    is_task_action_label,
     normalise_cn_task_title,
     task_identity,
     task_title_area,
@@ -16,6 +17,26 @@ from module.os.training_policy import parse_training_requirement
 
 
 class ShipyardDevelopmentPolicyTest(unittest.TestCase):
+    def test_live_submit_button_accepts_partial_ocr(self):
+        path = Path(__file__).parent / 'fixtures' / 'shipyard_development_submit_20260923.png'
+        image = cv2.imread(str(path), cv2.IMREAD_COLOR)
+        self.assertIsNotNone(image)
+        image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+        area = (0, 0, image.shape[1], image.shape[0])
+        label = Ocr([area], lang='cnocr', name='DevelopmentSubmitEvidence').ocr(image).strip()
+        self.assertEqual(label, '交')
+        self.assertTrue(is_task_action_label(label))
+
+    def test_development_action_label_rejects_unrelated_actions(self):
+        for label in ('', '前往', '购买', '开始研究'):
+            with self.subTest(label=label):
+                self.assertFalse(is_task_action_label(label))
+
+    def test_development_action_label_allows_exact_and_one_missing_glyph(self):
+        for label in ('提交', '提', '交', '完成', '完', '成', '立即完成', '立即完', '即完成', 'SUBMIT'):
+            with self.subTest(label=label):
+                self.assertTrue(is_task_action_label(label))
+
     def test_requires_cn_1280x720_before_device_work(self):
         class Fake(ShipyardDevelopment):
             def __init__(self):

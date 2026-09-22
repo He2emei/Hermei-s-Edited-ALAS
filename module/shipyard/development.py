@@ -13,9 +13,9 @@ from module.shipyard.development_assets import (
     HULL_SCULPT_ANCHOR,
     SHIP_NAME_AREA,
     SUPPORTED_SIZE,
-    TASK_ACTION_LABELS,
     TASK_LIST_AREA,
     TASK_SCAN_ROWS,
+    is_task_action_label,
     normalise_cn_task_title,
     ship_name_similarity,
     task_header_button,
@@ -269,7 +269,7 @@ class ShipyardDevelopment(ShipyardUI):
         x, y, w, h = rects[0]
         area = (1080 + x, 210 + y, 1080 + x + w, 210 + y + h)
         label = Ocr([area], lang='cnocr', name='DevelopmentSubmit').ocr(self.device.image).strip()
-        if label not in TASK_ACTION_LABELS | {'SUBMIT'}:
+        if not is_task_action_label(label):
             raise ScriptError(f'Unknown enabled development action: {label}')
         button = Button(area, (0, 0, 0), area, name='SHIPYARD_DEVELOPMENT_SUBMIT')
         self.device.click(button)

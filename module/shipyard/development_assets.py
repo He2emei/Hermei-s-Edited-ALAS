@@ -20,6 +20,34 @@ TASK_SCAN_ROWS = 8
 # ordinary shipyard confirm/buy buttons.
 TASK_ACTION_LABELS = frozenset({'提交', '完成', '立即完成'})
 
+
+def is_task_action_label(label):
+    """Return whether OCR still describes a known development action.
+
+    The CN submit button is rendered with a bright outline and shadow.  On the
+    live 2026-09-23 frame cnocr reads ``提交`` as only ``交`` even though the
+    entire button is inside the OCR area.  Accept one missing glyph while
+    keeping the observation an ordered subsequence of a known label.  The
+    caller separately requires a known material row and exactly one enabled
+    blue action, then verifies that the task becomes complete after the click.
+    """
+    if not isinstance(label, str):
+        return False
+    observed = label.replace(' ', '').replace('　', '').upper()
+    if not observed:
+        return False
+    if observed == 'SUBMIT' or observed in TASK_ACTION_LABELS:
+        return True
+
+    for expected in TASK_ACTION_LABELS:
+        if len(observed) < max(1, len(expected) - 1):
+            continue
+        iterator = iter(expected)
+        if all(char in iterator for char in observed):
+            return True
+    return False
+
+
 # Every locked task prints its countdown on the title line, right-aligned to
 # the panel edge, and a long title runs straight into it without a separator
 # (verified on the CN panel, 2026-09-16).  The countdown therefore arrives as
