@@ -204,7 +204,17 @@ class MapEventHandler(EnemySearchingHandler):
         cleared = False
         for _ in self.loop():
             if self.appear(AUTO_SEARCH_REWARD, offset=(50, 50), interval=2):
-                if self.ensure_no_info_bar():
+                # An info bar on this screen is the game saying it has no auto searchable event
+                # left, which is the end of the zone, so it is only looked at, never waited for.
+                # The bar of the archived frame below stays on the display while this reward panel
+                # is open and goes away once the panel is dismissed: waiting for the bar before
+                # the click waits for the click itself, and the sixty second stuck check of the
+                # device ends the task with `GameStuckError: Wait too long` (live 2026-09-22
+                # 14:16:13, dump log/error/1790057773446, where wait_until_info_bar_disappear()
+                # polled the same picture until the check fired). Clicking the panel with an info
+                # bar up is what the other AUTO_SEARCH_REWARD call sites do, and the click target
+                # (575, 598, 721, 646) is below the bar area (200, 173, 1080, 348).
+                if self.info_bar_count():
                     cleared = True
                 if drop:
                     drop.handle_add(main=self, before=4)
