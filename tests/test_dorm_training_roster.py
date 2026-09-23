@@ -16,7 +16,6 @@ from unittest.mock import Mock, patch
 
 import cv2
 
-from module.base.button import Button
 from module.base.timer import Timer
 from module.dorm.training import (ROSTER_CLOSE_AREA, ROSTER_CLOSE_FALLBACK, DormTraining,
                                   dismiss_training_roster, locate_roster_close,
