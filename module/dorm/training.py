@@ -4,6 +4,7 @@ from pathlib import Path
 
 import cv2
 
+from module.base.timer import Timer
 from module.combat.level import LevelOcr
 from module.dorm.training_policy import plan_dorm_rotation, should_awaken_in_dorm
 from module.equipment.assets import EQUIPMENT_OPEN
@@ -27,6 +28,93 @@ DORM_COUNT = DigitCounter([(972, 82, 1040, 115)], letter=(210, 210, 210), name='
 DORM_SCROLL = Scroll(DOCK_SCROLL.area, DOCK_SCROLL.color, name='DORM_DOCK_SCROLL')
 DORM_SCROLL.edge_threshold = DORM_SCROLL.drag_threshold = 0.08
 
+TRAINING_HEADER_AREA = (125, 140, 435, 193)
+ROSTER_CLOSE_AREA = (1110, 80, 1155, 122)
+# Used when the close icon itself cannot be read; verified against live closes.
+ROSTER_CLOSE_FALLBACK = point_button(1133, 100, 'DORM_TRAINING_CLOSE')
+# Interval between two "close the roster" clicks, the panel needs a moment to close.
+roster_close_timer = Timer(2, count=0)
+
+_TEMPLATES = {}
+
+
+def rgb_template(path):
+    """Load a local asset as RGB, the colour space of Device.image. Cached."""
+    key = str(path)
+    if key not in _TEMPLATES:
+        template = cv2.imread(key)
+        _TEMPLATES[key] = cv2.cvtColor(template, cv2.COLOR_BGR2RGB) if template is not None else None
+    return _TEMPLATES[key]
+
+
+def match_in_region(image, template, area):
+    """Best normalised template match of `template` inside `area` of an RGB screenshot.
+
+    Returns:
+        tuple: (score, (x, y)) of the best match, (0.0, None) when the region is too small.
+    """
+    x1, y1, x2, y2 = area
+    region = image[y1:y2, x1:x2]
+    if region.shape[0] < template.shape[0] or region.shape[1] < template.shape[1]:
+        return 0.0, None
+    result = cv2.matchTemplate(region, template, cv2.TM_CCOEFF_NORMED)
+    _, score, _, location = cv2.minMaxLoc(result)
+    return float(score), (x1 + location[0], y1 + location[1])
+
+
+def region_similarity(image, template, area):
+    """Best normalised template score of `template` inside `area` of an RGB screenshot."""
+    return match_in_region(image, template, area)[0]
+
+
+def locate_roster_close(image, similarity=0.9):
+    """Locate the close icon of the first-floor training roster, None when absent.
+
+    The icon is matched, not assumed: the returned button is the centre of the matched
+    icon, so a panel that shifts by a few pixels still closes. The icon is the roster's
+    own close button, the same on the training tab and on the rest tab, and a rest tab
+    roster does not show the training header. Of the 1611 archived crash frames of this
+    checkout (2025-12 to 2026-09) only the roster draws this icon in this region.
+    """
+    template = rgb_template(ASSETS / 'roster_close.png')
+    if template is None:
+        return None
+    score, location = match_in_region(image, template, ROSTER_CLOSE_AREA)
+    if score <= similarity:
+        return None
+    height, width = template.shape[:2]
+    return point_button(location[0] + width // 2, location[1] + height // 2, 'DORM_TRAINING_CLOSE')
+
+
+def dismiss_training_roster(ui):
+    """Close the dorm training roster while it covers the screen.
+
+    The roster is a modal panel that hides DORM_CHECK and has no HOME button, so while
+    it is open no page matches and every task dies with GamePageUnknownError. It survives
+    an interrupted task, and nothing else in Alas closes it, so it is closed here, from
+    the page poll, for every task.
+
+    The click is repeated while the panel is still on the display, because a tap can be
+    swallowed by the game (live 2026-09-24 03:49:29, the roster stayed open for minutes
+    after a tap that the device confirmed). There is no attempt limit: a roster that the
+    game will not close is a hung client, and the twelve-click protection of the device
+    then restarts the app, which is the only other way out. The interval only keeps the
+    panel from being clicked twice while it is closing.
+    """
+    if getattr(ui.config, 'SERVER', None) != 'cn':
+        return False
+    if not roster_close_timer.reached():
+        return False
+
+    button = locate_roster_close(ui.device.image)
+    if button is None:
+        return False
+
+    logger.info(f'Dorm training roster is covering the screen, close it: {button}')
+    ui.device.click(button)
+    roster_close_timer.reset()
+    return True
+
 
 class DormTraining(TrainingShipInspector):
     def _wait(self, predicate, description):
@@ -41,25 +129,22 @@ class DormTraining(TrainingShipInspector):
         raise RequestHumanTakeover('Dorm training timeout: ' + description)
 
     def _training_visible(self):
-        template = cv2.imread(str(ASSETS / 'training_header.png'))
+        template = rgb_template(ASSETS / 'training_header.png')
         if template is None:
             raise RequestHumanTakeover('Dorm training header asset missing')
-        template = cv2.cvtColor(template, cv2.COLOR_BGR2RGB)
-        return cv2.matchTemplate(self.device.image[140:193, 125:435], template,
-                                 cv2.TM_CCOEFF_NORMED).max() > 0.9
+        return region_similarity(self.device.image, template, TRAINING_HEADER_AREA) > 0.9
 
     def _open_training(self):
         self.device.screenshot()
         if self._training_visible():
             return
         self.ui_ensure(page_dorm)
-        template = cv2.imread(str(ASSETS / 'roster_close.png'))
-        if template is None:
+        if rgb_template(ASSETS / 'roster_close.png') is None:
             raise RequestHumanTakeover('Dorm roster close asset missing')
-        template = cv2.cvtColor(template, cv2.COLOR_BGR2RGB)
+
         def roster_visible():
-            return cv2.matchTemplate(self.device.image[80:122, 1110:1155], template,
-                                     cv2.TM_CCOEFF_NORMED).max() > 0.9
+            return locate_roster_close(self.device.image) is not None
+
         for _ in range(3):
             if roster_visible():
                 break
@@ -84,8 +169,21 @@ class DormTraining(TrainingShipInspector):
     def _close_training(self):
         if not self._training_visible():
             raise RequestHumanTakeover('Cannot close an unknown dorm panel')
-        self.device.click(point_button(1133, 100, 'DORM_TRAINING_CLOSE'))
-        self._wait(lambda: self.ui_page_appear(page_dorm), 'dorm room')
+        # A single tap is dropped by the game now and then, and a roster left open
+        # blocks page identification for every task, so retry before giving up.
+        for attempt in range(3):
+            button = locate_roster_close(self.device.image)
+            if button is None:
+                button = ROSTER_CLOSE_FALLBACK
+            self.device.click(button)
+            try:
+                self._wait(lambda: self.ui_page_appear(page_dorm), 'dorm room')
+                return
+            except RequestHumanTakeover:
+                if not self._training_visible():
+                    raise
+                logger.info(f'Dorm training close was ignored, retrying ({attempt + 1}/3)')
+        raise RequestHumanTakeover('Dorm training roster did not close after 3 taps')
 
     @staticmethod
     def _slot_button(slot):
