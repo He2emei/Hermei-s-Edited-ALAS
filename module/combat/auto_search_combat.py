@@ -316,6 +316,17 @@ class AutoSearchCombat(MapOperation, Combat, CampaignStatus):
                 continue
             if handle_new_ship_page(self):
                 continue
+            # The battle result screen is not an optional screen of the low emotion path: a battle
+            # of the auto search ends on it, and a result screen that stays on the display without a
+            # handler ends in the stuck check of the device.  `_auto_search_status_confirm` is only
+            # armed by a low emotion popup of the moving phase, so the block below does not cover it
+            # (live 2026-09-23 16:00:13, dump log/error/1790150413796: the frame is the
+            # `VICTORY / 大获全胜 S / 战斗评价` screen with BATTLE_STATUS_S matched, the wait list is
+            # the top part of this loop, and the screen had no click for sixty seconds).
+            # `Combat.handle_battle_status()` clicks the rank icon that was recognized and does
+            # nothing while a combat is executing, so it is safe to ask on every iteration.
+            if self.handle_battle_status():
+                continue
             if self.handle_auto_search_map_option():
                 self._auto_search_status_confirm = False
                 continue
