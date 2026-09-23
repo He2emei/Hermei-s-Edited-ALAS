@@ -511,6 +511,12 @@ class UI(InfoHandler):
             return True
         if self.appear_then_click(DORM_TROPHY_CONFIRM, offset=(30, 30), interval=3):
             return True
+        # The first-floor training roster hides DORM_CHECK and has no HOME button, so
+        # no page matches while it is open and every task would die with
+        # GamePageUnknownError. It survives an interrupted task, so close it here.
+        from module.dorm.training import dismiss_training_roster
+        if dismiss_training_roster(self):
+            return True
 
         # Meowfficer popup
         if self.appear_then_click(MEOWFFICER_INFO, offset=(30, 30), interval=3):
