@@ -28,12 +28,12 @@ class ShipyardDevelopmentPolicyTest(unittest.TestCase):
         self.assertTrue(is_task_action_label(label))
 
     def test_development_action_label_rejects_unrelated_actions(self):
-        for label in ('', '前往', '购买', '开始研究'):
+        for label in ('', '前往', '购买', '开始研究', '完成', '立即完成'):
             with self.subTest(label=label):
                 self.assertFalse(is_task_action_label(label))
 
     def test_development_action_label_allows_exact_and_one_missing_glyph(self):
-        for label in ('提交', '提', '交', '完成', '完', '成', '立即完成', '立即完', '即完成', 'SUBMIT'):
+        for label in ('提交', '提', '交', 'SUBMIT'):
             with self.subTest(label=label):
                 self.assertTrue(is_task_action_label(label))
 
@@ -254,6 +254,37 @@ class ShipyardDevelopmentPolicyTest(unittest.TestCase):
         self.assertEqual(ship, '柴郡')
         self.assertEqual(requirement, parse_training_requirement('皇家先锋技术测试I'))
         self.assertFalse(fake.submitted)
+
+    def test_submits_available_technical_and_material_rows_even_when_marked_complete(self):
+        class Fake(ShipyardDevelopment):
+            def __init__(self):
+                self.config = type('Config', (), {'SERVER': 'cn'})()
+                self.device = type('Device', (), {
+                    'image': type('Image', (), {'shape': (720, 1280, 3)})(),
+                })()
+                self.pending = {'大型技术理论I', '柴郡舰体塑造I'}
+                self.submitted = []
+
+            def _scan_working_ship(self):
+                return '柴郡'
+
+            def _read_ship_name(self):
+                return '柴郡'
+
+            def _read_all_tasks(self):
+                return [DevelopmentTask(1, '大型技术理论I', True, 130),
+                        DevelopmentTask(2, '柴郡舰体塑造I', True, 218)]
+
+            def _submit_available_task(self, title):
+                if title not in self.pending:
+                    return False
+                self.pending.remove(title)
+                self.submitted.append(title)
+                return True
+
+        fake = Fake()
+        self.assertEqual(fake.inspect_current_project(), ('柴郡', None))
+        self.assertEqual(fake.submitted, ['大型技术理论I', '柴郡舰体塑造I'])
 
     def test_unknown_incomplete_material_is_rejected(self):
         class Fake(ShipyardDevelopment):
