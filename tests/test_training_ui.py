@@ -130,7 +130,8 @@ class TrainingUiReviewTest(unittest.TestCase):
 
     def test_no_candidate_plan_has_no_fleet_edit(self):
         current = {
-            1: candidate('英仙座'), 2: candidate('当前主力'), 3: candidate('当前主力2'),
+            1: candidate('英仙座'), 2: candidate('当前主力'),
+            3: candidate('当前主力2', level=125, cap=125),
             4: candidate('伊吹', position='vanguard'),
             5: candidate('当前先锋', position='vanguard'),
             6: candidate('当前先锋2', position='vanguard'),
@@ -172,6 +173,51 @@ class TrainingUiReviewTest(unittest.TestCase):
             with self.assertRaises(RequestHumanTakeover):
                 manager.maintain(opsi)
         self.assertEqual(manager.edits, 0)
+
+    def test_maintenance_searches_rainbows_even_with_four_trainable_currents(self):
+        current = {1: candidate('英仙座'), 2: candidate('主力甲'), 3: candidate('主力乙'),
+                   4: candidate('伊吹', position='vanguard'),
+                   5: candidate('先锋甲', position='vanguard'),
+                   6: candidate('先锋乙', position='vanguard')}
+        rainbow = {
+            'main': ShipCandidate('彩主力', '皇家', 'main', 90, True, False),
+            'vanguard': ShipCandidate('彩先锋', '重樱', 'vanguard', 90, True, False),
+        }
+
+        class Manager(TrainingFleetManager):
+            def __init__(self):
+                self.config = SimpleNamespace(SERVER='cn', OpsiFleet_Fleet=4,
+                                              cross_set=lambda **kwargs: None)
+                self.device = SimpleNamespace(image=np.zeros((720, 1280, 3), dtype=np.uint8))
+                self.planned = None
+
+            def _check_cn(self):
+                pass
+
+            def ui_ensure(self, page):
+                pass
+
+            def inspect_map_fleet(self, opsi):
+                return current
+
+            def _available_ships(self, opsi):
+                return {ship.name for ship in rainbow.values()}
+
+            def find_candidates(self, side, factions, excluded, **kwargs):
+                return [rainbow[side]] if kwargs.get('rarity') == 'ultra' else []
+
+            def _deploy(self, opsi, before, planned):
+                self.planned = planned
+
+        opsi = SimpleNamespace(os_init=lambda **kwargs: None,
+                               globe_goto=lambda *args: None,
+                               name_to_zone=lambda name: name)
+        with patch('module.shipyard.development.ShipyardDevelopment') as shipyard:
+            shipyard.return_value.inspect_current_project.return_value = ('柴郡', None)
+            manager = Manager()
+            manager.maintain(opsi)
+        self.assertIn('彩主力', {manager.planned[2].name, manager.planned[3].name})
+        self.assertIn('彩先锋', {manager.planned[5].name, manager.planned[6].name})
 
     def test_catalog_type_and_faction_match_source_game_data(self):
         source_path = EVIDENCE / 'game-data' / 'ship_data_statistics.json'
