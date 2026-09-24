@@ -16,6 +16,20 @@ def ship(name='A', faction='皇家', position='main', level=100,
 
 
 class TrainingPolicyTest(unittest.TestCase):
+    def test_scarce_candidates_replace_only_finished_current_ship(self):
+        current = {
+            2: ship('done-2', rainbow=True, level=120, cap=120, stored=3_000_000),
+            3: ship('done-3', rainbow=True, level=120, cap=120, stored=3_000_000),
+            5: ship('ordinary-5', position='vanguard'),
+            6: ship('ordinary-6', position='vanguard'),
+        }
+        candidate = ship('musashi', faction='重樱', rainbow=True, level=1, cap=100)
+        plan = plan_rotation({}, current, [candidate])
+        self.assertTrue(plan.success)
+        self.assertIn('musashi', {plan.slots[2].name, plan.slots[3].name})
+        self.assertEqual(len({plan.slots[2].name, plan.slots[3].name}), 2)
+        self.assertEqual({plan.slots[5].name, plan.slots[6].name}, {'ordinary-5', 'ordinary-6'})
+
     def test_later_current_ship_cannot_duplicate_an_earlier_assignment(self):
         current = {2: ship('done', level=125, cap=125), 3: ship('shared'),
                    5: ship('v1', position='vanguard'), 6: ship('v2', position='vanguard')}
