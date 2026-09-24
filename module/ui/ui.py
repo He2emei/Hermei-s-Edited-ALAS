@@ -468,6 +468,56 @@ class UI(InfoHandler):
 
         return False
 
+    # Login page
+    # The title screen of a channel client is not a page, and no click can pass it while
+    # the game server is unreachable, but it is the only way back into the game, so it is
+    # worth more patience than a normal page - `Device.stuck_long_wait_list` exempts
+    # LOGIN_CHECK from the 60s stuck check for the same reason. The 12-click guard of
+    # `Device.click_record_check()` knows nothing about that patience: it ends the task
+    # after 12 clicks on the same button, which the login page reaches after ~36s in the
+    # page poll and after ~56s in `LoginHandler._handle_app_login()` (measured against the
+    # archived title frames of log/error/1790215533063 and log/error/1790236625054).
+    # A login page that is still there after this long is not waiting for a click, so it
+    # is handed to the scheduler, which asks the server checker and waits for the
+    # maintenance to end instead of restarting the client in a loop.
+    login_page_patience = 180
+    _login_page_timer = Timer(login_page_patience)
+
+    def handle_login_page(self, interval=3):
+        """Click the login page, hand a stalled one over to the scheduler.
+
+        Args:
+            interval (int, float): Seconds between two clicks on the login page.
+
+        Returns:
+            bool: If the login page is on screen.
+
+        Raises:
+            GamePageUnknownError: If the login page did not move on for
+                `login_page_patience` seconds.
+        """
+        if not self.match_template_color(LOGIN_CHECK, offset=(30, 30)):
+            self._login_page_timer.clear()
+            return False
+
+        if self._login_page_timer.started() and self._login_page_timer.reached():
+            logger.warning(f'Login page has not been passed for {self.login_page_patience}s, '
+                           f'clicks on it do not move the game on')
+            logger.warning('Game server may be under maintenance, check server status now')
+            self.device.click_record_clear()
+            raise GamePageUnknownError('Login page stalled')
+
+        self._login_page_timer.start()
+        timer = self.get_interval_timer(LOGIN_CHECK, interval=interval, renew=True)
+        if timer.reached():
+            timer.reset()
+            # The clicks of this page are not counted by the 12-click guard, the patience
+            # above is what ends a stalled login page. Clearing the stuck record keeps the
+            # stuck checks quiet as well.
+            self.device.stuck_record_clear()
+            self.device.click(LOGIN_CHECK, control_check=False)
+        return True
+
     def ui_additional(self, get_ship=True):
         """
         Handle all annoying popups during UI switching.
@@ -488,7 +538,14 @@ class UI(InfoHandler):
             return True
 
         # Popups appear at page_main, page_reward
-        if self.ui_page_main_popups(get_ship=get_ship):
+        # The login page is not page_main: its white artwork passes the colour-only
+        # GET_SHIP check of ui_page_main_popups() (the asset area is a 6x20 white strip
+        # and appear_then_click() checks it with threshold=30), which clicks a main page
+        # button that is not there and puts a second button into the click record.
+        # Live incident 2026-09-24 15:57:05, dump log/error/1790236625054:
+        # `GameTooManyClickError: Too many click between 2 buttons: LOGIN_CHECK, GET_SHIP`.
+        login_page = self.handle_login_page()
+        if not login_page and self.ui_page_main_popups(get_ship=get_ship):
             return True
 
         # Story
@@ -558,9 +615,7 @@ class UI(InfoHandler):
                 logger.warning("WITHDRAW button does not exist anymore")
                 self.interval_reset(WITHDRAW)
 
-        # Login
-        if self.appear_then_click(LOGIN_CHECK, offset=(30, 30), interval=3):
-            return True
+        # Login page is handled above, before the page_main popups
         if self.appear_then_click(MAINTENANCE_ANNOUNCE, offset=(30, 30), interval=3):
             return True
 
