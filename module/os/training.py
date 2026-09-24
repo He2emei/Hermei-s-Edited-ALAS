@@ -5,9 +5,11 @@ import cv2
 
 from module.base.utils import crop
 from module.exception import RequestHumanTakeover
+from module.handler.assets import POPUP_CANCEL, POPUP_CONFIRM
 from module.logger import logger
 from module.ocr.ocr import Ocr
 from module.os.training_policy import ROTATION_SLOTS, decide_trainability, plan_rotation, should_awaken
+from module.os.deployment_cost import read_deployment_cost
 from module.os.training_ui import (TrainingShipInspector, DOCK_SCROLL,
                                    FILTER_FACTIONS, catalog_name, point_button, dock_cards,
                                    same_dock_page)
@@ -143,15 +145,11 @@ class TrainingFleetManager(TrainingShipInspector):
             raise RequestHumanTakeover('Planned ship is not available in deployment dock: ' + target)
         return names
 
-    def _available_ships(self, opsi, requirement=None):
+    def _available_ships(self, opsi):
         self._open_selector(opsi)
         available = set()
         for slot in (2, 5):
             self._open_slot(slot)
-            side = 'main' if slot == 2 else 'vanguard'
-            if requirement and requirement.position == side:
-                self.dock_filter_set(faction=[FILTER_FACTIONS[f] for f in requirement.factions])
-                DOCK_SCROLL.set_top(main=self)
             available.update(self._scan_selection())
             self._cancel_slot()
         self._close_selector(opsi)
@@ -209,9 +207,19 @@ class TrainingFleetManager(TrainingShipInspector):
         if self._label((970, 584, 1155, 621)) != '立刻前往':
             raise RequestHumanTakeover('Deployment confirmation is unknown')
         self.device.click(point_button(1060, 608, 'TRAINING_DEPLOY_CONFIRM'))
+        self._wait(lambda: self.appear(POPUP_CANCEL, offset=(20, 20))
+                   and self.appear(POPUP_CONFIRM, offset=(20, 20)),
+                   'deployment cost confirmation')
+        cost = read_deployment_cost(self.device.image)
+        if cost != 0:
+            logger.warning(f'Training deployment deferred until free (displayed AP cost: {cost})')
+            if not self.handle_popup_cancel('OPSI_TRAINING_DEPLOY_PAID'):
+                raise RequestHumanTakeover('Could not cancel paid deployment')
+            self._wait(self._is_selector, 'return to fleet selector after cost cancellation')
+            self._close_selector(opsi)
+            return False
+        self.device.click(POPUP_CONFIRM)
         def deployed():
-            if self.handle_popup_confirm('OPSI_TRAINING_DEPLOY'):
-                return False
             if self.appear(PORT_CHECK, offset=(20, 20)):
                 opsi.port_quit()
                 return False
@@ -223,6 +231,7 @@ class TrainingFleetManager(TrainingShipInspector):
         if any(not decide_trainability(actual[s]).allowed for s in ROTATION_SLOTS):
             raise RequestHumanTakeover('A deployed ship no longer meets training requirements')
         logger.info('Fourth fleet deployment verified, both anchors preserved')
+        return True
 
     def maintain(self, opsi):
         from module.shipyard.development import ShipyardDevelopment
@@ -240,22 +249,53 @@ class TrainingFleetManager(TrainingShipInspector):
                         else None for slot in ROTATION_SLOTS}
         initial = plan_rotation(requirements, current, [])
         candidates = []
-        if not initial.success:
-            available = self._available_ships(opsi, requirement)
-            for side in ('main', 'vanguard'):
-                factions = requirement.factions if requirement and requirement.position == side else frozenset()
-                candidates.extend(self.find_candidates(side, factions, {s.name for s in current.values()},
-                                                       needed=2, available=available))
+        search = {}
+        for side, slots in (('main', (2, 3)), ('vanguard', (5, 6))):
+            existing = [current[slot] for slot in slots if decide_trainability(current[slot]).allowed]
+            active = requirement if requirement and requirement.position == side else None
+            rainbow = any(ship.is_rainbow for ship in existing)
+            matching_rainbow = any(ship.is_rainbow and ship.faction in active.factions
+                                   for ship in existing) if active else rainbow
+            faction_count = sum(ship.faction in active.factions for ship in existing) if active else 0
+            search[side] = (len(existing) < 2 or not rainbow
+                            or active is not None and (not matching_rainbow or faction_count < 2))
+        if not initial.success or any(search.values()):
+            available = self._available_ships(opsi)
+            excluded = {ship.name for ship in current.values()}
+            for side, slots in (('main', (2, 3)), ('vanguard', (5, 6))):
+                if not search[side] and initial.success:
+                    continue
+                existing = [current[slot] for slot in slots if decide_trainability(current[slot]).allowed]
+                active = requirement if requirement and requirement.position == side else None
+                factions = active.factions if active else frozenset()
+                has_matching_rainbow = any(ship.is_rainbow and (not active or ship.faction in factions)
+                                           for ship in existing)
+                rainbow_candidates = []
+                if not has_matching_rainbow:
+                    rainbow_candidates = self.find_candidates(
+                        side, factions, excluded, needed=1, available=available, rarity='ultra')
+                    candidates.extend(rainbow_candidates)
+                if not rainbow_candidates and not any(ship.is_rainbow for ship in existing):
+                    candidates.extend(self.find_candidates(
+                        side, frozenset(), excluded, needed=1, available=available, rarity='ultra'))
+                faction_count = sum(ship.faction in factions for ship in existing) if active else 0
+                if len(existing) < 2 or active and faction_count < 2:
+                    candidates.extend(self.find_candidates(
+                        side, factions, excluded, needed=2, available=available))
         plan = plan_rotation(requirements, current, candidates)
         if not plan.success:
             raise RequestHumanTakeover('No complete eligible fleet plan: ' + plan.reason)
         logger.info('Training plan: ' + ', '.join(f'{s}={plan.slots[s].name}' for s in range(1, 7)))
+        completed_during_awaken = False
         for slot in ROTATION_SLOTS:
             if should_awaken(plan.slots[slot]):
                 plan.slots[slot] = self._awaken_planned_ship(plan.slots[slot])
                 if not decide_trainability(plan.slots[slot]).allowed:
-                    raise RequestHumanTakeover('Planned ship is no longer trainable after awakening')
+                    logger.info(f'Training ship reached its target during awakening: {plan.slots[slot].name}')
+                    completed_during_awaken = True
+                    break
         opsi.os_init(skip_first_auto_search=True)
         opsi.globe_goto(opsi.name_to_zone('NY'))
-        self._deploy(opsi, current, plan.slots)
+        if not completed_during_awaken:
+            self._deploy(opsi, current, plan.slots)
         self.config.cross_set(keys='OpsiHazard1Leveling.OpsiTraining.LastCheck', value=int(time.time()))
