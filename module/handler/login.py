@@ -9,6 +9,7 @@ from uiautomator2.xpath import XPath, XPathSelector
 import module.config.server as server
 from module.base.timer import Timer
 from module.base.utils import color_similarity_2d, crop
+from module.exception import GamePageUnknownError
 from module.handler.assets import *
 from module.logger import logger
 from module.map.assets import *
@@ -18,6 +19,13 @@ from module.ui.ui import UI
 
 
 class LoginHandler(UI):
+    # The login page is the only way back into the game, so it is worth more patience than a
+    # normal page. It is in Device.stuck_long_wait_list for exactly that reason, but the
+    # 12-click guard of Device.click_record_check() runs out after about 55s at the 5s click
+    # interval of the loop below and used to end the task long before that patience.
+    # When the title screen stays for this long, clicking it is not what is missing.
+    login_page_patience = 180
+
     def _handle_app_login(self):
         """
         Pages:
@@ -28,11 +36,13 @@ class LoginHandler(UI):
             GameStuckError:
             GameTooManyClickError:
             GameNotRunningError:
+            GamePageUnknownError:
         """
         logger.hr('App login')
 
         confirm_timer = Timer(1.5, count=4).start()
         orientation_timer = Timer(5)
+        login_page_timer = Timer(self.login_page_patience)
         login_success = False
         self.device.stuck_record_clear()
         self.device.click_record_clear()
@@ -48,6 +58,7 @@ class LoginHandler(UI):
 
             # End
             if self.is_in_main():
+                login_page_timer.clear()
                 if confirm_timer.reached():
                     logger.info('Login to main confirm')
                     break
@@ -56,6 +67,22 @@ class LoginHandler(UI):
 
             # Login
             if self.match_template_color(LOGIN_CHECK, offset=(30, 30), interval=5):
+                # The title screen of the CN channel client keeps the CRIWARE mark at the asset
+                # area while the asset button points at the artwork in the middle of the screen.
+                # A click there is delivered but cannot move the game on, which is what happens
+                # while the game server is under maintenance (live dump log/error/1790215533063,
+                # 2026-09-24 10:05:33: the 12 clicks below took the whole scheduler down after
+                # three failed Restart tasks). Give the page its patience and then hand the
+                # stall to the scheduler, which already asks the server checker and waits for
+                # the maintenance to end instead of restarting the client in a loop.
+                if login_page_timer.started() and login_page_timer.reached():
+                    logger.warning(
+                        f'Login page has not been passed for {self.login_page_patience}s, '
+                        f'clicks on it do not move the game on')
+                    logger.warning('Game server may be under maintenance, check server status now')
+                    self.device.click_record_clear()
+                    raise GamePageUnknownError('Login page stalled')
+                login_page_timer.start()
                 self.device.click(LOGIN_CHECK)
                 if not login_success:
                     logger.info('Login success')
