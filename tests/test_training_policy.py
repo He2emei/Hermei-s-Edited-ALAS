@@ -45,12 +45,14 @@ class TrainingPolicyTest(unittest.TestCase):
 
     def test_rainbow_is_exempt_from_full_break(self):
         self.assertTrue(decide_trainability(ship(rainbow=True, broken=False, stored=0)).allowed)
+        self.assertTrue(decide_trainability(ship(level=119, cap=120, rainbow=True)).allowed)
+        self.assertFalse(decide_trainability(ship(level=120, cap=120, rainbow=True, stored=0)).allowed)
 
     def test_stored_exp_is_required_and_threshold_completes(self):
         self.assertFalse(decide_trainability(ship(level=105, stored=None)).allowed)
         self.assertTrue(decide_trainability(ship(level=109, stored=2_999_999, cap=120)).allowed)
         self.assertFalse(decide_trainability(ship(level=110, stored=3_000_000, cap=110)).allowed)
-        self.assertFalse(decide_trainability(ship(level=115, rainbow=True, stored=3_000_000, cap=115)).allowed)
+        self.assertTrue(decide_trainability(ship(level=115, rainbow=True, stored=3_000_000, cap=115)).allowed)
 
     def test_intermediate_116_is_not_implicitly_complete(self):
         self.assertTrue(decide_trainability(ship(level=116, stored=None, cap=120)).allowed)
@@ -128,6 +130,34 @@ class TrainingPolicyTest(unittest.TestCase):
         self.assertTrue(plan.success)
         self.assertEqual({plan.slots[2].identity, plan.slots[3].identity}, {'meta', 'collab'})
         self.assertFalse(plan_rotation({2: None}, {}, [ship('unknown', faction='未知')]).success)
+
+    def test_rainbow_and_faction_share_required_side_when_possible(self):
+        requirement = TrainingRequirement(frozenset({'皇家'}), 'vanguard', 1, '皇家先锋技术测试I')
+        current = {2: ship('ordinary-main'), 3: ship('other-main'),
+                   5: ship('ordinary-vanguard', faction='重樱', position='vanguard'),
+                   6: ship('other-vanguard', faction='重樱', position='vanguard')}
+        candidates = [
+            ship('rainbow-main', rainbow=True, level=115, cap=115),
+            ship('rainbow-vanguard', faction='重樱', position='vanguard', rainbow=True, level=115, cap=115),
+            ship('royal-vanguard', position='vanguard'),
+            ship('royal-rainbow', position='vanguard', rainbow=True, level=115, cap=115),
+        ]
+        plan = plan_rotation({5: requirement, 6: requirement}, current, candidates)
+        self.assertTrue(plan.success)
+        self.assertEqual({plan.slots[5].name, plan.slots[6].name}, {'royal-vanguard', 'royal-rainbow'})
+        self.assertIn('rainbow-main', {plan.slots[2].name, plan.slots[3].name})
+
+    def test_unmatched_rainbow_and_one_faction_take_priority(self):
+        requirement = TrainingRequirement(frozenset({'皇家'}), 'vanguard', 1, '皇家先锋技术测试I')
+        current = {2: ship('main1'), 3: ship('main2'),
+                   5: ship('current-rainbow', faction='重樱', position='vanguard',
+                           rainbow=True, level=115, cap=115),
+                   6: ship('current-royal', position='vanguard')}
+        plan = plan_rotation({5: requirement, 6: requirement}, current,
+                             [ship('other-royal', position='vanguard')])
+        self.assertTrue(plan.success)
+        self.assertEqual(plan.slots[5].name, 'current-rainbow')
+        self.assertEqual(plan.slots[6].name, 'current-royal')
 
 
 if __name__ == '__main__':
