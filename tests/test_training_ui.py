@@ -31,6 +31,14 @@ def candidate(name, faction='白鹰', position='main', level=90, cap=None):
 
 
 class TrainingUiReviewTest(unittest.TestCase):
+    def test_fleet_inspection_rejects_non_map_overlay_before_switching(self):
+        inspector = TrainingShipInspector.__new__(TrainingShipInspector)
+        inspector.appear = lambda *args, **kwargs: False
+        opsi = SimpleNamespace(is_in_map=lambda: True,
+                               fleet_set=lambda *args: self.fail('must not click fleet control'))
+        with self.assertRaisesRegex(RequestHumanTakeover, 'visible OpSi map controls'):
+            inspector.inspect_map_fleet(opsi)
+
     def test_protected_fleet_defaults_preserve_existing_anchors(self):
         self.assertEqual(
             protected_fleet_anchors(SimpleNamespace()),
