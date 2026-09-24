@@ -2,6 +2,8 @@ import unittest
 from pathlib import Path
 
 import cv2
+import numpy as np
+from unittest.mock import patch
 
 from module.exception import ScriptError
 from module.ocr.ocr import Ocr
@@ -285,6 +287,54 @@ class ShipyardDevelopmentPolicyTest(unittest.TestCase):
         fake = Fake()
         self.assertEqual(fake.inspect_current_project(), ('柴郡', None))
         self.assertEqual(fake.submitted, ['大型技术理论I', '柴郡舰体塑造I'])
+
+    def test_time_locked_submit_notice_defers_without_failing_scheduler(self):
+        class Device:
+            def __init__(self):
+                self.image = np.zeros((720, 1280, 3), dtype=np.uint8)
+                self.image[490:533, 1088:1234] = (60, 145, 230)
+                self.clicks = 0
+
+            def click(self, button):
+                self.clicks += 1
+
+            def sleep(self, seconds):
+                pass
+
+            def screenshot(self):
+                pass
+
+        class Fake(ShipyardDevelopment):
+            def __init__(self):
+                self.device = Device()
+                self.confirmed = False
+                self.collapsed = False
+
+            def _locate_visible_task(self, title):
+                return DevelopmentTask(3, title, False, 243)
+
+            def handle_popup_confirm(self, name):
+                if not self.confirmed:
+                    self.confirmed = True
+                    return True
+                return False
+
+            def _shipyard_in_ui(self):
+                return True
+
+            def _collapse_any_expanded_header(self):
+                self.collapsed = True
+
+            def _scan_visible_tasks(self):
+                raise AssertionError('The time-locked notice must be handled before task-state polling')
+
+        readings = iter(('交', '任务还没有完成'))
+        with patch('module.shipyard.development.Ocr') as ocr:
+            ocr.return_value.ocr.side_effect = lambda image: next(readings)
+            fake = Fake()
+            self.assertFalse(fake._submit_available_task('主力技术突破I'))
+        self.assertTrue(fake.collapsed)
+        self.assertEqual(fake.device.clicks, 2)
 
     def test_unknown_incomplete_material_is_rejected(self):
         class Fake(ShipyardDevelopment):

@@ -281,11 +281,24 @@ class ShipyardDevelopment(ShipyardUI):
             if self.handle_popup_confirm('SHIPYARD_DEVELOPMENT'):
                 continue
             if self._shipyard_in_ui():
+                # The game also offers a blue Submit on time-locked material
+                # rows.  Its confirmation succeeds, then a toast says the task
+                # is not complete and consumes nothing (seen live on 2026-09-25).
+                notice = Ocr([(520, 300, 790, 346)], lang='cnocr',
+                             name='DevelopmentSubmitResult').ocr(self.device.image)
+                if '任务还没有完成' in notice:
+                    logger.info(f'Development task is not yet eligible to submit: {title}')
+                    self._collapse_any_expanded_header()
+                    return False
                 for current in self._scan_visible_tasks():
                     if self._task_key(current.title) == self._task_key(title) and current.complete:
                         self._collapse_any_expanded_header()
                         return True
-        raise ScriptError('Development submission did not return to shipyard')
+        if self._shipyard_in_ui():
+            logger.warning(f'Development task did not complete after submit; defer: {title}')
+            self._collapse_any_expanded_header()
+            return False
+        raise ScriptError('Development submission left the shipyard unexpectedly')
 
     def inspect_current_project(self, submit_materials=True):
         """Return the actual working ship and its next technical requirement."""
