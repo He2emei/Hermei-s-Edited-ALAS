@@ -128,7 +128,7 @@ class TrainingUiReviewTest(unittest.TestCase):
         inspector.awaken_once = lambda **kwargs: self.fail('level 120 must not awaken')
         self.assertIs(inspector.awaken_for_training(ship), ship)
 
-    def test_no_candidate_plan_has_no_fleet_edit(self):
+    def test_no_candidate_retains_current_without_fleet_edit(self):
         current = {
             1: candidate('英仙座'), 2: candidate('当前主力'),
             3: candidate('当前主力2', level=125, cap=125),
@@ -140,7 +140,8 @@ class TrainingUiReviewTest(unittest.TestCase):
 
         class Manager(TrainingFleetManager):
             def __init__(self):
-                self.config = SimpleNamespace(SERVER='cn', OpsiFleet_Fleet=4)
+                self.config = SimpleNamespace(SERVER='cn', OpsiFleet_Fleet=4,
+                                              cross_set=lambda **kwargs: None)
                 self.device = SimpleNamespace(image=np.zeros((720, 1280, 3), dtype=np.uint8))
                 self.edits = 0
 
@@ -159,8 +160,8 @@ class TrainingUiReviewTest(unittest.TestCase):
             def find_candidates(self, *args, **kwargs):
                 return []
 
-            def _deploy(self, *args, **kwargs):
-                self.edits += 1
+            def _deploy(self, opsi, before, planned):
+                self.edits += sum(before[slot].name != planned[slot].name for slot in (2, 3, 5, 6))
 
         opsi = SimpleNamespace(
             os_init=lambda **kwargs: None,
@@ -170,8 +171,7 @@ class TrainingUiReviewTest(unittest.TestCase):
         with patch('module.shipyard.development.ShipyardDevelopment') as shipyard:
             shipyard.return_value.inspect_current_project.return_value = ('柴郡', requirement)
             manager = Manager()
-            with self.assertRaises(RequestHumanTakeover):
-                manager.maintain(opsi)
+            manager.maintain(opsi)
         self.assertEqual(manager.edits, 0)
 
     def test_maintenance_searches_rainbows_even_with_four_trainable_currents(self):
