@@ -15,7 +15,7 @@ from module.os.training_ui import (TrainingShipInspector, DOCK_SCROLL,
                                    same_dock_page)
 from module.retire.assets import DOCK_CHECK
 from module.retire.dock import OCR_DOCK_SELECTED
-from module.os_handler.port import PORT_CHECK
+from module.os_handler.assets import ORDER_ENTER
 from module.ui.page import page_shipyard
 
 
@@ -219,12 +219,15 @@ class TrainingFleetManager(TrainingShipInspector):
             self._close_selector(opsi)
             return False
         self.device.click(POPUP_CONFIRM)
-        def deployed():
-            if self.appear(PORT_CHECK, offset=(20, 20)):
-                opsi.port_quit()
-                return False
-            return opsi.is_in_map()
-        self._wait(deployed, 'deployment completion')
+        self._wait(lambda: not self.appear(POPUP_CONFIRM, offset=(20, 20)),
+                   'deployment confirmation dismissal')
+        # Confirmation can land in the port UI rather than the NY map.  The
+        # regular OS initializer handles either page; the port back shortcut
+        # can leave a shop overlay that looks enough like a map to fleet_set.
+        opsi.os_init(skip_first_auto_search=True)
+        opsi.globe_goto(opsi.name_to_zone('NY'))
+        self._wait(lambda: opsi.is_in_map() and self.appear(ORDER_ENTER, offset=(20, 20)),
+                   'NY map after deployment')
         actual = self.inspect_map_fleet(opsi)
         if any(actual[s].name != planned[s].name for s in range(1, 7)):
             raise RequestHumanTakeover('Deployed ship identities differ from the full plan')
