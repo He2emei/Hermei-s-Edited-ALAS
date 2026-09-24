@@ -18,7 +18,7 @@ TASK_SCAN_ROWS = 8
 
 # The action is derived from the currently expanded row, never from the
 # ordinary shipyard confirm/buy buttons.
-TASK_ACTION_LABELS = frozenset({'提交', '完成', '立即完成'})
+TASK_ACTION_LABELS = frozenset({'提交'})
 
 
 def is_task_action_label(label):
@@ -28,8 +28,8 @@ def is_task_action_label(label):
     live 2026-09-23 frame cnocr reads ``提交`` as only ``交`` even though the
     entire button is inside the OCR area.  Accept one missing glyph while
     keeping the observation an ordered subsequence of a known label.  The
-    caller separately requires a known material row and exactly one enabled
-    blue action, then verifies that the task becomes complete after the click.
+    caller separately requires a known task row and exactly one enabled blue
+    action, then verifies that the task becomes complete after the click.
     """
     if not isinstance(label, str):
         return False

@@ -100,6 +100,8 @@ def decide_trainability(candidate):
     invalid = _valid_candidate(candidate)
     if invalid:
         return PolicyDecision(False, invalid)
+    if candidate.is_rainbow and candidate.level >= 120:
+        return PolicyDecision(False, 'rainbow ship reached level 120')
     if candidate.level == MAX_LEVEL:
         return PolicyDecision(False, 'level 125 is complete')
     if not candidate.is_rainbow and not candidate.fully_limit_broken:
@@ -113,7 +115,7 @@ def decide_trainability(candidate):
     elif at_current_cap and level_cap >= 100:
         if candidate.stored_exp is None:
             return PolicyDecision(False, 'stored XP is required at level cap 100 or higher')
-        if candidate.level >= (115 if candidate.is_rainbow else 110) \
+        if not candidate.is_rainbow and candidate.level >= 110 \
                 and candidate.stored_exp >= MAX_STORED_EXP:
             return PolicyDecision(False, 'stored XP and level threshold are complete')
     return PolicyDecision(True, 'trainable')
@@ -177,17 +179,13 @@ def parse_training_requirement(title):
 parse_research_requirement = parse_training_requirement
 
 
-def _requirement_matches(candidate, requirement, slot):
+def _slot_eligible(candidate, slot):
     side = 'main' if slot in MAIN_SLOTS else 'vanguard' if slot in VANGUARD_SLOTS else None
-    if side is None or not is_trainable(candidate) or candidate.position != side:
-        return False
-    if requirement is None:
-        return True
-    return requirement.position == side and candidate.faction in requirement.factions
+    return side is not None and is_trainable(candidate) and candidate.position == side
 
 
 def plan_rotation(requirements, current_slots, screen_candidates, excluded_identities=()):
-    """Plan slots 2/3/5/6 atomically, preserving eligible current ships."""
+    """Fill four slots; favour one unfinished rainbow per side, then faction."""
     requirements = dict(requirements or {})
     current_slots = dict(current_slots or {})
     screen_candidates = list(screen_candidates or [])
@@ -220,7 +218,7 @@ def plan_rotation(requirements, current_slots, screen_candidates, excluded_ident
             current is not None
             and current.identity not in excluded
             and current.identity not in other_current
-            and _requirement_matches(current, requirements[slot], slot)
+            and _slot_eligible(current, slot)
         ):
             result.append(current)
         for candidate in screen_candidates:
@@ -228,28 +226,43 @@ def plan_rotation(requirements, current_slots, screen_candidates, excluded_ident
                 continue
             if candidate.identity in excluded or candidate.identity in other_current or candidate.identity in used:
                 continue
-            if _requirement_matches(candidate, requirements[slot], slot):
+            if _slot_eligible(candidate, slot):
                 result.append(candidate)
         return result
 
+    best = None
+    best_score = None
+
+    def score():
+        rainbow_sides = sum(any(assignments[s].is_rainbow for s in side)
+                            for side in (MAIN_SLOTS, VANGUARD_SLOTS))
+        faction_matches = sum(
+            requirement is not None
+            and requirement.position == assignments[slot].position
+            and assignments[slot].faction in requirement.factions
+            for slot, requirement in requirements.items()
+        )
+        unchanged = sum(current_slots.get(slot) == assignments[slot] for slot in ROTATION_SLOTS)
+        return rainbow_sides, faction_matches, unchanged
+
     def search(index, used):
+        nonlocal best, best_score
         if index == len(slot_order):
-            return dict(assignments)
+            value = score()
+            if best_score is None or value > best_score:
+                best, best_score = dict(assignments), value
+            return
         slot = slot_order[index]
         current = current_slots.get(slot)
-        next_used = used
-        for candidate in options(slot, next_used):
-            if candidate.identity in next_used:
+        for candidate in options(slot, used):
+            if candidate.identity in used:
                 continue
             assignments[slot] = candidate
-            result = search(index + 1, next_used | {candidate.identity})
-            if result is not None:
-                return result
+            search(index + 1, used | {candidate.identity})
         if current is None:
             assignments.pop(slot, None)
-        return None
 
-    result = search(0, set(other_current) | excluded)
-    if result is None:
+    search(0, set(other_current) | excluded)
+    if best is None:
         return RotationPlan(False, dict(current_slots), 'requirements cannot be satisfied without duplicate or side mismatch')
-    return RotationPlan(True, result)
+    return RotationPlan(True, best)
