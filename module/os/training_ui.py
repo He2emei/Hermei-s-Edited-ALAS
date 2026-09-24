@@ -217,6 +217,9 @@ class TrainingShipInspector(Awaken):
         return ship
 
     def inspect_map_fleet(self, opsi):
+        from module.os_handler.assets import ORDER_ENTER
+        if not opsi.is_in_map() or not self.appear(ORDER_ENTER, offset=(20, 20)):
+            raise RequestHumanTakeover('Fleet inspection requires visible OpSi map controls')
         opsi.fleet_set(4)
         ships = {}
         for slot, button in enumerate(MAP_SHIPS.buttons, 1):
