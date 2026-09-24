@@ -246,10 +246,10 @@ class ShipyardDevelopment(ShipyardUI):
                 if self._task_key(self._ocr_task_title(header_y)) == wanted:
                     return DevelopmentTask(0, title, False, header_y)
             self._scroll_task_list()
-        raise ScriptError(f'Material task is not visible: {title}')
+        raise ScriptError(f'Development task is not visible: {title}')
 
-    def _submit_material_task(self, title):
-        """Locate, expand, and submit one exact material task."""
+    def _submit_available_task(self, title):
+        """Submit only an observed blue 提交 action on a known task row."""
         task = self._locate_visible_task(title)
         self.device.click(task_header_button(task.header_y))
         self.device.sleep(0.6)
@@ -263,14 +263,16 @@ class ShipyardDevelopment(ShipyardUI):
         rects = [cv2.boundingRect(c) for c in contours]
         rects = [(x, y, w, h) for x, y, w, h in rects if w >= 100 and 25 <= h <= 65]
         if len(rects) != 1:
-            logger.info(f'Development material task remains locked/unavailable: {title}')
+            logger.info(f'Development task has no available submit action: {title}')
             self._collapse_any_expanded_header()
             return False
         x, y, w, h = rects[0]
         area = (1080 + x, 210 + y, 1080 + x + w, 210 + y + h)
         label = Ocr([area], lang='cnocr', name='DevelopmentSubmit').ocr(self.device.image).strip()
         if not is_task_action_label(label):
-            raise ScriptError(f'Unknown enabled development action: {label}')
+            logger.info(f'Development action is not submit: {title}: {label}')
+            self._collapse_any_expanded_header()
+            return False
         button = Button(area, (0, 0, 0), area, name='SHIPYARD_DEVELOPMENT_SUBMIT')
         self.device.click(button)
         for _ in range(20):
@@ -283,14 +285,17 @@ class ShipyardDevelopment(ShipyardUI):
                     if self._task_key(current.title) == self._task_key(title) and current.complete:
                         self._collapse_any_expanded_header()
                         return True
-        raise ScriptError('Development material submission did not return to shipyard')
+        raise ScriptError('Development submission did not return to shipyard')
 
     def inspect_current_project(self, submit_materials=True):
         """Return the actual working ship and its next technical requirement."""
         self._assert_supported_screen()
         self._assert_cn_server()
         ship_name = self._scan_working_ship()
-        for _ in range(2):
+        # A green check can describe a finished requirement that still needs
+        # its separate submit click.  Inspect every known row, not just the
+        # rows previously classified as incomplete material requirements.
+        for _ in range(TASK_SCAN_ROWS + 1):
             tasks = self._read_all_tasks()
             for task in tasks:
                 if not task.complete and self._catalog_kind(task.title) == 'experience' \
@@ -306,17 +311,19 @@ class ShipyardDevelopment(ShipyardUI):
             if unknown_incomplete:
                 raise ScriptError(f'Unknown shipyard task OCR: {unknown_incomplete[0].title}')
 
-            material_tasks = [
-                task for task in tasks
-                if not task.complete and self._is_known_material_title(task.title)
-            ]
-            if material_tasks and submit_materials:
+            if submit_materials:
                 submitted = False
-                for task in material_tasks:
-                    submitted |= self._submit_material_task(task.title)
+                for task in tasks:
+                    if not (self._is_technical_title(task.title)
+                            or self._is_known_material_title(task.title)
+                            or self._catalog_kind(task.title) is not None):
+                        continue
+                    if self._submit_available_task(task.title):
+                        submitted = True
+                        break
                 current_name = self._read_ship_name()
                 if current_name != ship_name and ship_name_similarity(current_name, ship_name) < 0.6:
-                    raise ScriptError('Working ship changed during material submission')
+                    raise ScriptError('Working ship changed during development submission')
                 if submitted:
                     continue
 
@@ -326,7 +333,7 @@ class ShipyardDevelopment(ShipyardUI):
                 return ship_name, requirement
             self.last_development_tasks = tuple(tasks)
             return ship_name, None
-        raise ScriptError('Material submission state did not settle')
+        raise ScriptError('Development submission state did not settle')
 
     @staticmethod
     def _is_technical_title(title):
