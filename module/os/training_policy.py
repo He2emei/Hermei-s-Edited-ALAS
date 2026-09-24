@@ -185,7 +185,7 @@ def _slot_eligible(candidate, slot):
 
 
 def plan_rotation(requirements, current_slots, screen_candidates, excluded_identities=()):
-    """Fill four slots; favour one unfinished rainbow per side, then faction."""
+    """Fill four slots; retain an existing finished ship only when no trainable replacement exists."""
     requirements = dict(requirements or {})
     current_slots = dict(current_slots or {})
     screen_candidates = list(screen_candidates or [])
@@ -195,8 +195,7 @@ def plan_rotation(requirements, current_slots, screen_candidates, excluded_ident
         if slot not in ROTATION_SLOTS:
             return RotationPlan(False, dict(current_slots), f'slot {slot} is immutable or invalid')
     # All four rotation slots are planned together. A missing or None entry is
-    # an unrestricted requirement for that slot, not permission to leave it
-    # empty or to accept an unsuitable ship.
+    # unrestricted, but is not permission to leave it empty.
     requirements = {slot: requirements.get(slot) for slot in ROTATION_SLOTS}
     for slot, requirement in requirements.items():
         if requirement is not None and not isinstance(requirement, TrainingRequirement):
@@ -218,7 +217,8 @@ def plan_rotation(requirements, current_slots, screen_candidates, excluded_ident
             current is not None
             and current.identity not in excluded
             and current.identity not in other_current
-            and _slot_eligible(current, slot)
+            and _valid_candidate(current) is None
+            and current.position == ('main' if slot in MAIN_SLOTS else 'vanguard')
         ):
             result.append(current)
         for candidate in screen_candidates:
@@ -234,16 +234,18 @@ def plan_rotation(requirements, current_slots, screen_candidates, excluded_ident
     best_score = None
 
     def score():
-        rainbow_sides = sum(any(assignments[s].is_rainbow for s in side)
+        trainable_count = sum(is_trainable(assignments[s]) for s in ROTATION_SLOTS)
+        rainbow_sides = sum(any(assignments[s].is_rainbow and is_trainable(assignments[s]) for s in side)
                             for side in (MAIN_SLOTS, VANGUARD_SLOTS))
         faction_matches = sum(
             requirement is not None
+            and is_trainable(assignments[slot])
             and requirement.position == assignments[slot].position
             and assignments[slot].faction in requirement.factions
             for slot, requirement in requirements.items()
         )
         unchanged = sum(current_slots.get(slot) == assignments[slot] for slot in ROTATION_SLOTS)
-        return rainbow_sides, faction_matches, unchanged
+        return trainable_count, rainbow_sides, faction_matches, unchanged
 
     def search(index, used):
         nonlocal best, best_score
