@@ -233,14 +233,15 @@ class TrainingShipInspector(Awaken):
         validate_protected_fleet(ships, self.config)
         return ships
 
-    def find_candidates(self, side, factions, excluded, needed=2, available=None, scroll=DOCK_SCROLL):
+    def find_candidates(self, side, factions, excluded, needed=2, available=None,
+                        rarity='all', scroll=DOCK_SCROLL):
         """Inspect in dock order. Never select/remove a deployed ship here."""
         self.ui_ensure(page_dock)
         self.dock_favourite_set(False)
         self.dock_sort_method_dsc_set(True)
         selected_factions = [FILTER_FACTIONS[f] for f in sorted(factions)] if factions else 'all'
         dock_side = 'ss' if side == 'submarine' else side
-        self.dock_filter_set(index=dock_side, faction=selected_factions)
+        self.dock_filter_set(index=dock_side, faction=selected_factions, rarity=rarity)
         scroll.set_top(main=self)
         found, seen = [], set(excluded)
         position = None
@@ -268,7 +269,8 @@ class TrainingShipInspector(Awaken):
                 if ship.name != name:
                     raise RequestHumanTakeover('Dock card and ship details disagree')
                 decision = decide_trainability(ship)
-                if decision.allowed and ship.position == side and (not factions or ship.faction in factions):
+                if decision.allowed and ship.position == side and (not factions or ship.faction in factions) \
+                        and (rarity != 'ultra' or ship.is_rainbow):
                     found.append(ship)
                 else:
                     logger.info(f'Training skip {name}: {decision.reason}')
