@@ -336,6 +336,31 @@ class ShipyardDevelopmentPolicyTest(unittest.TestCase):
         self.assertTrue(fake.collapsed)
         self.assertEqual(fake.device.clicks, 2)
 
+    def test_task_lookup_resets_from_bottom_before_searching(self):
+        class Fake(ShipyardDevelopment):
+            def __init__(self):
+                self.position = 'bottom'
+                self.swipes = []
+
+            def _collapse_any_expanded_header(self):
+                return False
+
+            def _scroll_task_list(self, direction=-1):
+                self.swipes.append(direction)
+                if direction == 1:
+                    self.position = 'top'
+
+            def _detect_header_ys(self):
+                return [130]
+
+            def _ocr_task_title(self, header_y):
+                return '铁血主力技术测试I' if self.position == 'top' else '主力技术突破I'
+
+        fake = Fake()
+        result = fake._locate_visible_task('铁血主力技术测试I')
+        self.assertEqual(result.header_y, 130)
+        self.assertEqual(fake.swipes, [1, 1])
+
     def test_unknown_incomplete_material_is_rejected(self):
         class Fake(ShipyardDevelopment):
             def __init__(self):

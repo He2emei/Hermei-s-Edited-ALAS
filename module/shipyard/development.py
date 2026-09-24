@@ -241,6 +241,12 @@ class ShipyardDevelopment(ShipyardUI):
     def _locate_visible_task(self, title):
         """Find a title on the current frame; never reuse historical y data."""
         wanted = self._task_key(title)
+        # Earlier submissions/expansions can leave the viewport at the bottom.
+        # Searching only downward from there misses task 1 even when it was
+        # enumerated successfully at the start of this inspection.
+        self._collapse_any_expanded_header()
+        for _ in range(2):
+            self._scroll_task_list(direction=1)
         for _ in range(8):
             for header_y in self._detect_header_ys():
                 if self._task_key(self._ocr_task_title(header_y)) == wanted:
