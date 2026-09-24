@@ -228,8 +228,8 @@ class TrainingFleetManager(TrainingShipInspector):
         actual = self.inspect_map_fleet(opsi)
         if any(actual[s].name != planned[s].name for s in range(1, 7)):
             raise RequestHumanTakeover('Deployed ship identities differ from the full plan')
-        if any(not decide_trainability(actual[s]).allowed for s in ROTATION_SLOTS):
-            raise RequestHumanTakeover('A deployed ship no longer meets training requirements')
+        if any(not decide_trainability(actual[s]).allowed for s in changed):
+            raise RequestHumanTakeover('A newly deployed ship no longer meets training requirements')
         logger.info('Fourth fleet deployment verified, both anchors preserved')
         return True
 
