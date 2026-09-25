@@ -256,6 +256,11 @@ class ShipyardDevelopment(ShipyardUI):
 
     def _submit_available_task(self, title):
         """Submit only an observed blue 提交 action on a known task row."""
+        # Each task is a distinct, bounded inspection.  Reset the device's
+        # click-loop history here: scrolling back to the top and opening the
+        # first visible header for several rows otherwise looks like the same
+        # two-button loop even though each row is inspected once.
+        self.device.click_record_clear()
         task = self._locate_visible_task(title)
         self.device.click(task_header_button(task.header_y))
         self.device.sleep(0.6)
