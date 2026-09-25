@@ -1,6 +1,7 @@
 """[heremei] Screenshot-verified CN ship inspection for OpSi fleet training."""
 import json
 import re
+from functools import lru_cache
 from pathlib import Path
 
 import cv2
@@ -37,6 +38,41 @@ MAP_SHIPS = ButtonGrid((20, 133), (0, 100), (65, 65), (1, 6), name='TRAINING_MAP
 def point_button(x, y, name):
     return Button((x - 3, y - 3, x + 3, y + 3), (0, 0, 0),
                   (x - 3, y - 3, x + 3, y + 3), name=name)
+
+
+@lru_cache(maxsize=1)
+def _card_lock_template():
+    template = cv2.imread('./assets/cn/opsi_training/card_lock_binary.png', cv2.IMREAD_GRAYSCALE)
+    if template is None:
+        raise RequestHumanTakeover('Training dock lock template missing')
+    return template
+
+
+def dock_card_lock(image, button):
+    """Read the CN card padlock; uncertain cards are never training candidates."""
+    x, y = button.area[:2]
+    region = image[y + 24:y + 65, x + 103:x + 138]
+    if region.shape != (41, 35, 3):
+        return None
+    minimum = region.min(axis=2)
+    spread = region.max(axis=2) - minimum
+    white = ((minimum > 190) & (spread < 65)).astype('uint8') * 255
+    score = float(cv2.matchTemplate(white, _card_lock_template(), cv2.TM_CCOEFF_NORMED).max())
+    if score >= 0.65:
+        return True
+    if score <= 0.35:
+        return False
+    return None
+
+
+def detail_ship_lock(image):
+    """The detail control says 解锁 for a locked ship and 锁定 for an unlocked one."""
+    label = Ocr([(876, 668, 951, 697)], lang='cnocr', name='TrainingLock').ocr(image)
+    if '锁定' in label:
+        return False
+    if '解' in label:
+        return True
+    return None
 
 
 
@@ -172,6 +208,9 @@ class TrainingShipInspector(Awaken):
             level = Digit(OCR_SHIP_LEVEL, letter=(255, 255, 255), threshold=128, name='TrainingLevel').ocr(self.device.image)
             if name is None or not 1 <= level <= 125:
                 continue
+            is_locked = detail_ship_lock(self.device.image)
+            if is_locked is None:
+                continue
             data = CATALOG[name]
             faction = FACTIONS.get(data['faction'], '联动' if data['faction'] >= 100 else '')
             ship_type = data['type']
@@ -199,7 +238,8 @@ class TrainingShipInspector(Awaken):
                 elif level == 125:
                     continue
             cap = level if at_cap else 100 if level < 100 else min(125, (level // 5 + 1) * 5)
-            ship = ShipCandidate(name, faction, side, level, data['rarity'] == 6, full, stored, cap)
+            ship = ShipCandidate(name, faction, side, level, data['rarity'] == 6, full, stored, cap,
+                                 is_locked)
             if ship == previous:
                 logger.info(f'Training ship: {ship}')
                 return ship
@@ -268,7 +308,9 @@ class TrainingShipInspector(Awaken):
                 name = catalog_name(raw_name)
                 if not name or name in seen or not 1 <= level < 125 or (available is not None and name not in available):
                     continue
-                seen.add(name)
+                if dock_card_lock(self.device.image, button) is not True:
+                    logger.info(f'Training skip {name}: dock card is unlocked or lock state unclear')
+                    continue
                 self.ship_info_enter(button, long_click=False)
                 try:
                     ship = self.read_ship()
@@ -277,12 +319,13 @@ class TrainingShipInspector(Awaken):
                     self.device.click(BACK_ARROW)
                     self.wait_until_appear(DOCK_CHECK, offset=(20, 20))
                     continue
-                if ship.name != name:
+                if ship.name != name or ship.level != level:
                     raise RequestHumanTakeover('Dock card and ship details disagree')
                 decision = decide_trainability(ship)
                 if decision.allowed and ship.position == side and (not factions or ship.faction in factions) \
                         and (rarity != 'ultra' or ship.is_rainbow):
                     found.append(ship)
+                    seen.add(name)
                 else:
                     logger.info(f'Training skip {name}: {decision.reason}')
                 self.device.click(BACK_ARROW)

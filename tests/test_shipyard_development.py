@@ -159,6 +159,54 @@ class ShipyardDevelopmentPolicyTest(unittest.TestCase):
         self.assertNotEqual(task_identity('柴郡舰体塑造I'),
                             task_identity('大型技术理论I'))
 
+    def test_live_bottom_hull_rows_remain_two_tasks_despite_stage_ocr_loss(self):
+        root = Path(__file__).parents[1] / 'tests/fixtures'
+        top = cv2.cvtColor(cv2.imread(str(root / 'shipyard_alas_top_rows_20260925.png')),
+                           cv2.COLOR_BGR2RGB)
+        bottom = cv2.cvtColor(cv2.imread(str(root / 'shipyard_alas_bottom_rows_20260925.png')),
+                              cv2.COLOR_BGR2RGB)
+        from types import SimpleNamespace
+        obj = object.__new__(ShipyardDevelopment)
+        obj.device = SimpleNamespace(image=top)
+        obj._collapse_any_expanded_header = lambda: False
+        obj._scroll_task_list = lambda direction=-1: setattr(obj.device, 'image',
+                                                              top if direction == 1 else bottom)
+        tasks = obj._read_all_tasks()
+        hull = [t for t in tasks if '舰体塑' in t.title]
+        self.assertEqual([(t.index, t.title[-2:], t.complete) for t in hull],
+                         [(7, '造I', True), (8, 'II', False)])
+        self.assertNotEqual(obj._task_key(hull[0].title), obj._task_key(hull[1].title))
+
+    def test_live_target8_has_one_enabled_submit_action(self):
+        path = Path(__file__).parents[1] / 'tests/fixtures/shipyard_alas_target8_submit_20260925.png'
+        image = cv2.cvtColor(cv2.imread(str(path)), cv2.COLOR_BGR2RGB)
+        pixels = image[210:558, 1080:1245].astype('int16')
+        red, green, blue = pixels[:, :, 0], pixels[:, :, 1], pixels[:, :, 2]
+        mask = ((blue > red + 45) & (blue > 140) & (green > 75)).astype('uint8') * 255
+        contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+        rects = [cv2.boundingRect(c) for c in contours]
+        rects = [(x, y, w, h) for x, y, w, h in rects if w >= 100 and 25 <= h <= 65]
+        self.assertEqual(len(rects), 1)
+        x, y, width, height = rects[0]
+        from module.shipyard.development_assets import is_task_action_label
+        label = Ocr([(1080 + x, 210 + y, 1080 + x + width, 210 + y + height)],
+                    lang='cnocr', name='Target8SubmitFixture').ocr(image)
+        self.assertTrue(is_task_action_label(label))
+
+    def test_expanded_target8_with_red_alert_keeps_both_hull_rows(self):
+        from types import SimpleNamespace
+        root = Path(__file__).parents[1] / 'tests/fixtures'
+        for filename, complete in (
+                ('shipyard_alas_target8_submit_20260925.png', False),
+                ('shipyard_alas_target8_submitted_20260925.png', True)):
+            image = cv2.cvtColor(cv2.imread(str(root / filename)), cv2.COLOR_BGR2RGB)
+            obj = object.__new__(ShipyardDevelopment)
+            obj.device = SimpleNamespace(image=image)
+            hull = [task for task in obj._scan_visible_tasks() if '舰体塑' in task.title]
+            with self.subTest(filename=filename):
+                self.assertEqual([task.index for task in hull], [7, 8])
+                self.assertIs(hull[1].complete, complete)
+
     def test_locked_rows_from_live_evidence_carry_no_countdown(self):
         path = (Path(__file__).parents[2] / 'code_workflow' / 'evidence' / '2026-09-16'
                 / 'shipyard-alas-locked-timer.png')
