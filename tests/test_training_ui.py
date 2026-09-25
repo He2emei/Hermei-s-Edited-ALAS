@@ -319,6 +319,22 @@ class TrainingUiReviewTest(unittest.TestCase):
         self.assertEqual(ship.stored_exp, 331_039)
         self.assertEqual(ship.level_cap, 120)
 
+    def test_live_white_dragon_detail_is_identifiable(self):
+        path = ROOT / 'tests/fixtures/opsi_white_dragon_detail.png'
+        image = cv2.cvtColor(cv2.imread(str(path)), cv2.COLOR_BGR2RGB)
+        inspector = TrainingShipInspector.__new__(TrainingShipInspector)
+        inspector.config = SimpleNamespace(SERVER='cn')
+        inspector.device = SimpleNamespace(image=image, screenshot=lambda: None)
+        inspector.appear = lambda *args, **kwargs: True
+        ship = inspector.read_ship()
+        self.assertEqual(ship.name, '白龙')
+        self.assertEqual(ship.faction, '重樱')
+        self.assertEqual(ship.position, 'main')
+        self.assertEqual(ship.level, 118)
+        self.assertTrue(ship.is_rainbow)
+        self.assertEqual(ship.level_cap, 120)
+        self.assertIsNone(ship.stored_exp)
+
     def test_scrolled_card_geometry_failure_is_safe(self):
         inspector = TrainingShipInspector.__new__(TrainingShipInspector)
         inspector.ui_ensure = lambda *args, **kwargs: None

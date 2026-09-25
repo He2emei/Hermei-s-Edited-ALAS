@@ -96,7 +96,9 @@ def same_dock_page(previous, current, threshold=0.5):
 def catalog_name(text):
     name = normalise_name(text)
     # Exact cnocr substitution verified against the 2026-09-08 detail screenshot.
-    name = {'朝咀': '朝凪'}.get(name, name)
+    # The 2026-09-25 CN detail for 白龙 is read as 一白龙 by cnocr;
+    # the dock card and the visible detail title both confirm 白龙.
+    name = {'朝咀': '朝凪', '一白龙': '白龙'}.get(name, name)
     # This combined character's name scrolls beyond the detail label width.
     # The distinctive exact prefix is verified in current-slot6.png.
     if '八舞耶俱矢八舞' in name.replace('·', ''):
