@@ -20,6 +20,7 @@ from module.os.training_ui import (
     validate_protected_fleet,
 )
 from module.os.training import TrainingFleetManager
+from module.retire.assets import DOCK_EMPTY
 
 
 ROOT = Path(__file__).parents[1]
@@ -328,10 +329,24 @@ class TrainingUiReviewTest(unittest.TestCase):
             screenshot=lambda: None,
             image=np.zeros((720, 1280, 3), dtype=np.uint8),
         )
+        inspector.appear = lambda *args, **kwargs: False
         with patch('module.os.training_ui.DOCK_SCROLL.set_top'), \
                 patch('module.os.training_ui.dock_cards', return_value=[]):
             with self.assertRaises(RequestHumanTakeover):
                 inspector.find_candidates('main', frozenset(), set())
+
+    def test_empty_rarity_faction_filter_has_no_candidates(self):
+        inspector = TrainingShipInspector.__new__(TrainingShipInspector)
+        inspector.ui_ensure = lambda *args, **kwargs: None
+        inspector.dock_favourite_set = lambda *args, **kwargs: None
+        inspector.dock_sort_method_dsc_set = lambda *args, **kwargs: None
+        inspector.dock_filter_set = lambda *args, **kwargs: None
+        inspector.device = SimpleNamespace(screenshot=lambda: None)
+        inspector.appear = lambda asset, **kwargs: asset is DOCK_EMPTY
+        with patch('module.os.training_ui.DOCK_SCROLL.set_top') as set_top:
+            self.assertEqual(inspector.find_candidates('vanguard', frozenset({'铁血'}),
+                                                       set(), rarity='ultra'), [])
+        set_top.assert_not_called()
 
 
 if __name__ == '__main__':
