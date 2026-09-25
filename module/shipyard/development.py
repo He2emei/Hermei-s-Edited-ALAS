@@ -115,6 +115,18 @@ class ShipyardDevelopment(ShipyardUI):
         targets.sort()
         if not targets:
             raise ScriptError('Shipyard task TARGET rows are not identifiable')
+        # A red task alert can cover the TARGET label. Two compact rows have
+        # a 120-136px pitch here, so probe the one missing header midway and
+        # accept it only when its title belongs to a known task family.
+        inferred = []
+        for upper, lower in zip(targets, targets[1:]):
+            if 120 <= lower - upper <= 136:
+                header_y = upper + (lower - upper) // 2
+                title = self._ocr_task_title(header_y)
+                if self._catalog_key(title) is not None or self._is_technical_title(title) \
+                        or self._is_known_material_title(title):
+                    inferred.append(header_y)
+        targets = sorted(targets + inferred)
         # TARGET text is at the top of a header.  Keep the offset in one place
         # so a fresh screenshot always produces fresh header coordinates.
         return [y for y in targets if y + 40 <= TASK_LIST_AREA[3]]

@@ -1,5 +1,6 @@
 import unittest
 from pathlib import Path
+from types import SimpleNamespace
 
 import cv2
 import numpy as np
@@ -19,6 +20,17 @@ from module.os.training_policy import parse_training_requirement
 
 
 class ShipyardDevelopmentPolicyTest(unittest.TestCase):
+    def test_alert_badge_does_not_hide_second_compact_task(self):
+        path = Path(__file__).parent / 'fixtures' / 'shipyard_target2_obscured.png'
+        image = cv2.imread(str(path), cv2.IMREAD_COLOR)
+        self.assertIsNotNone(image)
+        inspector = ShipyardDevelopment.__new__(ShipyardDevelopment)
+        inspector.device = SimpleNamespace(image=cv2.cvtColor(image, cv2.COLOR_BGR2RGB))
+        header_ys = inspector._detect_header_ys()
+        self.assertEqual(header_ys, [130, 193, 257])
+        self.assertEqual(inspector._task_key(inspector._ocr_task_title(193)),
+                         inspector._task_key('大型技术理论I'))
+
     def test_live_submit_button_accepts_partial_ocr(self):
         path = Path(__file__).parent / 'fixtures' / 'shipyard_development_submit_20260923.png'
         image = cv2.imread(str(path), cv2.IMREAD_COLOR)
