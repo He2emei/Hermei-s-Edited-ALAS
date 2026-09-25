@@ -8,10 +8,11 @@ from module.exception import RequestHumanTakeover
 from module.handler.assets import POPUP_CANCEL, POPUP_CONFIRM
 from module.logger import logger
 from module.ocr.ocr import Ocr
-from module.os.training_policy import ROTATION_SLOTS, decide_trainability, plan_rotation, should_awaken
+from module.combat.level import LevelOcr
+from module.os.training_policy import ShipCandidate, ROTATION_SLOTS, decide_trainability, plan_rotation, should_awaken
 from module.os.deployment_cost import read_deployment_cost
 from module.os.training_ui import (TrainingShipInspector, DOCK_SCROLL,
-                                   FILTER_FACTIONS, catalog_name, point_button, dock_cards,
+                                   FILTER_FACTIONS, catalog_name, dock_card_lock, point_button, dock_cards,
                                    same_dock_page)
 from module.retire.assets import DOCK_CHECK
 from module.retire.dock import OCR_DOCK_SELECTED
@@ -103,6 +104,8 @@ class TrainingFleetManager(TrainingShipInspector):
 
     def _scan_selection(self, target=None):
         names = set()
+        matches = []
+        match_images = []
         previous_reading = None
         position = None
         for _ in range(40):
@@ -113,10 +116,25 @@ class TrainingFleetManager(TrainingShipInspector):
                 # A recognized new page is actual progress, not a stuck swipe.
                 # Keep the hard page bound and repeated-page check below.
                 self.device.click_record_clear()
-            for button, name in zip(self._visible_cards, visible):
+            levels = None
+            if isinstance(target, ShipCandidate):
+                levels = LevelOcr([(b.area[0] + 77, b.area[1] + 5, b.area[2], b.area[1] + 27)
+                                   for b in self._visible_cards], name='TrainingSelectionLevels').ocr(self.device.image)
+            for index, (button, name) in enumerate(zip(self._visible_cards, visible)):
                 if name is not None:
                     names.add(name)
-                if target is not None and name == target:
+                if isinstance(target, ShipCandidate):
+                    if name == target.name and levels[index] == target.level \
+                            and dock_card_lock(self.device.image, button) is True:
+                        x, y = button.area[:2]
+                        portrait = crop(self.device.image, (x + 15, y + 45, x + 120, y + 150), copy=True)
+                        # A page turn overlaps one or two rows. Count the same
+                        # card only once when it reappears at a new screen y.
+                        if not any(cv2.absdiff(portrait, old).mean() < 2
+                                   for old in match_images):
+                            matches.append(button)
+                            match_images.append(portrait)
+                elif target is not None and name == target:
                     return button
             current = DOCK_SCROLL.cal_position(main=self)
             if current > 1 - DOCK_SCROLL.edge_threshold:
@@ -143,7 +161,30 @@ class TrainingFleetManager(TrainingShipInspector):
             DOCK_SCROLL.next_page(main=self, page=0.45)
             self.device.sleep(0.6)
         if target is not None:
-            raise RequestHumanTakeover('Planned ship is not available in deployment dock: ' + target)
+            if len(matches) == 1:
+                # The uniqueness scan ends at the bottom, so its old button
+                # coordinates cannot be clicked. Locate the same card again.
+                DOCK_SCROLL.set_top(main=self)
+                for _ in range(40):
+                    self.device.screenshot()
+                    visible = self._visible_names()
+                    levels = LevelOcr([
+                        (b.area[0] + 77, b.area[1] + 5, b.area[2], b.area[1] + 27)
+                        for b in self._visible_cards
+                    ], name='TrainingSelectionLevels').ocr(self.device.image)
+                    for button, name, level in zip(self._visible_cards, visible, levels):
+                        if name == target.name and level == target.level \
+                                and dock_card_lock(self.device.image, button) is True:
+                            return button
+                    if DOCK_SCROLL.cal_position(main=self) > 1 - DOCK_SCROLL.edge_threshold:
+                        break
+                    DOCK_SCROLL.next_page(main=self, page=0.45)
+                    self.device.sleep(0.6)
+                raise RequestHumanTakeover('Verified ship vanished while locating deployment card')
+            if len(matches) > 1:
+                raise RequestHumanTakeover(f'Ambiguous duplicate deployment cards: {target.name} level {target.level}')
+            name = target.name if isinstance(target, ShipCandidate) else target
+            raise RequestHumanTakeover('Planned locked ship is not available in deployment dock: ' + name)
         return names
 
     def _available_ships(self, opsi):
@@ -164,7 +205,7 @@ class TrainingFleetManager(TrainingShipInspector):
         self.dock_sort_method_dsc_set(True)
         self.dock_filter_set(index=target.position, faction=FILTER_FACTIONS.get(target.faction, 'all'))
         DOCK_SCROLL.set_top(main=self)
-        button = self._scan_selection(target.name)
+        button = self._scan_selection(target)
         self.ship_info_enter(button, long_click=False)
         actual = self.read_ship()
         if actual != target:
@@ -188,7 +229,10 @@ class TrainingFleetManager(TrainingShipInspector):
         raise RequestHumanTakeover('Training UI timeout: NY map after deployment')
 
     def _deploy(self, opsi, current, planned):
-        changed = [slot for slot in ROTATION_SLOTS if current[slot].name != planned[slot].name]
+        def instance(ship):
+            return ship.name, ship.level, ship.is_locked
+
+        changed = [slot for slot in ROTATION_SLOTS if instance(current[slot]) != instance(planned[slot])]
         if not changed:
             return
         self._open_selector(opsi)
@@ -198,7 +242,7 @@ class TrainingFleetManager(TrainingShipInspector):
         # Preflight every selected identity before making the first edit.
         for slot in changed:
             self._open_slot(slot, planned[slot])
-            button = self._scan_selection(planned[slot].name)
+            button = self._scan_selection(planned[slot])
             self.device.click(button)
             self.device.sleep(0.6)
             self.device.screenshot()
@@ -207,7 +251,7 @@ class TrainingFleetManager(TrainingShipInspector):
             self._cancel_slot()
         for slot in changed:
             self._open_slot(slot, planned[slot])
-            button = self._scan_selection(planned[slot].name)
+            button = self._scan_selection(planned[slot])
             self.device.click(button)
             self.device.sleep(0.5)
             self.device.screenshot()
@@ -240,7 +284,8 @@ class TrainingFleetManager(TrainingShipInspector):
                    'deployment confirmation dismissal')
         self._return_to_ny_map_after_deploy(opsi)
         actual = self.inspect_map_fleet(opsi)
-        if any(actual[s].name != planned[s].name for s in range(1, 7)):
+        if any(instance(actual[s]) != instance(planned[s]) for s in ROTATION_SLOTS) \
+                or any(actual[s].name != planned[s].name for s in (1, 4)):
             raise RequestHumanTakeover('Deployed ship identities differ from the full plan')
         if any(not decide_trainability(actual[s]).allowed for s in changed):
             raise RequestHumanTakeover('A newly deployed ship no longer meets training requirements')
@@ -275,7 +320,9 @@ class TrainingFleetManager(TrainingShipInspector):
                             or active is not None and (not matching_rainbow or faction_count < 2))
         if not initial.success or any(search.values()):
             available = self._available_ships(opsi)
-            excluded = {ship.name for ship in current.values()}
+            # An unlocked deployed copy must not hide a distinct, locked dock
+            # copy of the same ship from the candidate search.
+            excluded = {ship.name for ship in current.values() if ship.is_locked}
             for side, slots in (('main', (2, 3)), ('vanguard', (5, 6))):
                 if not search[side] and initial.success:
                     continue
