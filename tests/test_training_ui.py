@@ -16,6 +16,8 @@ from module.os.training_ui import (
     FILTER_FACTIONS,
     TrainingShipInspector,
     catalog_name,
+    detail_ship_lock,
+    dock_card_lock,
     protected_fleet_anchors,
     validate_protected_fleet,
 )
@@ -360,6 +362,24 @@ class TrainingUiReviewTest(unittest.TestCase):
         self.assertTrue(ship.is_rainbow)
         self.assertEqual(ship.level_cap, 120)
         self.assertIsNone(ship.stored_exp)
+
+    def test_live_locked_and_unlocked_detail_labels(self):
+        for filename, expected in (
+                ('opsi_locked_musashi_alas2_20260925.png', True),
+                ('opsi_unlocked_bulin_alas2_20260925.png', False)):
+            image = cv2.cvtColor(cv2.imread(str(ROOT / 'tests/fixtures' / filename)), cv2.COLOR_BGR2RGB)
+            with self.subTest(filename=filename):
+                self.assertIs(detail_ship_lock(image), expected)
+
+    def test_live_dock_card_lock_separates_material_from_locked_ship(self):
+        from module.base.button import Button
+        image = cv2.cvtColor(cv2.imread(str(ROOT / 'tests/fixtures/opsi_lock_dock_alas2_20260925.png')),
+                             cv2.COLOR_BGR2RGB)
+        def card(col):
+            x = round(93 + col * (164 + 2 / 3))
+            return Button((x, 529, x + 138, 733), (0, 0, 0), (x, 529, x + 138, 733))
+        self.assertIs(dock_card_lock(image, card(5)), True)
+        self.assertIs(dock_card_lock(image, card(3)), False)
 
     def test_scrolled_card_geometry_failure_is_safe(self):
         inspector = TrainingShipInspector.__new__(TrainingShipInspector)

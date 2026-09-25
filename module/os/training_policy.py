@@ -32,6 +32,7 @@ class ShipCandidate:
     fully_limit_broken: bool
     stored_exp: Optional[int] = None
     level_cap: Optional[int] = None
+    is_locked: bool = True
 
     @property
     def identity(self):
@@ -73,6 +74,8 @@ def _valid_candidate(candidate):
         return 'rainbow flag is unknown'
     if not isinstance(candidate.fully_limit_broken, bool):
         return 'limit break state is unknown'
+    if not isinstance(candidate.is_locked, bool):
+        return 'ship lock state is unknown'
     if (
         not isinstance(candidate.level, int)
         or isinstance(candidate.level, bool)
@@ -100,6 +103,8 @@ def decide_trainability(candidate):
     invalid = _valid_candidate(candidate)
     if invalid:
         return PolicyDecision(False, invalid)
+    if not candidate.is_locked:
+        return PolicyDecision(False, 'unlocked ship may be limit-break material')
     if candidate.is_rainbow and candidate.level >= 120:
         return PolicyDecision(False, 'rainbow ship reached level 120')
     if candidate.level == MAX_LEVEL:
@@ -130,6 +135,8 @@ def decide_awaken(candidate):
     invalid = _valid_candidate(candidate)
     if invalid:
         return PolicyDecision(False, invalid)
+    if not candidate.is_locked:
+        return PolicyDecision(False, 'unlocked ship may be limit-break material')
     if not candidate.is_rainbow and not candidate.fully_limit_broken:
         return PolicyDecision(False, 'ordinary ship is not fully limit broken')
     if candidate.level_cap is None:
@@ -222,7 +229,12 @@ def plan_rotation(requirements, current_slots, screen_candidates, excluded_ident
         ):
             result.append(current)
         for candidate in screen_candidates:
-            if candidate.identity == (current.identity if current else None):
+            # The deployed copy may be an unlocked breakthrough material while
+            # a locked copy with the same name is in dock. A distinct level
+            # proves they are different physical ships; allow that replacement.
+            if candidate.identity == (current.identity if current else None) \
+                    and not (current is not None and not current.is_locked
+                             and candidate.is_locked and candidate.level != current.level):
                 continue
             if candidate.identity in excluded or candidate.identity in other_current or candidate.identity in used:
                 continue
