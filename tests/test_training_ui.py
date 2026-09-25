@@ -20,6 +20,8 @@ from module.os.training_ui import (
     validate_protected_fleet,
 )
 from module.os.training import TrainingFleetManager
+from module.os_handler.assets import ORDER_ENTER
+from module.os_handler.port import PORT_CHECK
 from module.retire.assets import DOCK_EMPTY
 
 
@@ -100,6 +102,30 @@ class TrainingUiReviewTest(unittest.TestCase):
                 with self.subTest(slot=slot):
                     inspector._open_slot(slot)
         self.assertEqual(set_top.call_count, 4)
+
+    def test_deployment_return_exits_ny_port_before_map_verification(self):
+        state = ['port']
+        exits = []
+        manager = TrainingFleetManager.__new__(TrainingFleetManager)
+        manager.device = SimpleNamespace(screenshot=lambda: None, sleep=lambda _: None)
+        manager.appear = lambda asset, **kwargs: (
+            asset is PORT_CHECK and state[0] == 'port'
+            or asset is ORDER_ENTER and state[0] == 'map')
+
+        def port_quit(**kwargs):
+            exits.append(kwargs)
+            state[0] = 'map'
+
+        opsi = SimpleNamespace(
+            os_init=lambda **kwargs: None,
+            globe_goto=lambda zone: None,
+            name_to_zone=lambda zone: zone,
+            # The port transition fooled this weaker map check in the live run.
+            is_in_map=lambda: True,
+            port_quit=port_quit,
+        )
+        manager._return_to_ny_map_after_deploy(opsi)
+        self.assertEqual(exits, [{'skip_first_screenshot': True}])
 
     def test_unknown_and_empty_name_ocr_are_rejected_without_identity_guess(self):
         inspector = TrainingShipInspector.__new__(TrainingShipInspector)
