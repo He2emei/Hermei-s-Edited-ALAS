@@ -114,6 +114,18 @@ class LoopLimitReached(Exception):
 
 
 class SettlementScreenFrameTest(unittest.TestCase):
+    def test_visible_opsi_map_is_not_treated_as_battle_result(self):
+        class VisibleMap:
+            def is_in_map(self):
+                return True
+
+            def __getattr__(self, name):
+                return lambda *args, **kwargs: False
+
+        with patch('module.os_handler.map_event.handle_battle_result_screen',
+                   side_effect=AssertionError('must not inspect settlement on visible map')):
+            self.assertEqual(MapEventHandler.handle_map_event(VisibleMap()), '')
+
     """The screen that hung OpsiHazard1Leveling on 2026-09-22 02:56:34.
 
     Live log/error/1790016994804 (plus 1789999429360, 1790004710224, 1790005453134 and
