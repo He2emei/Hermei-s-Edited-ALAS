@@ -1,7 +1,17 @@
-from time import time
+from time import monotonic, time
 
 from module.base.timer import Timer
-from module.combat.assets import BATTLE_STATUS_A, BATTLE_STATUS_B, BATTLE_STATUS_C, BATTLE_STATUS_D, BATTLE_STATUS_S
+from module.combat.assets import (BATTLE_STATUS_A, BATTLE_STATUS_B, BATTLE_STATUS_C, BATTLE_STATUS_D,
+                                  BATTLE_STATUS_S, QUIT_RECONFIRM)
+from module.combat_ui.assets import (PAUSE, PAUSE_AzureCore, PAUSE_Christmas, PAUSE_Cyber, PAUSE_Devil,
+                                     PAUSE_ElvenVine, PAUSE_GildedReverie, PAUSE_HolyLight,
+                                     PAUSE_Iridescent_Fantasy, PAUSE_MaidCafe, PAUSE_Neon, PAUSE_New,
+                                     PAUSE_Ninja, PAUSE_Nurse, PAUSE_OldeRoyal, PAUSE_Pharaoh, PAUSE_Ritual,
+                                     PAUSE_Seaside, PAUSE_ShadowPuppetry, PAUSE_SpringInn, PAUSE_Star,
+                                     PAUSE_Ancient, PAUSE_YoRHa, QUIT, QUIT_Christmas, QUIT_Cyber,
+                                     QUIT_GildedReverie, QUIT_Iridescent_Fantasy, QUIT_MaidCafe, QUIT_New,
+                                     QUIT_Ninja, QUIT_Nurse, QUIT_Pharaoh, QUIT_Ritual, QUIT_Seaside,
+                                     QUIT_SpringInn, QUIT_YoRHa)
 from module.logger import logger
 
 # Buttons of the battle result screen, ordered like Combat.handle_battle_status().
@@ -105,4 +115,155 @@ def handle_battle_result_screen(app):
     # clickable area of the result screen, and registers the button in the click record.
     app.device.click(button)
     battle_result_click_timer.reset()
+    return True
+
+
+# ---------------------------------------------------------------------------------------------
+# A combat that is still running is the other half of the same problem. The battle HUD is not a
+# page either, so UI.ui_get_current_page() polls the page list while it is on the display and
+# ends in GamePageUnknownError ten seconds later. It happens whenever the scheduler is restarted
+# while a battle is running - exactly what the guard does when it finds a stopped scheduler.
+# Measured over the archived dumps: 38 of the 160 `Starting from current page is not supported`
+# dumps have a live battle HUD on their frame (2025-12-08 -> 2026-09-25, both profiles, 14
+# different tasks, this incident is log/error/1790317301661 on alas2 Commission). 26 more dumps
+# of the same signature carry a battle result screen, which is what handle_battle_result_screen()
+# above already covers.
+#
+# The way out is the one ALAS already uses in OSFleet.interrupt_auto_search() for the same state
+# (module/os/map.py: pause -> quit -> reconfirm, "in: Any, usually to be is_combat_executing"):
+# click the PAUSE button of the battle HUD to open the pause menu, then the QUIT button of that
+# menu, then the confirmation. No new asset and no new screen layout is assumed - the pause button
+# is what Combat.is_combat_executing() recognizes and the quit assets are the ones
+# Combat.handle_combat_quit() clicks.
+# ---------------------------------------------------------------------------------------------
+
+# Battle HUD themes of Combat.is_combat_executing(), same order and same probes (match_luma for
+# every theme; the SERVER dependent colour branch of PAUSE is not repeated here, a live battle is
+# recognized by the luma probe of PAUSE on cn/en as well).
+COMBAT_HUD_BUTTONS = (PAUSE, PAUSE_New, PAUSE_Iridescent_Fantasy, PAUSE_Christmas, PAUSE_Neon, PAUSE_Cyber,
+                      PAUSE_HolyLight, PAUSE_Pharaoh, PAUSE_Star, PAUSE_Nurse, PAUSE_Devil, PAUSE_Seaside,
+                      PAUSE_Ninja, PAUSE_ShadowPuppetry, PAUSE_MaidCafe, PAUSE_Ancient, PAUSE_SpringInn,
+                      PAUSE_ElvenVine, PAUSE_GildedReverie, PAUSE_AzureCore, PAUSE_OldeRoyal, PAUSE_YoRHa,
+                      PAUSE_Ritual)
+
+# QUIT buttons of the pause menu, same order and same probe as Combat.handle_combat_quit().
+COMBAT_QUIT_BUTTONS = (QUIT, QUIT_New, QUIT_Iridescent_Fantasy, QUIT_Cyber, QUIT_Christmas, QUIT_Pharaoh,
+                       QUIT_Nurse, QUIT_Seaside, QUIT_Ninja, QUIT_MaidCafe, QUIT_SpringInn,
+                       QUIT_GildedReverie, QUIT_YoRHa, QUIT_Ritual)
+
+# Interval between two clicks of the same button of this sequence. QUIT_RECONFIRM is asked more
+# often, exactly like Combat.handle_combat_quit_reconfirm().
+combat_hud_pause_timer = Timer(2, count=0)
+combat_hud_quit_timer = Timer(2, count=0)
+combat_hud_reconfirm_timer = Timer(1, count=0)
+# Clicks spent on the battle that is on the display right now. Every click of the sequence
+# counts, so a pause menu that never opens cannot spend the twelve click guard of the device on
+# the PAUSE button (six clicks at the interval below stop the sequence after about twelve
+# seconds, well inside the guard).
+combat_hud_attempt = 0
+# When the current battle was seen first, to stop clicking a battle that never ends.
+combat_hud_seen_at = 0.
+
+# A battle HUD that no combat loop finished is clicked at most this many times.
+COMBAT_HUD_MAX_ATTEMPT = 6
+# ... and for at most this long; after that the page poll reports the page again and the
+# scheduler restarts the client, which is the recovery this state had before.
+COMBAT_HUD_PATIENCE = 60
+
+
+def match_combat_hud_button(image):
+    """
+    Detect the battle HUD of a combat that is running right now.
+
+    Args:
+        image (np.ndarray): Screenshot.
+
+    Returns:
+        Button: The matched PAUSE button, or None.
+    """
+    for button in COMBAT_HUD_BUTTONS:
+        if button.match_luma(image, offset=(10, 10)):
+            return button
+
+    return None
+
+
+def match_combat_quit_button(image):
+    """
+    Detect the QUIT button of the pause menu.
+
+    Args:
+        image (np.ndarray): Screenshot.
+
+    Returns:
+        Button: The matched QUIT button, or None.
+    """
+    for button in COMBAT_QUIT_BUTTONS:
+        if button.match_luma(image, offset=(20, 20)):
+            return button
+
+    return None
+
+
+def handle_combat_hud(app):
+    """
+    Leave a combat that is still running, so that the page poll can see a page again.
+
+    The sequence is pause -> quit -> reconfirm, the one OSFleet.interrupt_auto_search() uses for
+    the same state. It is asked in that order of visibility, not in that order of actions: the
+    pause menu covers the pause button of the battle HUD, so the menu has to be recognized before
+    the battle HUD is looked for.
+
+    Args:
+        app: Alas or UI instance.
+
+    Returns:
+        bool: If a click was sent.
+    """
+    global combat_hud_attempt, combat_hud_seen_at
+
+    image = app.device.image
+    quit_button = match_combat_quit_button(image)
+    reconfirm = bool(QUIT_RECONFIRM.match_luma(image, offset=(20, 20)))
+    pause = None if (quit_button is not None or reconfirm) else match_combat_hud_button(image)
+
+    if quit_button is None and not reconfirm and pause is None:
+        combat_hud_attempt = 0
+        combat_hud_seen_at = 0.
+        return False
+
+    if combat_hud_seen_at == 0.:
+        combat_hud_seen_at = monotonic()
+    if monotonic() - combat_hud_seen_at > COMBAT_HUD_PATIENCE:
+        if combat_hud_attempt:
+            logger.warning(f'Combat has not ended for {COMBAT_HUD_PATIENCE}s, '
+                           f'clicks on its battle HUD do not move the game on')
+            combat_hud_attempt = 0
+        return False
+    if combat_hud_attempt >= COMBAT_HUD_MAX_ATTEMPT:
+        return False
+
+    # The pause menu is open: leave the battle. Combat.handle_combat_quit() and
+    # Combat.handle_combat_quit_reconfirm() are bound to the Alas instance of the combat loops,
+    # not to the UI instance that polls the page, so the same two probes are asked here.
+    if quit_button is not None and combat_hud_quit_timer.reached():
+        combat_hud_attempt += 1
+        combat_hud_quit_timer.reset()
+        logger.info(f'Combat is still running, quit it: {quit_button}, attempt {combat_hud_attempt}')
+        app.device.click(quit_button)
+        return True
+    if reconfirm and combat_hud_reconfirm_timer.reached():
+        combat_hud_attempt += 1
+        combat_hud_reconfirm_timer.reset()
+        logger.info(f'Combat is still running, confirm quitting it, attempt {combat_hud_attempt}')
+        app.device.click(QUIT_RECONFIRM)
+        return True
+
+    # The battle HUD itself: open the pause menu.
+    if pause is None or not combat_hud_pause_timer.reached():
+        return False
+    combat_hud_attempt += 1
+    combat_hud_pause_timer.reset()
+    logger.info(f'Combat is still running, pause it: {pause}, attempt {combat_hud_attempt}')
+    app.device.click(pause)
     return True
