@@ -1,6 +1,13 @@
 {
-  "source": "CN client detail and dorm roster screenshots verified 2026-09-10; https://wiki.biligame.com/blhx/U-2501 corroborates type, faction and rarity. The fetched game-data snapshot lacks this ship; no internal group ID is assumed.",
+  "source": "U-2501: CN client screenshots verified 2026-09-10; https://wiki.biligame.com/blhx/U-2501 corroborates type, faction and rarity. Z23.改: CN fourth-fleet detail captured 2026-09-25 in tests/fixtures/opsi_z23_retrofit_detail.png; base Z23's group/type/faction/max_stars come from ship_training_catalog.json, and https://wiki.biligame.com/blhx/Z23 confirms the retrofit exists. The main catalog takes precedence when updated.",
   "ships": {
+    "Z23.改": {
+      "rarity": 5,
+      "faction": 4,
+      "type": 1,
+      "max_stars": 5,
+      "group": 40123
+    },
     "U-2501": {
       "rarity": 6,
       "faction": 4,
