@@ -1,4 +1,5 @@
 import unittest
+from dataclasses import replace
 
 from module.os.training_policy import (
     ShipCandidate,
@@ -16,6 +17,25 @@ def ship(name='A', faction='皇家', position='main', level=100,
 
 
 class TrainingPolicyTest(unittest.TestCase):
+    def test_unlocked_material_is_not_trainable_or_awakened(self):
+        unlocked = replace(ship('material', level=100), is_locked=False)
+        self.assertFalse(decide_trainability(unlocked).allowed)
+        self.assertFalse(decide_awaken(unlocked).allowed)
+        current = {2: unlocked, 3: ship('other'),
+                   5: ship('front-1', position='vanguard'), 6: ship('front-2', position='vanguard')}
+        plan = plan_rotation({}, current, [ship('locked-replacement')])
+        self.assertTrue(plan.success)
+        self.assertEqual(plan.slots[2].name, 'locked-replacement')
+
+    def test_locked_duplicate_can_replace_unlocked_same_name_at_distinct_level(self):
+        unlocked = replace(ship('musashi', level=41, cap=100, rainbow=True), is_locked=False)
+        locked = ship('musashi', level=1, cap=100, rainbow=True)
+        current = {2: unlocked, 3: ship('other'),
+                   5: ship('front-1', position='vanguard'), 6: ship('front-2', position='vanguard')}
+        plan = plan_rotation({}, current, [locked])
+        self.assertTrue(plan.success)
+        self.assertEqual(plan.slots[2], locked)
+
     def test_scarce_candidates_replace_only_finished_current_ship(self):
         current = {
             2: ship('done-2', rainbow=True, level=120, cap=120, stored=3_000_000),
