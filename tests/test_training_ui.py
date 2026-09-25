@@ -302,6 +302,22 @@ class TrainingUiReviewTest(unittest.TestCase):
             self.assertEqual(ship.level_cap, 120)
             self.assertTrue(ship.fully_limit_broken)
 
+    def test_live_z23_retrofit_detail_is_identifiable(self):
+        path = ROOT / 'tests/fixtures/opsi_z23_retrofit_detail.png'
+        image = cv2.cvtColor(cv2.imread(str(path)), cv2.COLOR_BGR2RGB)
+        inspector = TrainingShipInspector.__new__(TrainingShipInspector)
+        inspector.config = SimpleNamespace(SERVER='cn')
+        inspector.device = SimpleNamespace(image=image, screenshot=lambda: None)
+        inspector.appear = lambda *args, **kwargs: True
+        ship = inspector.read_ship()
+        self.assertEqual(ship.name, 'Z23.改')
+        self.assertEqual(ship.faction, '铁血')
+        self.assertEqual(ship.position, 'vanguard')
+        self.assertEqual(ship.level, 120)
+        self.assertTrue(ship.fully_limit_broken)
+        self.assertEqual(ship.stored_exp, 331_039)
+        self.assertEqual(ship.level_cap, 120)
+
     def test_scrolled_card_geometry_failure_is_safe(self):
         inspector = TrainingShipInspector.__new__(TrainingShipInspector)
         inspector.ui_ensure = lambda *args, **kwargs: None
