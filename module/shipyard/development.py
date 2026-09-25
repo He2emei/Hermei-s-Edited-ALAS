@@ -3,6 +3,7 @@
 from dataclasses import dataclass
 import cv2
 import json
+import re
 from pathlib import Path
 
 from module.base.button import Button
@@ -126,6 +127,14 @@ class ShipyardDevelopment(ShipyardUI):
                 if self._catalog_key(title) is not None or self._is_technical_title(title) \
                         or self._is_known_material_title(title):
                     inferred.append(header_y)
+        # TARGET 8 can be covered by its red alert when the last hull row is
+        # expanded. The two hull headers still keep their 63px pitch and the
+        # second title remains readable (2026-09-25 live submission frame).
+        if targets and HULL_SCULPT_ANCHOR in self._ocr_task_title(targets[-1]):
+            next_y = targets[-1] + 63
+            if next_y + 48 <= TASK_LIST_AREA[3] \
+                    and HULL_SCULPT_ANCHOR in self._ocr_task_title(next_y):
+                inferred.append(next_y)
         targets = sorted(targets + inferred)
         # TARGET text is at the top of a header.  Keep the offset in one place
         # so a fresh screenshot always produces fresh header coordinates.
@@ -147,6 +156,20 @@ class ShipyardDevelopment(ShipyardUI):
             if title:
                 tasks.append(DevelopmentTask(index + 1, title,
                                               self._task_complete(header_y), header_y))
+        # Both hull rows fit together at the bottom of the collapsed CN list.
+        # Their suffix OCR is unreliable (II is repeatedly read as I), so the
+        # upper/lower visible row is the authoritative stage. A lone hull row
+        # has no safe stage identity until both rows are visible together.
+        hull_rows = [i for i, task in enumerate(tasks) if HULL_SCULPT_ANCHOR in task.title]
+        if len(hull_rows) == 2:
+            for stage, i in enumerate(hull_rows, 1):
+                task = tasks[i]
+                title = re.sub(r'I{1,2}$', '', task.title) + ('I' if stage == 1 else 'II')
+                tasks[i] = DevelopmentTask(6 + stage, title, task.complete, task.header_y)
+        elif len(hull_rows) == 1:
+            i = hull_rows[0]
+            task = tasks[i]
+            tasks[i] = DevelopmentTask(0, task.title, task.complete, task.header_y)
         return tasks
 
     def _scroll_task_list(self, direction=-1):
@@ -180,6 +203,8 @@ class ShipyardDevelopment(ShipyardUI):
             visible = self._scan_visible_tasks(self._detect_header_ys())
             fingerprint = tuple((self._task_key(t.title), t.complete, t.header_y) for t in visible)
             for task in visible:
+                if HULL_SCULPT_ANCHOR in task.title and task.index == 0:
+                    continue
                 # Rows are keyed by identity, not by raw text: two scans of the
                 # same row may differ in a dropped character, and a duplicate
                 # key would send the inspector after a title that never exists.
@@ -193,7 +218,9 @@ class ShipyardDevelopment(ShipyardUI):
             self._scroll_task_list(direction=1)
         visible = self._scan_visible_tasks(self._detect_header_ys())
         for task in visible:
-            seen[task_identity(task.title)] = task
+            if HULL_SCULPT_ANCHOR in task.title and task.index == 0:
+                continue
+            seen[self._task_key(task.title)] = task
         if not seen:
             raise ScriptError('Shipyard task list OCR/state is unknown')
         return list(seen.values())
@@ -260,9 +287,15 @@ class ShipyardDevelopment(ShipyardUI):
         for _ in range(2):
             self._scroll_task_list(direction=1)
         for _ in range(8):
-            for header_y in self._detect_header_ys():
-                if self._task_key(self._ocr_task_title(header_y)) == wanted:
-                    return DevelopmentTask(0, title, False, header_y)
+            headers = self._detect_header_ys()
+            if HULL_SCULPT_ANCHOR in normalise_cn_task_title(title):
+                for task in self._scan_visible_tasks(headers):
+                    if task.index and self._task_key(task.title) == wanted:
+                        return task
+            else:
+                for header_y in headers:
+                    if self._task_key(self._ocr_task_title(header_y)) == wanted:
+                        return DevelopmentTask(0, title, False, header_y)
             self._scroll_task_list()
         raise ScriptError(f'Development task is not visible: {title}')
 
@@ -410,6 +443,9 @@ class ShipyardDevelopment(ShipyardUI):
         text, so ``先锋技术突破I``, ``先锋技术突破I仍`` and ``先锋技术突破I47:33:43``
         all describe the same row instead of three different ones.
         """
+        normalised = normalise_cn_task_title(title)
+        if HULL_SCULPT_ANCHOR in normalised:
+            return 'hull', 2 if normalised.endswith('II') else 1
         key = cls._catalog_key(title)
         if key is not None:
             return 'catalog', key
