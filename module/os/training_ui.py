@@ -17,7 +17,7 @@ from module.ocr.ocr import Digit, Ocr
 from module.os.training_policy import ShipCandidate, decide_trainability, should_awaken
 from module.retire.card_geometry import dock_cards
 from module.retire.dock import DOCK_SCROLL
-from module.retire.assets import DOCK_CHECK
+from module.retire.assets import DOCK_CHECK, DOCK_EMPTY
 from module.ui.assets import BACK_ARROW
 from module.ui.page import page_dock
 
@@ -245,6 +245,10 @@ class TrainingShipInspector(Awaken):
         selected_factions = [FILTER_FACTIONS[f] for f in sorted(factions)] if factions else 'all'
         dock_side = 'ss' if side == 'submarine' else side
         self.dock_filter_set(index=dock_side, faction=selected_factions, rarity=rarity)
+        self.device.screenshot()
+        if self.appear(DOCK_EMPTY, offset=(30, 30)):
+            logger.info(f'Training dock has no {side} candidates for rarity={rarity}, faction={factions}')
+            return []
         scroll.set_top(main=self)
         found, seen = [], set(excluded)
         position = None
@@ -252,6 +256,8 @@ class TrainingShipInspector(Awaken):
             self.device.screenshot()
             cards = dock_cards(self.device.image)
             if not cards:
+                if self.appear(DOCK_EMPTY, offset=(30, 30)):
+                    return found
                 raise RequestHumanTakeover('No stable dock card geometry')
             levels = LevelOcr([(b.area[0] + 77, b.area[1] + 5, b.area[2], b.area[1] + 27) for b in cards], name='TrainingDockLevels').ocr(self.device.image)
             names = Ocr([tuple((b.area[0], b.area[1] + 164, b.area[2], b.area[1] + 189))
