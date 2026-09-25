@@ -269,6 +269,7 @@ class DeploymentDockScanTest(unittest.TestCase):
         inspector.ship_info_enter = lambda *args, **kwargs: None
         inspector.wait_until_appear = lambda *args, **kwargs: True
         inspector.device = device
+        inspector.appear = lambda *args, **kwargs: False
         ship = ShipCandidate('德意志', '铁血', 'vanguard', 120, False, True, None, 120)
         inspector.read_ship = lambda: ship
         with patch('module.os.training_ui.DOCK_SCROLL.set_top'), \
