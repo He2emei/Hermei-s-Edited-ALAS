@@ -16,6 +16,7 @@ from module.os.training_ui import (TrainingShipInspector, DOCK_SCROLL,
 from module.retire.assets import DOCK_CHECK
 from module.retire.dock import OCR_DOCK_SELECTED
 from module.os_handler.assets import ORDER_ENTER
+from module.os_handler.port import PORT_CHECK
 from module.ui.page import page_shipyard
 
 
@@ -170,6 +171,22 @@ class TrainingFleetManager(TrainingShipInspector):
             raise RequestHumanTakeover('Ship changed since planning; awakening deferred')
         return self.awaken_for_training(actual)
 
+    def _return_to_ny_map_after_deploy(self, opsi):
+        opsi.os_init(skip_first_auto_search=True)
+        opsi.globe_goto(opsi.name_to_zone('NY'))
+        # The NY port may become visible after os_init/globe_goto have already
+        # mistaken a transitional frame for the NY map.  Resolve the port
+        # explicitly before relying on the map's ORDER_ENTER control.
+        for _ in range(40):
+            self.device.screenshot()
+            if self.appear(PORT_CHECK, offset=(20, 20)):
+                opsi.port_quit(skip_first_screenshot=True)
+                continue
+            if opsi.is_in_map() and self.appear(ORDER_ENTER, offset=(20, 20)):
+                return
+            self.device.sleep(0.15)
+        raise RequestHumanTakeover('Training UI timeout: NY map after deployment')
+
     def _deploy(self, opsi, current, planned):
         changed = [slot for slot in ROTATION_SLOTS if current[slot].name != planned[slot].name]
         if not changed:
@@ -221,13 +238,7 @@ class TrainingFleetManager(TrainingShipInspector):
         self.device.click(POPUP_CONFIRM)
         self._wait(lambda: not self.appear(POPUP_CONFIRM, offset=(20, 20)),
                    'deployment confirmation dismissal')
-        # Confirmation can land in the port UI rather than the NY map.  The
-        # regular OS initializer handles either page; the port back shortcut
-        # can leave a shop overlay that looks enough like a map to fleet_set.
-        opsi.os_init(skip_first_auto_search=True)
-        opsi.globe_goto(opsi.name_to_zone('NY'))
-        self._wait(lambda: opsi.is_in_map() and self.appear(ORDER_ENTER, offset=(20, 20)),
-                   'NY map after deployment')
+        self._return_to_ny_map_after_deploy(opsi)
         actual = self.inspect_map_fleet(opsi)
         if any(actual[s].name != planned[s].name for s in range(1, 7)):
             raise RequestHumanTakeover('Deployed ship identities differ from the full plan')
