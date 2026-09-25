@@ -274,6 +274,7 @@ class DeploymentDockScanTest(unittest.TestCase):
         inspector.read_ship = lambda: ship
         with patch('module.os.training_ui.DOCK_SCROLL.set_top'), \
                 patch('module.os.training_ui.dock_cards', return_value=[card('DOCK_CARD')]), \
+                patch('module.os.training_ui.dock_card_lock', return_value=True), \
                 patch('module.os.training_ui.LevelOcr') as level, \
                 patch('module.os.training_ui.Ocr') as ocr, \
                 patch('module.os.training_ui.decide_trainability',
