@@ -147,7 +147,10 @@ class MapEventHandler(EnemySearchingHandler):
         # operation siren loop that waits for is_in_map() ends in GameStuckError while it stays
         # on the display: auto search can be stopped while a battle is still running, and the
         # result screen of that battle appears afterwards, when no combat loop is watching.
-        if handle_battle_result_screen(self):
+        # Rank-letter assets can match transient map artwork during a fleet
+        # switch.  A visible OpSi map takes precedence over settlement OCR:
+        # clicking the rank button there opens an unrelated panel.
+        if not self.is_in_map() and handle_battle_result_screen(self):
             return 'battle_result'
         if self.handle_map_get_items(drop=drop):
             return 'map_get_items'
