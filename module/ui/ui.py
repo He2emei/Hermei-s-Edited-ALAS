@@ -2,7 +2,7 @@ from module.base.button import Button
 from module.base.decorator import run_once
 from module.base.timer import Timer
 from module.combat.assets import GET_ITEMS_1, GET_ITEMS_2, GET_SHIP
-from module.combat.battle_result import handle_battle_result_screen
+from module.combat.battle_result import handle_battle_result_screen, handle_combat_hud
 from module.exception import (GameNotRunningError, GamePageUnknownError,
                               RequestHumanTakeover)
 from module.exercise.assets import EXERCISE_PREPARATION
@@ -196,6 +196,13 @@ class UI(InfoHandler):
 
             # Unknown page but able to handle
             logger.info("Unknown ui page")
+            # A battle that is still running is not a page either, and its HUD covers the
+            # screen until it is left. It is there when a scheduler is restarted during a
+            # combat - the guard does exactly that when it finds a stopped scheduler, so the
+            # page poll must leave the battle instead of reporting the page.
+            if handle_combat_hud(self):
+                timeout.reset()
+                continue
             # A battle result screen is not a page, but it covers the screen until it is
             # clicked away. It is left there when a scheduler restarts during a combat.
             if handle_battle_result_screen(self):
