@@ -294,6 +294,10 @@ class ShipyardDevelopmentPolicyTest(unittest.TestCase):
                 self.image = np.zeros((720, 1280, 3), dtype=np.uint8)
                 self.image[490:533, 1088:1234] = (60, 145, 230)
                 self.clicks = 0
+                self.history_resets = 0
+
+            def click_record_clear(self):
+                self.history_resets += 1
 
             def click(self, button):
                 self.clicks += 1
@@ -335,6 +339,7 @@ class ShipyardDevelopmentPolicyTest(unittest.TestCase):
             self.assertFalse(fake._submit_available_task('主力技术突破I'))
         self.assertTrue(fake.collapsed)
         self.assertEqual(fake.device.clicks, 2)
+        self.assertEqual(fake.device.history_resets, 1)
 
     def test_task_lookup_resets_from_bottom_before_searching(self):
         class Fake(ShipyardDevelopment):
