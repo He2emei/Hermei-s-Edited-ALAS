@@ -597,7 +597,7 @@ class ShipyardDevelopmentTaskLookupSweepTest(unittest.TestCase):
 
         def __init__(self, titles, top=130, bottom=558, pitch=63,
                      readable_offsets=(-63,), offset=0, top_offset=-63,
-                     movable=True):
+                     movable=True, min_offset=None, max_offset=None):
             self.titles = list(titles)
             self.top = top
             self.bottom = bottom
@@ -606,6 +606,10 @@ class ShipyardDevelopmentTaskLookupSweepTest(unittest.TestCase):
             self.offset = offset
             self.top_offset = top_offset
             self.movable = movable
+            # The live panel's range is one row tall; a test that models it can
+            # pin both ends instead of deriving them from a longer title list.
+            self.min_offset = top_offset if min_offset is None else min_offset
+            self.max_offset = max_offset
             self.swipes = []
 
         def row_y(self, index):
@@ -670,7 +674,9 @@ class ShipyardDevelopmentTaskLookupSweepTest(unittest.TestCase):
                 return
             # The viewport cannot travel past either end of its own list.
             bottom_offset = self.top + (len(self.titles) - 1) * self.pitch - self.bottom
-            self.offset = min(self.top_offset, max(bottom_offset, self.offset + vector[1]))
+            if self.max_offset is not None:
+                bottom_offset = self.max_offset
+            self.offset = min(self.min_offset, max(bottom_offset, self.offset + vector[1]))
 
     @staticmethod
     def inspector(device, distance, move_step=None):
@@ -710,23 +716,68 @@ class ShipyardDevelopmentTaskLookupSweepTest(unittest.TestCase):
         self.assertTrue(device.swipes)
 
     def test_a_panel_that_does_not_move_stops_instead_of_looping(self):
-        # No state of this panel reads, so the sweep must give up after the
-        # first swipe that fails to move the viewport instead of looping.
+        # No state of this panel reads, so the sweep must give up instead of
+        # looping.  A saturated swipe in one direction alone is not enough to
+        # conclude that the panel is immovable: the row can sit at the other
+        # end (see the bottom-start case below), so both ends are probed once.
         device = self.FakeScrollPanel(self.TITLES, readable_offsets=(), offset=0,
                                       movable=False)
         inspector = self.inspector(device, distance=self.SWIPE_DISTANCE, move_step=90)
         with self.assertRaises(ScriptError):
             inspector._locate_visible_task('大型技术理论I')
-        self.assertEqual(len(device.swipes), 1)
+        self.assertEqual([vector[1] for vector in device.swipes],
+                         [self.SWIPE_DISTANCE, -self.SWIPE_DISTANCE])
+
+    def test_lookup_reaches_the_top_row_from_the_bottom_of_the_panel(self):
+        # Live 2026-09-26 21:41:15 alas2: the sweep hunted the *first* row of
+        # the list while the viewport was already at the bottom of its one-row
+        # range.  The downward probe could not move the panel, the old code
+        # ended the whole search after that single swipe, and the row at the
+        # panel top was never read in a frame where it is legible
+        # (`Development task is not visible: 铁血主力技术测试I`).  This panel
+        # models the live geometry: one row of travel (46px), and the row
+        # against the top edge only reads while the viewport sits at the top.
+        class LivePanel(self.FakeScrollPanel):
+            def _readable(self, index):
+                return index != 0 or self.offset == 0
+
+            def move(self, vector):
+                # The live viewport starts parked at the bottom of its one-row
+                # range, so a swipe towards that same end cannot move it.
+                if vector[1] > 0:
+                    return
+                super().move(vector)
+
+        # A distinctive first row: the shipped list repeats
+        # `铁血先锋技术测试I` further down, and this case is about the row at
+        # the very top of the panel.
+        titles = ('铁血主力技术测试I',) + tuple(self.TITLES[1:])
+        device = LivePanel(titles, readable_offsets=(0,), offset=46,
+                           min_offset=0, max_offset=46)
+        inspector = self.inspector(device, distance=self.SWIPE_DISTANCE, move_step=46)
+        self.assertNotIn(130, inspector._detect_header_ys())
+        task = inspector._locate_visible_task(titles[0])
+        self.assertEqual(task.header_y, 130)
+        self.assertEqual(inspector._task_key(task.title),
+                         inspector._task_key(titles[0]))
+        self.assertEqual([vector[1] for vector in device.swipes],
+                         [self.SWIPE_DISTANCE, -self.SWIPE_DISTANCE])
+        self.assertEqual(device.offset, 0)
 
 
 class ShipyardDevelopmentRealFrameLocateTest(unittest.TestCase):
     """The sweep has to work on the real CN panel geometry."""
 
+    # The live panel keeps eight 63px rows inside the 428px list area, so the
+    # whole scrollable range is one row tall: the top state has row 1 at y=130
+    # and the bottom state, scrolled by a full swipe, has row 1 at y=176.
+    ROW_PITCH = 63
+    MAX_OFFSET = 46
+
     class ScrollingPanel:
-        def __init__(self, image):
+        def __init__(self, image, offset=0):
             self.source = image
-            self.offset = 0
+            self.offset = offset
             self.image = image
             self.render()
             self.swipes = []
@@ -741,7 +792,7 @@ class ShipyardDevelopmentRealFrameLocateTest(unittest.TestCase):
             self.swipes.append(vector)
 
         def move(self, vector):
-            self.offset = max(-160, min(160, self.offset + vector[1]))
+            self.offset = max(0, min(46, self.offset + vector[1]))
             self.render()
 
         def sleep(self, seconds):
@@ -753,17 +804,50 @@ class ShipyardDevelopmentRealFrameLocateTest(unittest.TestCase):
         def click(self, button):
             raise AssertionError('the live frame needs no collapse click')
 
+    @staticmethod
+    def inspector(device):
+        """The shipped code bound to a panel that really moves on a swipe."""
+        class Fake(ShipyardDevelopment):
+            def _collapse_any_expanded_header(self):
+                return False
+
+            def _scroll_task_list(self, direction=-1):
+                device.swipe_vector((0, direction * self.TASK_SCROLL_DISTANCE))
+                # A 450px swipe saturates this one-row range in a single step.
+                device.move((0, -direction * ShipyardDevelopmentRealFrameLocateTest.MAX_OFFSET))
+
+        fake = Fake.__new__(Fake)
+        fake.device = device
+        return fake
+
     def test_live_panel_row_is_located_through_the_sweep(self):
         root = Path(__file__).parents[1] / 'tests/fixtures'
         image = cv2.cvtColor(cv2.imread(str(root / 'shipyard_alas_top_rows_20260925.png')),
                              cv2.COLOR_BGR2RGB)
         device = self.ScrollingPanel(image)
-        inspector = object.__new__(ShipyardDevelopment)
-        inspector.device = device
+        inspector = self.inspector(device)
         task = inspector._locate_visible_task('大型技术理论I')
         self.assertEqual(inspector._task_key(task.title),
                          inspector._task_key('大型技术理论I'))
         self.assertIn(task.header_y, range(130, 559))
+
+    def test_live_first_row_is_located_from_the_bottom_state(self):
+        # The live 2026-09-26 21:41:15 failure: the sweep had to find the first
+        # row of the list while the panel sat at the bottom of its one-row
+        # range.  In that state the first row's header is above the detection
+        # band, so only a swipe towards the top makes it readable again.
+        root = Path(__file__).parents[1] / 'tests/fixtures'
+        image = cv2.cvtColor(cv2.imread(str(root / 'shipyard_alas_top_rows_20260925.png')),
+                             cv2.COLOR_BGR2RGB)
+        device = self.ScrollingPanel(image, offset=self.MAX_OFFSET)
+        inspector = self.inspector(device)
+        self.assertNotIn(130, inspector._detect_header_ys())
+        task = inspector._locate_visible_task('铁血先锋技术测试I')
+        self.assertEqual(inspector._task_key(task.title),
+                         inspector._task_key('铁血先锋技术测试I'))
+        self.assertEqual(task.header_y, 130)
+        self.assertEqual([vector[1] for vector in device.swipes],
+                         [ShipyardDevelopment.TASK_SCROLL_DISTANCE])
 
 
 if __name__ == '__main__':
