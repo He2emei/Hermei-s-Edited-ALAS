@@ -215,6 +215,86 @@ class ScanManager(TrainingFleetManager):
         return [catalog_name(n) for n in raw]
 
 
+class VerifiedCardRelocationTest(unittest.TestCase):
+    """The second scan must not jump over a card proven to exist on the first."""
+
+    def test_relocation_covers_the_narrow_page_and_respects_click_guard(self):
+        # The 05:06 alas2 log found locked level-1 Azuma near 0.75 on its
+        # preflight, then the second scan jumped from 0.72 to 0.90 and stopped.
+        class Scroll:
+            edge_threshold = 0.05
+            drag_threshold = 0.05
+
+            def __init__(self):
+                self.position = 0.0
+                self.pages = []
+
+            def set_top(self, main):
+                self.position = 0.0
+
+            def cal_position(self, main):
+                return self.position
+
+            def next_page(self, main, page):
+                main.device.click_record_add('DOCK_SCROLL')
+                main.device.click_record_check()
+                self.pages.append(page)
+                self.position = min(1.0, self.position + 0.2 * page)
+
+        scroll = Scroll()
+        device = ProbeDevice(scroll, step=0.0)
+        manager = TrainingFleetManager.__new__(TrainingFleetManager)
+        manager.device = device
+
+        def visible_names():
+            manager._visible_cards = [card('AZUMA')]
+            manager._raw_names = ['吾妻'] if 0.73 <= scroll.position <= 0.78 else ['别的船']
+            return list(manager._raw_names)
+
+        manager._visible_names = visible_names
+        fake_level = SimpleNamespace(ocr=lambda image: [1])
+        target = SimpleNamespace(name='吾妻', level=1)
+        with patch('module.os.training.DOCK_SCROLL', scroll), \
+             patch('module.os.training.LevelOcr', return_value=fake_level), \
+             patch('module.os.training.dock_card_lock', return_value=True):
+            selected = manager._locate_verified_locked_card(target)
+        self.assertEqual(selected.name, 'AZUMA')
+        self.assertTrue(all(page <= 0.2 for page in scroll.pages))
+        self.assertGreaterEqual(len(scroll.pages), 18)
+        self.assertLess(len(scroll.pages), 40)
+
+    def test_relocation_does_not_clear_the_guard_on_stalled_pages(self):
+        class StalledScroll:
+            edge_threshold = 0.05
+            drag_threshold = 0.05
+
+            def __init__(self):
+                self.pages = 0
+
+            def set_top(self, main):
+                pass
+
+            def cal_position(self, main):
+                return 0.5
+
+            def next_page(self, main, page):
+                self.pages += 1
+
+        scroll = StalledScroll()
+        device = ProbeDevice(scroll, step=0.0)
+        manager = TrainingFleetManager.__new__(TrainingFleetManager)
+        manager.device = device
+        manager._visible_names = lambda: [None]
+        manager._visible_cards = [card('OTHER')]
+        fake_level = SimpleNamespace(ocr=lambda image: [1])
+        target = SimpleNamespace(name='吾妻', level=1)
+        with patch('module.os.training.DOCK_SCROLL', scroll), \
+             patch('module.os.training.LevelOcr', return_value=fake_level):
+            with self.assertRaises(RequestHumanTakeover):
+                manager._locate_verified_locked_card(target)
+        self.assertLessEqual(scroll.pages, 4)
+
+
 class DockScrollTrackTest(unittest.TestCase):
     """The dock scrollbar track ends at y=626, not at the asset's y=641.
 
