@@ -172,9 +172,21 @@ class ShipyardDevelopment(ShipyardUI):
             tasks[i] = DevelopmentTask(0, task.title, task.complete, task.header_y)
         return tasks
 
+    # One swipe has to move the viewport by more than one compact task row.
+    # The panel keeps eight rows of 63px pitch in a 428px viewport, so the
+    # whole scrollable range is only about one row tall.  With a swipe shorter
+    # than that range the viewport can only reach two overlapping states, the
+    # scan keeps reading the same rows and the row sitting at the boundary
+    # stays outside the readable band forever - which is how three runs ended
+    # with `Development task is not visible` (2026-09-25 07:27 alas2 and
+    # 10:20 alas, 2026-09-26 08:41 alas2).  450px is inside the range the list
+    # box can carry (see `random_rectangle_vector_opted`), so every swipe is a
+    # full row of travel.
+    TASK_SCROLL_DISTANCE = 450
+
     def _scroll_task_list(self, direction=-1):
         self.device.swipe_vector(
-            (0, direction * 350), box=TASK_LIST_AREA, padding=-5
+            (0, direction * self.TASK_SCROLL_DISTANCE), box=TASK_LIST_AREA, padding=-5
         )
         self.device.sleep(0.6)
         self.device.screenshot()
@@ -288,28 +300,6 @@ class ShipyardDevelopment(ShipyardUI):
             if prerequisite:
                 return requirement
         raise ScriptError('Pending technical stage II has no verified completed stage I')
-
-    def _locate_visible_task(self, title):
-        """Find a title on the current frame; never reuse historical y data."""
-        wanted = self._task_key(title)
-        # Earlier submissions/expansions can leave the viewport at the bottom.
-        # Searching only downward from there misses task 1 even when it was
-        # enumerated successfully at the start of this inspection.
-        self._collapse_any_expanded_header()
-        for _ in range(2):
-            self._scroll_task_list(direction=1)
-        for _ in range(8):
-            headers = self._detect_header_ys()
-            if HULL_SCULPT_ANCHOR in normalise_cn_task_title(title):
-                for task in self._scan_visible_tasks(headers):
-                    if task.index and self._task_key(task.title) == wanted:
-                        return task
-            else:
-                for header_y in headers:
-                    if self._task_key(self._ocr_task_title(header_y)) == wanted:
-                        return DevelopmentTask(0, title, False, header_y)
-            self._scroll_task_list()
-        raise ScriptError(f'Development task is not visible: {title}')
 
     def _submit_available_task(self, title):
         """Submit only an observed blue 提交 action on a known task row."""
@@ -442,6 +432,33 @@ class ShipyardDevelopment(ShipyardUI):
                 return candidate
         return None
 
+    @staticmethod
+    def _tolerant_catalog_key(title):
+        """Match a reading that lost or gained a glyph inside its title.
+
+        The exact catalogue lookup above already covers a stage stroke eaten by
+        the countdown and a stray character left by it.  It does not cover a
+        character dropped from the middle of the title itself, which is how the
+        panel reads rows at the boundary of its very short scroll range: the
+        locate sweep logged the row it was hunting as noise (``-7一``,
+        ``一7一``) and as ``大型技术理论`` without its stage, so the exact key
+        never matched and the task aborted with
+        `Development task is not visible: 大型技术理论I` even though the row was
+        on screen (2026-09-25 07:27 alas2 / 10:20 alas, 2026-09-26 08:41 alas2).
+        An ordered-subsequence match keeps the identity readable, and the
+        length guard stops a short noise reading from matching a long key.
+        """
+        normalised = normalise_cn_task_title(title)
+        if len(normalised) < 4:
+            return None
+        for key in TASK_CATALOG:
+            if len(key) - len(normalised) > 2:
+                continue
+            iterator = iter(key)
+            if all(char in iterator for char in normalised):
+                return key
+        return None
+
     @classmethod
     def _catalog_kind(cls, title):
         key = cls._catalog_key(title)
@@ -461,7 +478,60 @@ class ShipyardDevelopment(ShipyardUI):
         key = cls._catalog_key(title)
         if key is not None:
             return 'catalog', key
+        key = cls._tolerant_catalog_key(title)
+        if key is not None:
+            return 'catalog', key
         return task_identity(title)
+
+    def _visible_frame_key(self, headers, tasks):
+        """Fingerprint one viewport state for the row-locating sweep.
+
+        The panel keeps eight rows of 63px pitch inside a 428px viewport, so
+        the whole scrollable range is about one row tall.  A swipe shorter than
+        that range leaves the viewport able to reach only two overlapping
+        states, and a locate loop that keeps swiping between them reads the same
+        rows forever while the row at the panel boundary stays outside the
+        readable band: three runs ended with `Development task is not visible`
+        for a row that had just been enumerated (2026-09-25 07:27 alas2 and
+        10:20 alas, 2026-09-26 08:41 alas2).  The sweep below therefore stops as
+        soon as a swipe lands on a state it has already read, and a fingerprint
+        built from task identities rather than raw readings keeps OCR noise on
+        a title from looking like a new state.
+        """
+        return (
+            tuple(headers),
+            tuple(sorted((task.header_y, self._task_key(task.title)) for task in tasks)),
+        )
+
+    def _locate_visible_task(self, title):
+        """Find a title on the current frame; never reuse historical y data."""
+        wanted = self._task_key(title)
+        hull = HULL_SCULPT_ANCHOR in normalise_cn_task_title(title)
+        # Earlier submissions/expansions can leave the viewport anywhere in its
+        # short range.  Search it to both ends, reading every frame on the way,
+        # and stop once a swipe no longer produces a state that has not been
+        # read already.  The previous version scrolled up twice and then only
+        # downward, so a row left just outside the readable band on the first
+        # frame could never be reached again.
+        self._collapse_any_expanded_header()
+        seen = set()
+        for direction in (1, -1):
+            for _ in range(20):
+                headers = self._detect_header_ys()
+                tasks = self._scan_visible_tasks(headers)
+                for task in tasks:
+                    if not hull and not task.index:
+                        continue
+                    if self._task_key(task.title) == wanted:
+                        if hull:
+                            return task
+                        return DevelopmentTask(0, title, False, task.header_y)
+                state = self._visible_frame_key(headers, tasks)
+                if state in seen:
+                    break
+                seen.add(state)
+                self._scroll_task_list(direction=direction)
+        raise ScriptError(f'Development task is not visible: {title}')
 
     @classmethod
     def _is_known_material_title(cls, title):
