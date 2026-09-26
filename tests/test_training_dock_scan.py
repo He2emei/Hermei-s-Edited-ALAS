@@ -15,6 +15,20 @@ dock slot 5, faction filter ``iron``):
   swipe is recorded by ``Device.click_record_add()``, so
   ``Device.click_record_check()`` aborted the whole task with
   ``GameTooManyClickError`` after 13 s of swiping.
+
+Dump 1790380371763 (2026-09-26 07:52:51, alas / OpsiHazard1Leveling, deployment
+dock slot 6, faction filter ``vichya``) is the same crash with a longer thumb:
+
+- The thumb measures y 159..626 (length 468), so the same over-long track
+  saturated at (316.5-234.0)/(565-468) = 0.8505.
+- The stall guard that was added for the first dump did not fire either: the
+  first frame after each swipe still showed the drag's overscroll bounce, where
+  the thumb is drawn shorter and lower (length 441, position 0.77), and the old
+  judgement read that 0.08 jump as movement.
+
+Both crashes come from measurement noise around an unreachable position, so the
+tests below pin the calibrated track, the positions measured on the archived
+frames and the settled-frame judgement.
 """
 import collections
 import unittest
@@ -30,12 +44,16 @@ from module.os.training import TrainingFleetManager
 from module.os.training_policy import ShipCandidate
 from module.os.training_ui import (TrainingShipInspector, catalog_name,
                                    reading_similarity, same_dock_page)
+from module.retire.dock import DOCK_SCROLL
 from module.ui.scroll import Scroll
 
 # Positions measured on the crash frame: the thumb length, the calibrated
 # track and the highest position the scrollbar can report.
 THUMB_LENGTH = 301
 TRACK_END = 0.9450757575757576
+# Thumb colour measured on the archived frames (the calibrated colour is
+# (247, 211, 66), which color_similarity_2d matches with 34 levels of slack).
+THUMB_COLOR = (244, 206, 65)
 
 
 def card(name):
@@ -49,10 +67,52 @@ class Main:
         self.device = device
 
 
+class FrameMain:
+    """ModuleBase stand-in that serves a synthetic frame to Scroll."""
+
+    def __init__(self, image):
+        self.image = image
+
+    def image_crop(self, area, copy=True):
+        return self.image[area[1]:area[3], area[0]:area[2]]
+
+
+def dock_frame(thumb):
+    """A 1280x720 frame whose dock scrollbar thumb covers the rows ``thumb``."""
+    image = np.zeros((720, 1280, 3), dtype=np.uint8)
+    image[thumb[0]:thumb[1] + 1, 1239:1248] = THUMB_COLOR
+    return image
+
+
+class ProbeTimer:
+    """``Timer(1, count=2)`` without the waiting.
+
+    ``clear()`` keeps the real fast first try and ``reached()`` then needs two
+    accesses, like the real timer.  Those extra accesses are the frames the
+    scrollbar settles on, so the probe keeps them.
+    """
+
+    def __init__(self):
+        self.calls = 1
+
+    def clear(self):
+        self.calls = 1
+
+    def reset(self):
+        self.calls = 0
+
+    def reached(self):
+        self.calls += 1
+        return self.calls % 2 == 0
+
+
 class ProbeScroll(Scroll):
     """A dock scrollbar whose position is reported from a model, not pixels."""
 
     def __init__(self, position, end, page_step):
+        # The probe reports its position from a model, so the area only feeds
+        # the swipe geometry.  It keeps the over-long calibration the two dumps
+        # were measured on, which is what makes the modelled end unreachable.
         super().__init__((1239, 76, 1248, 641), (247, 211, 66), name='DOCK_SCROLL')
         self.length = THUMB_LENGTH
         self.position = position
@@ -61,13 +121,33 @@ class ProbeScroll(Scroll):
 
     def ready(self):
         """Let every drag attempt run without waiting for the real timers."""
-        self.drag_interval = collections.namedtuple('_Timer', 'clear reset reached')(
-            lambda: None, lambda: None, lambda: True)
+        self.drag_interval = ProbeTimer()
         self.drag_timeout = collections.namedtuple('_Timer', 'reset reached')(
             lambda: None, lambda: False)
         return self
 
     def cal_position(self, main):
+        return self.position
+
+
+class BouncingScroll(ProbeScroll):
+    """The scrollbar of dump 1790380371763: the frame after a swipe still shows
+    the drag's overscroll bounce.
+
+    The log reports the settled position 0.85 (``(316.5-234.0)/(565-468)``) and
+    0.77 (``(316.2-220.5)/(565-441)``) right after each swipe.
+    """
+
+    bounce_offset = 0.08
+
+    def __init__(self, position, end, page_step):
+        super().__init__(position, end, page_step)
+        self.bounce = False
+
+    def cal_position(self, main):
+        if self.bounce:
+            self.bounce = False
+            return self.position - self.bounce_offset
         return self.position
 
 
@@ -111,6 +191,14 @@ class ProbeDevice:
                                    self.scroll.end)
 
 
+class BouncingDevice(ProbeDevice):
+    """ProbeDevice whose scrollbar bounces on the frame after every swipe."""
+
+    def swipe(self, *args, **kwargs):
+        super().swipe(*args, **kwargs)
+        self.scroll.bounce = True
+
+
 class ScanManager(TrainingFleetManager):
     """TrainingFleetManager whose dock OCR follows the probe position."""
 
@@ -125,6 +213,44 @@ class ScanManager(TrainingFleetManager):
         self._raw_names = raw
         self._visible_cards = [card(f'CARD_{i}') for i in range(len(raw))]
         return [catalog_name(n) for n in raw]
+
+
+class DockScrollTrackTest(unittest.TestCase):
+    """The dock scrollbar track ends at y=626, not at the asset's y=641.
+
+    Measured on the archived frames: the thumb bottoms out at y=626 in dump
+    1790380371763 (thumb y 159..626, length 468) and in dump 1789964197466
+    (thumb y 326..626, length 301), while the dock scrolled to its top draws
+    the thumb from y=69 (2026-09-10 frame, length 107).  The JP asset is
+    78..628, i.e. the same 550 px track.
+    """
+
+    def test_the_track_is_calibrated_to_the_measured_height(self):
+        self.assertEqual(DOCK_SCROLL.area, (1239, 76, 1248, 626))
+
+    def test_the_end_of_the_list_reports_position_one(self):
+        for thumb in ((159, 626), (326, 626)):
+            with self.subTest(thumb=thumb):
+                main = FrameMain(dock_frame(thumb))
+                position = DOCK_SCROLL.cal_position(main)
+                # The area's bottom row is the exclusive end of the crop, so the
+                # thumb's last row is not measured and the reading lands just
+                # under 1.0: what matters is that it clears at_bottom() and
+                # that set(1.0) can converge on it.
+                self.assertGreater(position, 1 - DOCK_SCROLL.edge_threshold)
+                self.assertLess(abs(1 - position), DOCK_SCROLL.drag_threshold)
+                self.assertTrue(DOCK_SCROLL.at_bottom(main))
+
+    def test_the_top_of_the_list_reports_position_zero(self):
+        # The thumb is drawn from y=69 here, above the calibrated area, and the
+        # mask is clipped to the area; the top must still read as 0.
+        main = FrameMain(dock_frame((69, 175)))
+        self.assertEqual(DOCK_SCROLL.cal_position(main), 0.0)
+        self.assertTrue(DOCK_SCROLL.at_top(main))
+
+    def test_a_thumb_filling_the_track_does_not_break_the_measurement(self):
+        main = FrameMain(dock_frame((76, 626)))
+        self.assertEqual(DOCK_SCROLL.cal_position(main), 0.0)
 
 
 class ScrollStallTest(unittest.TestCase):
@@ -161,6 +287,27 @@ class ScrollStallTest(unittest.TestCase):
         with self.assertRaises(GameTooManyClickError):
             for _ in range(20):
                 scroll.set(1.0, main=main)
+
+
+class ScrollSettleTest(unittest.TestCase):
+    """A swipe is judged on the settled scrollbar, not on the frame after it."""
+
+    def test_a_bouncing_thumb_does_not_hide_an_unreachable_position(self):
+        # Dump 1790380371763: the thumb saturates at 0.85 and every swipe is
+        # followed by a bounce frame that reports 0.77.
+        scroll = BouncingScroll(position=0.85, end=0.85, page_step=0.85).ready()
+        device = BouncingDevice(scroll, step=0.5)
+        dragged = scroll.set(1.0, main=Main(device))
+        self.assertEqual(dragged, scroll.stall_limit)
+        self.assertEqual(device.swipes, ['DOCK_SCROLL'] * scroll.stall_limit)
+        self.assertEqual(scroll.position, 0.85)
+
+    def test_a_bouncing_thumb_still_reaches_a_reachable_position(self):
+        scroll = BouncingScroll(position=0.0, end=0.85, page_step=0.45).ready()
+        device = BouncingDevice(scroll, step=0.45)
+        dragged = scroll.set(0.45, main=Main(device))
+        self.assertGreaterEqual(dragged, 1)
+        self.assertAlmostEqual(scroll.position, 0.45)
 
 
 class DockPageReadingTest(unittest.TestCase):
