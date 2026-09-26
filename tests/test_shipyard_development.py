@@ -451,6 +451,81 @@ class ShipyardDevelopmentPolicyTest(unittest.TestCase):
         self.assertEqual(result.header_y, 130)
         self.assertEqual(fake.swipes, [1])
 
+    def test_task_scroll_uses_interior_points_reproduced_on_live_cn_panel(self):
+        class Device:
+            def __init__(self):
+                self.swipes = []
+
+            def swipe(self, start, end, **kwargs):
+                self.swipes.append((start, end))
+
+            def sleep(self, seconds):
+                pass
+
+            def screenshot(self):
+                pass
+
+        manager = ShipyardDevelopment.__new__(ShipyardDevelopment)
+        manager.device = Device()
+        manager._scroll_task_list(direction=1)
+        manager._scroll_task_list(direction=-1)
+        self.assertEqual(manager.device.swipes, [
+            ((1100, 220), (1100, 520)),
+            ((1100, 520), (1100, 220)),
+        ])
+
+        fixture_dir = Path(__file__).parent / 'fixtures'
+        top = cv2.cvtColor(cv2.imread(str(fixture_dir / 'shipyard_20260927_top_interior.png')),
+                           cv2.COLOR_BGR2RGB)
+        bottom = cv2.cvtColor(cv2.imread(str(fixture_dir / 'shipyard_20260927_bottom.png')),
+                              cv2.COLOR_BGR2RGB)
+        manager.device.image = top
+        self.assertEqual(manager._detect_header_ys(), [130, 193, 257, 320, 383, 446, 510])
+        manager.device.image = bottom
+        self.assertEqual(manager._detect_header_ys(), [176, 240, 303, 366, 430, 493])
+
+    def test_task_lookup_recovers_target_one_after_boundary_swipes_stall(self):
+        class Device:
+            def __init__(self):
+                self.position = 'bottom'
+                self.swipes = []
+
+            def swipe_vector(self, vector, **kwargs):
+                self.swipes.append(('boundary', vector))
+                # On the live CN panel, a touch beginning at y=130/558
+                # did not move the list even though the gesture was sent.
+
+            def swipe(self, start, end, **kwargs):
+                self.swipes.append((start, end))
+                self.position = 'top' if end[1] > start[1] else 'bottom'
+
+            def sleep(self, seconds):
+                pass
+
+            def screenshot(self):
+                pass
+
+        class Fake(ShipyardDevelopment):
+            def __init__(self):
+                self.device = Device()
+
+            def _collapse_any_expanded_header(self):
+                return False
+
+            def _detect_header_ys(self):
+                return [130] if self.device.position == 'top' else [176]
+
+            def _scan_visible_tasks(self, header_ys=None):
+                if self.device.position == 'top':
+                    return [DevelopmentTask(1, '铁血先锋技术测试I', True, 130)]
+                return [DevelopmentTask(2, '大型技术理论I', True, 176)]
+
+        manager = Fake()
+        task = manager._locate_visible_task('铁血先锋技术测试I')
+        self.assertEqual(task.header_y, 130)
+        self.assertEqual(manager.device.swipes[0],
+                         ((1100, 220), (1100, 520)))
+
     def test_unknown_incomplete_material_is_rejected(self):
         class Fake(ShipyardDevelopment):
             def __init__(self):
@@ -788,11 +863,9 @@ class ShipyardDevelopmentRealFrameLocateTest(unittest.TestCase):
             out[top:bottom, 940:1280] = self.source[top + self.offset:bottom + self.offset, 940:1280]
             self.image = out
 
-        def swipe_vector(self, vector, box=None, padding=None):
-            self.swipes.append(vector)
-
-        def move(self, vector):
-            self.offset = max(0, min(46, self.offset + vector[1]))
+        def swipe(self, start, end, **kwargs):
+            self.swipes.append((start, end))
+            self.offset = max(0, min(46, self.offset + start[1] - end[1]))
             self.render()
 
         def sleep(self, seconds):
@@ -810,11 +883,6 @@ class ShipyardDevelopmentRealFrameLocateTest(unittest.TestCase):
         class Fake(ShipyardDevelopment):
             def _collapse_any_expanded_header(self):
                 return False
-
-            def _scroll_task_list(self, direction=-1):
-                device.swipe_vector((0, direction * self.TASK_SCROLL_DISTANCE))
-                # A 450px swipe saturates this one-row range in a single step.
-                device.move((0, -direction * ShipyardDevelopmentRealFrameLocateTest.MAX_OFFSET))
 
         fake = Fake.__new__(Fake)
         fake.device = device
@@ -846,8 +914,9 @@ class ShipyardDevelopmentRealFrameLocateTest(unittest.TestCase):
         self.assertEqual(inspector._task_key(task.title),
                          inspector._task_key('铁血先锋技术测试I'))
         self.assertEqual(task.header_y, 130)
-        self.assertEqual([vector[1] for vector in device.swipes],
-                         [ShipyardDevelopment.TASK_SCROLL_DISTANCE])
+        self.assertEqual(device.swipes,
+                         [(ShipyardDevelopment.TASK_SCROLL_TOP,
+                           ShipyardDevelopment.TASK_SCROLL_BOTTOM)])
 
 
 if __name__ == '__main__':
