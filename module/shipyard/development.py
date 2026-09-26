@@ -188,6 +188,18 @@ class ShipyardDevelopment(ShipyardUI):
             next_y = ys[index + 1] if index + 1 < len(ys) else TASK_LIST_AREA[3]
             if next_y - header_y > 150 and self._ocr_task_title(header_y):
                 self.device.click(task_header_button(header_y))
+                # The row collapses with an animation.  Reading the frame taken
+                # in the same instant as this click still shows the expanded row,
+                # so the next caller clicked the same header a second time and
+                # expanded it instead of collapsing it: the body then pushed
+                # every other row out of the detection strip, the list could not
+                # be read any more and the task ended with `Development task is
+                # not visible` (live 2026-09-26 08:14:59 and 08:21:55) - or, when
+                # the frame in flight held no TARGET label at all, with
+                # `Shipyard task TARGET rows are not identifiable` (08:16:47).
+                # Every other screenshot in this file waits for the same
+                # animation: 0.6s after a header click and after every swipe.
+                self.device.sleep(0.6)
                 self.device.screenshot()
                 return True
         return False
