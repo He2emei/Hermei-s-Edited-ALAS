@@ -162,30 +162,55 @@ class TrainingFleetManager(TrainingShipInspector):
             self.device.sleep(0.6)
         if target is not None:
             if len(matches) == 1:
-                # The uniqueness scan ends at the bottom, so its old button
-                # coordinates cannot be clicked. Locate the same card again.
-                DOCK_SCROLL.set_top(main=self)
-                for _ in range(40):
-                    self.device.screenshot()
-                    visible = self._visible_names()
-                    levels = LevelOcr([
-                        (b.area[0] + 77, b.area[1] + 5, b.area[2], b.area[1] + 27)
-                        for b in self._visible_cards
-                    ], name='TrainingSelectionLevels').ocr(self.device.image)
-                    for button, name, level in zip(self._visible_cards, visible, levels):
-                        if name == target.name and level == target.level \
-                                and dock_card_lock(self.device.image, button) is True:
-                            return button
-                    if DOCK_SCROLL.cal_position(main=self) > 1 - DOCK_SCROLL.edge_threshold:
-                        break
-                    DOCK_SCROLL.next_page(main=self, page=0.45)
-                    self.device.sleep(0.6)
-                raise RequestHumanTakeover('Verified ship vanished while locating deployment card')
+                # The uniqueness scan ends at the bottom. Its old button
+                # coordinates cannot be clicked after scrolling away.
+                return self._locate_verified_locked_card(target)
             if len(matches) > 1:
                 raise RequestHumanTakeover(f'Ambiguous duplicate deployment cards: {target.name} level {target.level}')
             name = target.name if isinstance(target, ShipCandidate) else target
             raise RequestHumanTakeover('Planned locked ship is not available in deployment dock: ' + name)
         return names
+
+    def _locate_verified_locked_card(self, target):
+        """Find the sole verified instance again before selecting it.
+
+        A long CN dock can land on different rows at the same thumb position.
+        On 2026-09-27 alas2, the first scan saw a locked level-1 Azuma near
+        0.75, but the second 0.45-page sweep jumped from 0.72 to 0.90. A
+        smaller sweep found the same card on the live stopped emulator.
+        """
+        DOCK_SCROLL.set_top(main=self)
+        previous_position = None
+        stalled = 0
+        for _ in range(40):
+            self.device.screenshot()
+            visible = self._visible_names()
+            levels = LevelOcr([
+                (b.area[0] + 77, b.area[1] + 5, b.area[2], b.area[1] + 27)
+                for b in self._visible_cards
+            ], name='TrainingSelectionLevels').ocr(self.device.image)
+            for button, name, level in zip(self._visible_cards, visible, levels):
+                if name == target.name and level == target.level \
+                        and dock_card_lock(self.device.image, button) is True:
+                    return button
+            current = DOCK_SCROLL.cal_position(main=self)
+            if current > 1 - DOCK_SCROLL.edge_threshold:
+                break
+            if previous_position is not None:
+                if current > previous_position + 0.01:
+                    # A moving thumb is meaningful page progress. Clear only
+                    # here, so a genuinely stuck swipe still hits the guard.
+                    self.device.click_record_clear()
+                    stalled = 0
+                else:
+                    stalled += 1
+                    if stalled >= 3:
+                        logger.info('Verified ship relocation stopped: dock did not advance')
+                        break
+            previous_position = current
+            DOCK_SCROLL.next_page(main=self, page=0.2)
+            self.device.sleep(0.6)
+        raise RequestHumanTakeover('Verified ship vanished while locating deployment card')
 
     def _available_ships(self, opsi):
         self._open_selector(opsi)
