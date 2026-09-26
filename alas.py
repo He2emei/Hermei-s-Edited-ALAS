@@ -137,6 +137,7 @@ class AzurLaneAutoScript:
             self._notify_error(command, e)
             exit(1)
         except RequestHumanTakeover as e:
+            logger.error(f'RequestHumanTakeover: {e}')
             logger.critical('Request human takeover')
             handle_notify(
                 self.config.Error_OnePushConfig,
