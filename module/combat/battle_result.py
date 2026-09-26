@@ -2,7 +2,8 @@ from time import monotonic, time
 
 from module.base.timer import Timer
 from module.combat.assets import (BATTLE_STATUS_A, BATTLE_STATUS_B, BATTLE_STATUS_C, BATTLE_STATUS_D,
-                                  BATTLE_STATUS_S, QUIT_RECONFIRM)
+                                  BATTLE_STATUS_S, EXP_INFO_A, EXP_INFO_B, EXP_INFO_C, EXP_INFO_D,
+                                  EXP_INFO_S, QUIT_RECONFIRM)
 from module.combat_ui.assets import (PAUSE, PAUSE_AzureCore, PAUSE_Christmas, PAUSE_Cyber, PAUSE_Devil,
                                      PAUSE_ElvenVine, PAUSE_GildedReverie, PAUSE_HolyLight,
                                      PAUSE_Iridescent_Fantasy, PAUSE_MaidCafe, PAUSE_Neon, PAUSE_New,
@@ -13,6 +14,8 @@ from module.combat_ui.assets import (PAUSE, PAUSE_AzureCore, PAUSE_Christmas, PA
                                      QUIT_Ninja, QUIT_Nurse, QUIT_Pharaoh, QUIT_Ritual, QUIT_Seaside,
                                      QUIT_SpringInn, QUIT_YoRHa)
 from module.logger import logger
+from module.ui.assets import MAIN_GOTO_FLEET
+from module.ui_white.assets import MAIN_GOTO_CAMPAIGN_WHITE
 
 # Buttons of the battle result screen, ordered like Combat.handle_battle_status().
 # Their area is the rank icon, which is the recognition signal, and their button is the
@@ -115,6 +118,124 @@ def handle_battle_result_screen(app):
     # clickable area of the result screen, and registers the button in the click record.
     app.device.click(button)
     battle_result_click_timer.reset()
+    return True
+
+
+# ---------------------------------------------------------------------------------------------
+# The settlement screen is the second half of the same flow. The result screen of a battle
+# (VICTORY + 大获全胜 + 点击继续, the rank letter of BATTLE_STATUS_*) is followed by 大获全胜
+# S/A/B/C/D + the EXP list of the fleet + 战斗记录 + 确定, whose rank letter is the recognition
+# signal of EXP_INFO_* and whose 确定 is the button area of the same asset.
+#
+# AutoSearchCombat.auto_search_combat() skips that screen since 4e73027ce (handle_auto_search_exp_info,
+# live 2026-09-22 02:56:34), but every other loop that can meet it knows only the first half: the
+# page poll UI.ui_get_current_page() and the operation siren loops that call
+# MapEventHandler.handle_map_event(). The screen is not the map - is_in_map() fails on it, measured
+# on all 78 archived settlement frames - and it is not a page either, so such a loop polls its own
+# buttons until the sixty second stuck check of the device ends the task:
+#
+#   * live 2026-09-26 22:46:39 alas2 OpsiHazard1Leveling, dump log/error/1790433999346. The task
+#     entered the operation siren map, clicked the action point counter (ACTION_POINT_REMAIN_OS) in
+#     action_point_enter(), handle_battle_result_screen() skipped the result screen that appeared
+#     17 seconds later (its two clicks landed on the blue 战斗记录 button of the settlement layout,
+#     which is the button area of BATTLE_STATUS_*), and the settlement screen that followed matched
+#     no handler for sixty seconds -> GameStuckError: Wait too long.
+#   * live 2025-12-19 03:10:40, same loop (action_point_enter), same screen, same error.
+#   * 160 archived dumps reached the unknown page branch of the page poll and 7 of their frames are
+#     this screen (2025-12-10, 2026-01-10 x2, 2026-06-10, 2026-08-28, 2026-08-29, 2026-09-18), all
+#     `CRITICAL | Game page unknown`.
+#   * further archived cases sit in os_auto_search_daemon (2025-12-23) and os_auto_search_quit
+#     (2026-01-10).
+#
+# Recognition and localization both come from the assets, exactly like handle_auto_search_exp_info():
+# the rank letter area is the recognition signal and the button area of the same asset is 确定. No
+# string is matched anywhere on this path (every probe is a colour probe), so the OCR noise
+# tolerance of the shipyard and dock paths does not apply here.
+#
+# page_main is the one screen whose random background is known to trigger these rank letters:
+# upstream keeps the same probe out of OSMap.interrupt_auto_search() for that reason
+# (module/os/map.py, "Random background from page_main may trigger EXP_INFO_*, don't check them"),
+# and that loop reaches page_main by design. Both check buttons of page_main are therefore asked
+# before the rank letters; missing a settlement screen because of them is the behaviour this handler
+# had before it existed, while clicking into page_main would press an unrelated button.
+# ---------------------------------------------------------------------------------------------
+
+# Rank letters of the settlement screen, the same asset set the auto search loop uses.
+SETTLEMENT_RANK_BUTTONS = (EXP_INFO_S, EXP_INFO_A, EXP_INFO_B, EXP_INFO_C, EXP_INFO_D)
+
+# Interval between two "skip the settlement screen" clicks, same as battle_result_click_timer.
+settlement_click_timer = Timer(2, count=0)
+# Clicks spent on the settlement screen that is on the display right now.
+settlement_attempt = 0
+
+# A settlement screen that no combat loop skipped is clicked at most this many times; a screen that
+# the game ignores then keeps the task on its sixty second stuck check, which is the recovery this
+# state had before this handler existed (twelve clicks of the device guard would only replace the
+# GameStuckError of the archive with a GameTooManyClickError).
+SETTLEMENT_MAX_ATTEMPT = 3
+
+
+def match_settlement_button(image):
+    """
+    Detect the settlement screen of a battle that was fought in the operation siren.
+
+    Args:
+        image (np.ndarray): Screenshot.
+
+    Returns:
+        Button: The matched rank button, or None.
+    """
+    # A visible main page is never the settlement screen, and its random background is the one
+    # screen known to trigger the rank letters (see the comment above).
+    if MAIN_GOTO_FLEET.appear_on(image) or MAIN_GOTO_CAMPAIGN_WHITE.appear_on(image):
+        return None
+
+    for button in SETTLEMENT_RANK_BUTTONS:
+        if button.appear_on(image):
+            return button
+
+    return None
+
+
+def handle_settlement_screen(app):
+    """
+    Skip a settlement screen that is left on the display, so that a loop waiting for the map can
+    see the map again.
+
+    The screen is clicked through the button of the asset that recognized it, which is the 确定
+    button, so no new template and no new screen layout is assumed here. A single click can be
+    swallowed by the game, hence the repeated attempts; the count is bounded, because a screen the
+    game refuses to close has to fall back to the sixty second stuck check of the device (the
+    campaign loops reach GameTooManyClickError on that state, live 2026-03-01 01:45:10).
+
+    Args:
+        app: Alas or UI instance.
+
+    Returns:
+        bool: If clicked.
+    """
+    global settlement_attempt
+
+    if not settlement_click_timer.reached():
+        return False
+
+    button = match_settlement_button(app.device.image)
+    if button is None:
+        settlement_attempt = 0
+        return False
+
+    if settlement_attempt >= SETTLEMENT_MAX_ATTEMPT:
+        # Warned once: the loop that keeps meeting the screen calls this every screenshot.
+        if settlement_attempt == SETTLEMENT_MAX_ATTEMPT:
+            logger.warning(f'Unable to skip the settlement screen: {button}')
+            settlement_attempt += 1
+        return False
+
+    settlement_attempt += 1
+    logger.info(f'Skip settlement screen: {button}, attempt {settlement_attempt}')
+    # Device.click() takes a Button and reads `button.button`, which is the 确定 button.
+    app.device.click(button)
+    settlement_click_timer.reset()
     return True
 
 

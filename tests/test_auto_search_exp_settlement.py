@@ -325,10 +325,16 @@ class AutoSearchLoopTest(unittest.TestCase):
         self.assertIsNone(result)
 
     def test_without_the_settlement_handler_the_loop_never_ends(self):
-        """The pre-fix behaviour of the same frames, for the record."""
+        """The pre-fix behaviour of the same frames, for the record.
+
+        `handle_map_event()` at the end of the loop skips the same screen since 2026-09-26
+        (`handle_settlement_screen()`), so that handler is stubbed out as well: this test is about
+        the button set of the auto search loop itself.
+        """
         app = AutoSearchLoopApp(self.settlement(), self.map_frame(), limit=50)
         with fresh_click_state(), patch.object(OsCombat, '_auto_search_exp_info_buttons',
-                                               (EXP_INFO_C, EXP_INFO_D)):
+                                               (EXP_INFO_C, EXP_INFO_D)), \
+                patch('module.os_handler.map_event.handle_settlement_screen', lambda app: False):
             with self.assertRaises(LoopLimitReached):
                 app.auto_search_combat()
         self.assertEqual(app.device.clicked, [])

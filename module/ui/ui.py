@@ -2,7 +2,7 @@ from module.base.button import Button
 from module.base.decorator import run_once
 from module.base.timer import Timer
 from module.combat.assets import GET_ITEMS_1, GET_ITEMS_2, GET_SHIP
-from module.combat.battle_result import handle_battle_result_screen, handle_combat_hud
+from module.combat.battle_result import handle_battle_result_screen, handle_combat_hud, handle_settlement_screen
 from module.exception import (GameNotRunningError, GamePageUnknownError,
                               RequestHumanTakeover)
 from module.exercise.assets import EXERCISE_PREPARATION
@@ -206,6 +206,13 @@ class UI(InfoHandler):
             # A battle result screen is not a page, but it covers the screen until it is
             # clicked away. It is left there when a scheduler restarts during a combat.
             if handle_battle_result_screen(self):
+                timeout.reset()
+                continue
+            # The settlement screen that follows that result screen is not a page either, and a
+            # scheduler that starts while it is on the display reports the page as unknown instead
+            # of closing it: 7 of the 160 archived dumps that reached this branch carry it
+            # (2025-12-10, 2026-01-10 x2, 2026-06-10, 2026-08-28, 2026-08-29, 2026-09-18).
+            if handle_settlement_screen(self):
                 timeout.reset()
                 continue
             if self.appear_then_click(GOTO_MAIN, offset=(30, 30), interval=2):
