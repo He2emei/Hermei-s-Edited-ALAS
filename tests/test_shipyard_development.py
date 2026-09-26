@@ -465,5 +465,81 @@ class ShipyardDevelopmentPolicyTest(unittest.TestCase):
         self.assertEqual(obj._pending_requirement(tasks), parse_training_requirement('皇家先锋技术测试I'))
 
 
+class ShipyardDevelopmentSettledCollapseTest(unittest.TestCase):
+    """The expanded-row collapse has to judge a settled frame.
+
+    Live 2026-09-26: `_collapse_any_expanded_header()` screenshotted in the same
+    instant as its click, so the row still looked expanded and the next caller
+    clicked the same header a second time, which expanded it instead.  The body
+    then pushed every other row out of the detection strip, and the task ended
+    with `Development task is not visible` (08:14:59 and 08:21:55) - or, when the
+    frame in flight held no TARGET label at all, with `Shipyard task TARGET rows
+    are not identifiable` (08:16:47).
+    """
+
+    class AnimatedDevice:
+        """The panel: the frame in flight right after a click, and the settled one."""
+
+        def __init__(self, expanded, settled, in_flight):
+            self.expanded = expanded
+            self.settled = settled
+            self.in_flight = in_flight
+            self.image = expanded
+            self.clicks = []
+            self.sleeps = []
+
+        def click(self, button):
+            self.clicks.append(button)
+            # The collapse animation has not moved the rows yet.
+            self.image = self.in_flight
+
+        def sleep(self, seconds):
+            self.sleeps.append(seconds)
+            if seconds >= 0.5:
+                # The animation finished while the caller waited.
+                self.image = self.settled
+
+        def screenshot(self):
+            return self.image
+
+    @staticmethod
+    def fixtures():
+        root = Path(__file__).parents[1] / 'tests/fixtures'
+        expanded = cv2.cvtColor(cv2.imread(str(root / 'shipyard_target2_obscured.png')),
+                                cv2.COLOR_BGR2RGB)
+        settled = cv2.cvtColor(cv2.imread(str(root / 'shipyard_alas_top_rows_20260925.png')),
+                               cv2.COLOR_BGR2RGB)
+        return expanded, settled
+
+    @staticmethod
+    def inspector(device):
+        obj = object.__new__(ShipyardDevelopment)
+        obj.device = device
+        return obj
+
+    def test_an_expanded_row_is_collapsed_once_and_on_the_settled_frame(self):
+        expanded, settled = self.fixtures()
+        device = self.AnimatedDevice(expanded, settled, in_flight=expanded)
+        inspector = self.inspector(device)
+        self.assertTrue(inspector._collapse_any_expanded_header())
+        # The next caller reads the settled frame, where the row is collapsed:
+        # reading the frame in flight made it click the header a second time.
+        self.assertFalse(inspector._collapse_any_expanded_header())
+        self.assertEqual(len(device.clicks), 1)
+        self.assertIn(0.6, device.sleeps)
+
+    def test_the_frame_in_flight_is_never_read(self):
+        expanded, settled = self.fixtures()
+        in_flight = expanded.copy()
+        # A collapse moves every row at once, so the strip the inspector reads
+        # holds no TARGET label while it runs.
+        in_flight[130:558, 944:1020] = expanded[130:558, 200:276]
+        device = self.AnimatedDevice(expanded, settled, in_flight=in_flight)
+        inspector = self.inspector(device)
+        self.assertTrue(inspector._collapse_any_expanded_header())
+        self.assertFalse(inspector._collapse_any_expanded_header())
+        self.assertEqual(len(device.clicks), 1)
+
+
 if __name__ == '__main__':
     unittest.main()
