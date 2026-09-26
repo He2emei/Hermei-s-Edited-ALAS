@@ -146,6 +146,28 @@ class ShipyardDevelopmentPolicyTest(unittest.TestCase):
         self.assertTrue(ShipyardDevelopment._is_known_material_title('先锋技术突破'))
         self.assertIsNone(ShipyardDevelopment._catalog_kind('菲利克斯·舒尔茨'))
 
+    def test_stage_stroke_dropped_by_a_boundary_row_keeps_its_identity(self):
+        # Live 2026-09-26 08:41: the locate sweep hunted `大型技术理论I` while
+        # the row sat against the panel edge and cnocr dropped the stage
+        # stroke, so the exact catalogue lookup found nothing and the task
+        # aborted with `Development task is not visible`.  The identity has to
+        # survive one dropped glyph, in both the recognition and the locate
+        # path (both compare through `_task_key`).
+        for reading, wanted in (
+                ('大型技术理论', '大型技术理论I'),
+                ('铁血主力技术测试', '铁血主力技术测试I'),
+                ('主力技术突破', '主力技术突破I'),
+                ('皇家先锋技术测试', '皇家先锋技术测试I')):
+            with self.subTest(reading=reading):
+                self.assertEqual(ShipyardDevelopment._task_key(reading),
+                                 ShipyardDevelopment._task_key(wanted))
+        # Noise must not become an identity.
+        for noise in ('一7一', '-7一', '就', 'r——.———-'):
+            with self.subTest(noise=noise):
+                self.assertIsNone(ShipyardDevelopment._tolerant_catalog_key(noise))
+                self.assertEqual(ShipyardDevelopment._task_key(noise),
+                                 task_identity(noise))
+
     def test_one_row_seen_twice_keeps_one_identity(self):
         self.assertEqual(task_identity('菲利克斯·舒尔茨舰体塑造I143:33:43'),
                          task_identity('利克斯·舒尔茨舰体塑造143:33:43'))
@@ -418,13 +440,16 @@ class ShipyardDevelopmentPolicyTest(unittest.TestCase):
             def _detect_header_ys(self):
                 return [130]
 
-            def _ocr_task_title(self, header_y):
-                return '铁血主力技术测试I' if self.position == 'top' else '主力技术突破I'
+            def _scan_visible_tasks(self, header_ys=None):
+                return [
+                    DevelopmentTask(1, '铁血主力技术测试I' if self.position == 'top'
+                                    else '主力技术突破I', False, 130)
+                ]
 
         fake = Fake()
         result = fake._locate_visible_task('铁血主力技术测试I')
         self.assertEqual(result.header_y, 130)
-        self.assertEqual(fake.swipes, [1, 1])
+        self.assertEqual(fake.swipes, [1])
 
     def test_unknown_incomplete_material_is_rejected(self):
         class Fake(ShipyardDevelopment):
@@ -539,6 +564,206 @@ class ShipyardDevelopmentSettledCollapseTest(unittest.TestCase):
         self.assertTrue(inspector._collapse_any_expanded_header())
         self.assertFalse(inspector._collapse_any_expanded_header())
         self.assertEqual(len(device.clicks), 1)
+
+
+class ShipyardDevelopmentTaskLookupSweepTest(unittest.TestCase):
+    """Locating a row has to sweep the whole, very short, scroll range.
+
+    The CN panel keeps eight rows of 63px pitch inside a 428px viewport, so the
+    scrollable range is only about one row tall and the row sitting at the
+    panel boundary is partly clipped.  Live 2026-09-25 07:27 (alas2) and 10:20
+    (alas), and 2026-09-26 08:41 (alas2) all ended with
+    `Development task is not visible: 大型技术理论I` / `铁血主力技术测试I` for a
+    row that `_read_all_tasks()` had just enumerated: the locate loop scrolled
+    up twice and then only downward with a 350px swipe, so it kept reading the
+    same two overlapping states while the target row stayed outside the
+    readable band.
+    """
+
+    ROW_PITCH = 63
+    # Two full rows of travel, so a swipe always lands on a state the previous
+    # one could not reach.  The shipped value is 350, which left the viewport
+    # oscillating between two states.
+    SWIPE_DISTANCE = 450
+
+    TITLES = (
+        '铁血先锋技术测试I', '大型技术理论I', '先锋技术突破I', '铁血先锋技术测试II',
+        '大型技术理论II', '主力技术突破I', '柴郡舰体塑造I', '柴郡舰体塑造II',
+        '主力技术突破II', '先锋技术突破II', '铁血主力技术测试I', '铁血主力技术测试II',
+    )
+
+    class FakeScrollPanel:
+        """A task list whose whole scrollable range is about one row tall."""
+
+        def __init__(self, titles, top=130, bottom=558, pitch=63,
+                     readable_offsets=(-63,), offset=0, top_offset=-63,
+                     movable=True):
+            self.titles = list(titles)
+            self.top = top
+            self.bottom = bottom
+            self.pitch = pitch
+            self.readable_offsets = tuple(readable_offsets)
+            self.offset = offset
+            self.top_offset = top_offset
+            self.movable = movable
+            self.swipes = []
+
+        def row_y(self, index):
+            return self.top + index * self.pitch
+
+        def _readable(self, index):
+            # The real panel scrolls in overlapping states a fraction of a row
+            # tall, and a row pressed against the panel edge loses glyphs.  The
+            # row the locate loop was hunting read as `-7一` / `一7一` in every
+            # state that loop sampled, and only read in a state it never
+            # reached (live 2026-09-25 07:27 alas2 / 10:20 alas, 2026-09-26
+            # 08:41 alas2).
+            return self.offset in self.readable_offsets
+
+        def _title_reading(self, index):
+            """What cnocr makes of the row in the current viewport state."""
+            if not self._readable(index):
+                return '一7一'
+            # The live boundary frame dropped the stage stroke and left the
+            # base title behind (live `大型技术理论` for `大型技术理论I`).
+            return self.titles[index].rstrip('I') or self.titles[index]
+
+        def _row_index(self, header_y):
+            return int(round((header_y - self.top - self.offset) / float(self.pitch)))
+
+        def _scan_visible_tasks(self, header_ys=None):
+            header_ys = self._detect_header_ys() if header_ys is None else header_ys
+            tasks = []
+            for position, header_y in enumerate(header_ys[:8], 1):
+                index = self._row_index(header_y)
+                if not 0 <= index < len(self.titles):
+                    continue
+                tasks.append(DevelopmentTask(position, self._title_reading(index),
+                                             False, header_y))
+            return tasks
+
+        def _detect_header_ys(self):
+            ys = []
+            for index in range(len(self.titles)):
+                header_y = self.row_y(index) + self.offset
+                if self.top <= header_y and header_y + 40 <= self.bottom:
+                    ys.append(header_y)
+            return ys
+
+        def _ocr_task_title(self, header_y):
+            index = self._row_index(header_y)
+            if not 0 <= index < len(self.titles):
+                return ''
+            return self._title_reading(index)
+
+        def swipe_vector(self, vector, box=None, padding=None):
+            self.swipes.append(vector)
+
+        def sleep(self, seconds):
+            pass
+
+        def screenshot(self):
+            pass
+
+        def move(self, vector):
+            if not self.movable:
+                return
+            # The viewport cannot travel past either end of its own list.
+            bottom_offset = self.top + (len(self.titles) - 1) * self.pitch - self.bottom
+            self.offset = min(self.top_offset, max(bottom_offset, self.offset + vector[1]))
+
+    @staticmethod
+    def inspector(device, distance, move_step=None):
+        move_step = distance if move_step is None else move_step
+
+        class Fake(ShipyardDevelopment):
+            def _collapse_any_expanded_header(self):
+                return False
+
+            def _detect_header_ys(self):
+                return device._detect_header_ys()
+
+            def _scan_visible_tasks(self, header_ys=None):
+                return device._scan_visible_tasks(header_ys)
+
+            def _ocr_task_title(self, header_y):
+                return device._ocr_task_title(header_y)
+
+            def _scroll_task_list(self, direction=-1):
+                device.swipe_vector((0, direction * distance))
+                device.move((0, direction * move_step))
+
+        fake = Fake.__new__(Fake)
+        fake.device = device
+        return fake
+
+    def test_lookup_reaches_the_state_that_reads(self):
+        # The target row only reads cleanly in one viewport state (its header
+        # at the top of the panel, with the stage stroke dropped by cnocr).
+        # The sweep has to scroll into that state and stop there.
+        device = self.FakeScrollPanel(self.TITLES, readable_offsets=(-63,), offset=0)
+        inspector = self.inspector(device, distance=self.SWIPE_DISTANCE, move_step=90)
+        task = inspector._locate_visible_task('大型技术理论I')
+        self.assertEqual(task.header_y, 130)
+        self.assertEqual(inspector._task_key(task.title),
+                         inspector._task_key('大型技术理论I'))
+        self.assertTrue(device.swipes)
+
+    def test_a_panel_that_does_not_move_stops_instead_of_looping(self):
+        # No state of this panel reads, so the sweep must give up after the
+        # first swipe that fails to move the viewport instead of looping.
+        device = self.FakeScrollPanel(self.TITLES, readable_offsets=(), offset=0,
+                                      movable=False)
+        inspector = self.inspector(device, distance=self.SWIPE_DISTANCE, move_step=90)
+        with self.assertRaises(ScriptError):
+            inspector._locate_visible_task('大型技术理论I')
+        self.assertEqual(len(device.swipes), 1)
+
+
+class ShipyardDevelopmentRealFrameLocateTest(unittest.TestCase):
+    """The sweep has to work on the real CN panel geometry."""
+
+    class ScrollingPanel:
+        def __init__(self, image):
+            self.source = image
+            self.offset = 0
+            self.image = image
+            self.render()
+            self.swipes = []
+
+        def render(self):
+            out = self.source.copy()
+            top, bottom = 130, 558
+            out[top:bottom, 940:1280] = self.source[top + self.offset:bottom + self.offset, 940:1280]
+            self.image = out
+
+        def swipe_vector(self, vector, box=None, padding=None):
+            self.swipes.append(vector)
+
+        def move(self, vector):
+            self.offset = max(-160, min(160, self.offset + vector[1]))
+            self.render()
+
+        def sleep(self, seconds):
+            pass
+
+        def screenshot(self):
+            pass
+
+        def click(self, button):
+            raise AssertionError('the live frame needs no collapse click')
+
+    def test_live_panel_row_is_located_through_the_sweep(self):
+        root = Path(__file__).parents[1] / 'tests/fixtures'
+        image = cv2.cvtColor(cv2.imread(str(root / 'shipyard_alas_top_rows_20260925.png')),
+                             cv2.COLOR_BGR2RGB)
+        device = self.ScrollingPanel(image)
+        inspector = object.__new__(ShipyardDevelopment)
+        inspector.device = device
+        task = inspector._locate_visible_task('大型技术理论I')
+        self.assertEqual(inspector._task_key(task.title),
+                         inspector._task_key('大型技术理论I'))
+        self.assertIn(task.header_y, range(130, 559))
 
 
 if __name__ == '__main__':
