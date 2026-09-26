@@ -29,7 +29,19 @@ else:
     CARD_LEVEL_GRIDS = CARD_GRIDS.crop(area=(74, 5, 136, 27), name='LEVEL')
     CARD_EMOTION_GRIDS = CARD_GRIDS.crop(area=(21, 29, 71, 48), name='EMOTION')
 
-DOCK_SCROLL = Scroll(DOCK_SCROLL, color=(247, 211, 66), name='DOCK_SCROLL')
+# The generated CN/EN/TW DOCK_SCROLL asset runs to y=641, 15 px past the end of
+# the scrollbar track: on the archived 2026-09-26 crash frame the thumb bottoms
+# out at y=626 and the JP asset is already 78..628, i.e. the track is 550 px
+# tall.  A calibrated track that is too long makes cal_position() saturate
+# below 1.0 at the end of the list -- 0.945 for a 301 px thumb, 0.85 for the
+# 468 px thumb of that frame -- so at_bottom() never fires and set(1.0) keeps
+# swiping at an unreachable position until Device.click_record_check() aborts
+# the task with GameTooManyClickError.
+_DOCK_SCROLL_AREA = DOCK_SCROLL.area
+DOCK_SCROLL = Scroll(
+    (_DOCK_SCROLL_AREA[0], _DOCK_SCROLL_AREA[1], _DOCK_SCROLL_AREA[2],
+     min(_DOCK_SCROLL_AREA[3], _DOCK_SCROLL_AREA[1] + 550)),
+    color=(247, 211, 66), name='DOCK_SCROLL')
 
 OCR_DOCK_SELECTED = DigitCounter(DOCK_SELECTED, threshold=64, name='OCR_DOCK_SELECTED')
 
