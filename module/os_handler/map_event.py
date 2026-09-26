@@ -1,6 +1,6 @@
 from module.base.timer import Timer
 from module.combat.assets import *
-from module.combat.battle_result import handle_battle_result_screen
+from module.combat.battle_result import handle_battle_result_screen, handle_settlement_screen
 from module.exception import CampaignEnd
 from module.handler.assets import POPUP_CANCEL, POPUP_CONFIRM
 from module.logger import logger
@@ -152,6 +152,13 @@ class MapEventHandler(EnemySearchingHandler):
         # clicking the rank button there opens an unrelated panel.
         if not self.is_in_map() and handle_battle_result_screen(self):
             return 'battle_result'
+        # The settlement screen that follows that result screen is the second half of the same
+        # flow and no other handler of this function knows it.  It is not the map either, so a loop
+        # that waits for is_in_map() polls until the sixty second stuck check ends the task: live
+        # 2026-09-26 22:46:39 (dump log/error/1790433999346) and 2025-12-19 03:10:40, both in
+        # action_point_enter(), plus os_auto_search_daemon and os_auto_search_quit in the archive.
+        if not self.is_in_map() and handle_settlement_screen(self):
+            return 'settlement'
         if self.handle_map_get_items(drop=drop):
             return 'map_get_items'
         if self.handle_os_game_tips():
