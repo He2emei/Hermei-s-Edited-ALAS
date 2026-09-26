@@ -493,10 +493,10 @@ class ShipyardDevelopment(ShipyardUI):
         rows forever while the row at the panel boundary stays outside the
         readable band: three runs ended with `Development task is not visible`
         for a row that had just been enumerated (2026-09-25 07:27 alas2 and
-        10:20 alas, 2026-09-26 08:41 alas2).  The sweep below therefore stops as
-        soon as a swipe lands on a state it has already read, and a fingerprint
-        built from task identities rather than raw readings keeps OCR noise on
-        a title from looking like a new state.
+        10:20 alas, 2026-09-26 08:41 alas2).  The sweep below therefore ends one
+        direction as soon as that direction reads a state it has already read,
+        and a fingerprint built from task identities rather than raw readings
+        keeps OCR noise on a title from looking like a new state.
         """
         return (
             tuple(headers),
@@ -508,29 +508,47 @@ class ShipyardDevelopment(ShipyardUI):
         wanted = self._task_key(title)
         hull = HULL_SCULPT_ANCHOR in normalise_cn_task_title(title)
         # Earlier submissions/expansions can leave the viewport anywhere in its
-        # short range.  Search it to both ends, reading every frame on the way,
-        # and stop once a swipe no longer produces a state that has not been
-        # read already.  The previous version scrolled up twice and then only
-        # downward, so a row left just outside the readable band on the first
-        # frame could never be reached again.
+        # short range.  Search it to both ends, reading every frame on the way.
+        # A swipe that leaves the viewport where it already was means the panel
+        # is saturated at that end, not that the panel is immovable: the row can
+        # sit at the other end.  The sweep therefore probes the opposite
+        # direction too and only gives up after both ends have stopped moving.
+        # Giving up on the first saturated swipe is how a live run aborted with
+        # `Development task is not visible: 铁血主力技术测试I` (2026-09-26
+        # 21:41:15 alas2) while that row - the first of the list - was sitting at
+        # the panel top: the viewport was already at the bottom, so the downward
+        # probe could not move it, the first direction ended after a single
+        # swipe, the second one stopped on the state the first had just read and
+        # the row at the top was never sampled in a readable frame.
         self._collapse_any_expanded_header()
-        seen = set()
-        for direction in (1, -1):
-            for _ in range(20):
-                headers = self._detect_header_ys()
-                tasks = self._scan_visible_tasks(headers)
-                for task in tasks:
-                    if not hull and not task.index:
-                        continue
-                    if self._task_key(task.title) == wanted:
-                        if hull:
-                            return task
-                        return DevelopmentTask(0, title, False, task.header_y)
-                state = self._visible_frame_key(headers, tasks)
-                if state in seen:
-                    break
-                seen.add(state)
-                self._scroll_task_list(direction=direction)
+        # Per-direction state memory: a state already read while travelling one
+        # way says nothing about the other way, and the two directions share
+        # their starting frame.  Treating that shared frame as "already read"
+        # ended the opposite direction before it ever swiped.
+        read = {1: set(), -1: set()}
+        exhausted = [False, False]
+        while not all(exhausted):
+            for index, direction in enumerate((1, -1)):
+                for _ in range(20):
+                    headers = self._detect_header_ys()
+                    tasks = self._scan_visible_tasks(headers)
+                    for task in tasks:
+                        if not hull and not task.index:
+                            continue
+                        if self._task_key(task.title) == wanted:
+                            if hull:
+                                return task
+                            return DevelopmentTask(0, title, False, task.header_y)
+                    state = self._visible_frame_key(headers, tasks)
+                    if state in read[direction]:
+                        # This swipe did not move the viewport, so this
+                        # direction is saturated.  The opposite one still gets
+                        # its turn: the viewport is often parked at one end,
+                        # where the probe towards that same end cannot move it.
+                        exhausted[index] = True
+                        break
+                    read[direction].add(state)
+                    self._scroll_task_list(direction=direction)
         raise ScriptError(f'Development task is not visible: {title}')
 
     @classmethod
