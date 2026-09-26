@@ -172,22 +172,17 @@ class ShipyardDevelopment(ShipyardUI):
             tasks[i] = DevelopmentTask(0, task.title, task.complete, task.header_y)
         return tasks
 
-    # One swipe has to move the viewport by more than one compact task row.
-    # The panel keeps eight rows of 63px pitch in a 428px viewport, so the
-    # whole scrollable range is only about one row tall.  With a swipe shorter
-    # than that range the viewport can only reach two overlapping states, the
-    # scan keeps reading the same rows and the row sitting at the boundary
-    # stays outside the readable band forever - which is how three runs ended
-    # with `Development task is not visible` (2026-09-25 07:27 alas2 and
-    # 10:20 alas, 2026-09-26 08:41 alas2).  450px is inside the range the list
-    # box can carry (see `random_rectangle_vector_opted`), so every swipe is a
-    # full row of travel.
-    TASK_SCROLL_DISTANCE = 450
+    # On the CN panel, a full-height swipe starting at y=130/558 is sometimes
+    # swallowed by the task-list border.  Three live back-and-forth probes
+    # verified interior y=220<->520 reaches both endpoint viewports.
+    TASK_SCROLL_TOP = (1100, 220)
+    TASK_SCROLL_BOTTOM = (1100, 520)
 
     def _scroll_task_list(self, direction=-1):
-        self.device.swipe_vector(
-            (0, direction * self.TASK_SCROLL_DISTANCE), box=TASK_LIST_AREA, padding=-5
+        start, end = (self.TASK_SCROLL_TOP, self.TASK_SCROLL_BOTTOM) if direction > 0 else (
+            self.TASK_SCROLL_BOTTOM, self.TASK_SCROLL_TOP
         )
+        self.device.swipe(start, end, duration=(0.2, 0.3), name='SHIPYARD_TASK_SCROLL')
         self.device.sleep(0.6)
         self.device.screenshot()
 
