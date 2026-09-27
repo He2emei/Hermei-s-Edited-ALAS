@@ -2,6 +2,7 @@ from module.base.timer import Timer
 from module.combat.assets import *
 from module.combat.battle_result import handle_battle_result_screen, handle_settlement_screen
 from module.exception import CampaignEnd
+from module.handler.android_no_respond import handle_android_no_respond
 from module.handler.assets import POPUP_CANCEL, POPUP_CONFIRM
 from module.logger import logger
 from module.os.assets import GLOBE_GOTO_MAP
@@ -139,6 +140,13 @@ class MapEventHandler(EnemySearchingHandler):
         Returns:
             str: Event that handled
         """
+        # The emulator's Android "application not responding" dialog is a modal system window:
+        # every touch of the game behind it is swallowed and no other event of this handler can be
+        # handled while it is up, so it is dismissed first.  Live 2026-09-27 08:37:16 (dump
+        # log/error/1790469436812), where the same dialog made os_auto_search_quit() spend its
+        # twelve clicks on a reward panel that could not answer.
+        if handle_android_no_respond(self):
+            return 'android_no_respond'
         # The operation info page is a definite state (its close button is a template match), and
         # nothing else can be handled while it covers the map, so it is closed first.
         if self.handle_os_mission_page():
@@ -213,6 +221,13 @@ class MapEventHandler(EnemySearchingHandler):
         confirm_timer = Timer(1.2, count=3).start()
         cleared = False
         for _ in self.loop():
+            # The dialog of the emulator swallows the reward panel's click while it is up, and
+            # this branch comes before handle_map_event(), so it is checked here as well.  Without
+            # it the loop spends all twelve clicks of the device guard on a panel that cannot
+            # answer (live 2026-09-27 08:37:16, dump log/error/1790469436812).
+            if handle_android_no_respond(self):
+                confirm_timer.reset()
+                continue
             if self.appear(AUTO_SEARCH_REWARD, offset=(50, 50), interval=2):
                 # An info bar on this screen is the game saying it has no auto searchable event
                 # left, which is the end of the zone, so it is only looked at, never waited for.
