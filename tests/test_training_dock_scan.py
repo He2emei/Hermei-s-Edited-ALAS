@@ -32,9 +32,11 @@ frames and the settled-frame judgement.
 """
 import collections
 import unittest
+from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import patch
 
+import cv2
 import numpy as np
 
 from module.base.button import Button
@@ -43,9 +45,14 @@ from module.exception import GameTooManyClickError, RequestHumanTakeover
 from module.os.training import TrainingFleetManager
 from module.os.training_policy import ShipCandidate
 from module.os.training_ui import (TrainingShipInspector, catalog_name,
-                                   reading_similarity, same_dock_page)
+                                   reading_similarity, same_card_portrait,
+                                   same_dock_page)
+from module.retire.card_geometry import dock_cards
 from module.retire.dock import DOCK_SCROLL
 from module.ui.scroll import Scroll
+
+ROOT = Path(__file__).resolve().parent.parent
+LOCK_DOCK_FRAME = ROOT / 'tests/fixtures/opsi_lock_dock_alas2_20260925.png'
 
 # Positions measured on the crash frame: the thumb length, the calibrated
 # track and the highest position the scrollbar can report.
@@ -213,6 +220,81 @@ class ScanManager(TrainingFleetManager):
         self._raw_names = raw
         self._visible_cards = [card(f'CARD_{i}') for i in range(len(raw))]
         return [catalog_name(n) for n in raw]
+
+
+class FrameDevice:
+    """Device stub that serves one frame per dock page and keeps the guard.
+
+    ``click_record*`` come from :class:`Device`, so a runaway scan still fails
+    through the check that ended the production task.
+    """
+
+    click_record_add = Device.click_record_add
+    click_record_check = Device.click_record_check
+    click_record_clear = Device.click_record_clear
+
+    def __init__(self, frames):
+        self.frames = list(frames)
+        self.index = 0
+        self.image = self.frames[0]
+        self.click_record = collections.deque(maxlen=15)
+        self.swipes = []
+
+    def screenshot(self):
+        return self.image
+
+    def sleep(self, seconds):
+        return None
+
+    def click(self, button, control_check=True):
+        return None
+
+    def swipe(self, p1, p2, duration=(0.1, 0.2), name='SWIPE', distance_check=True):
+        self.click_record_add(name)
+        self.click_record_check()
+        self.swipes.append(name)
+        self.index = min(self.index + 1, len(self.frames) - 1)
+        self.image = self.frames[self.index]
+
+
+class PageScroll:
+    """DOCK_SCROLL stub whose position is one page per served frame."""
+
+    edge_threshold = 0.05
+    drag_threshold = 0.05
+
+    def __init__(self, device):
+        self.device = device
+
+    def cal_position(self, main):
+        return 0.0 if self.device.index == 0 else 0.99
+
+    def at_bottom(self, main):
+        return self.cal_position(main) > 1 - self.edge_threshold
+
+    def set_top(self, main):
+        self.device.index = 0
+        self.device.image = self.device.frames[0]
+
+    def next_page(self, main, page=0.45):
+        main.device.swipe((1239, 300), (1239, 430), name='DOCK_SCROLL')
+
+
+class FrameScanManager(TrainingFleetManager):
+    """TrainingFleetManager whose reads come from the frames of one dock."""
+
+    def __init__(self, device, scroll, cards, layouts, levels):
+        self.device = device
+        self.scroll = scroll
+        self.cards = cards
+        self.layouts = layouts
+        self.levels = levels
+
+    def _visible_names(self):
+        raw = list(self.layouts[self.device.index])
+        self._raw_names = raw
+        self._visible_cards = list(self.cards)
+        return [catalog_name(name) for name in raw]
 
 
 class VerifiedCardRelocationTest(unittest.TestCase):
@@ -417,6 +499,90 @@ class DockPageReadingTest(unittest.TestCase):
         self.assertFalse(same_dock_page(page, page[:2]))
         self.assertFalse(same_dock_page(page, []))
         self.assertFalse(same_dock_page([], page))
+
+
+class DuplicateCardPortraitTest(unittest.TestCase):
+    """One card read at two page positions must not be counted twice.
+
+    Production 2026-09-27 07:50:37 (alas, OpsiHazard1Leveling, deployment slot
+    6): the scan read ``喀琅施塔得`` level 1 at grid index 11, turned the page,
+    read the same card again at index 4 and stopped the scheduler.  The crop
+    origin of a match is the card top from ``dock_cards()``, the median of the
+    whole-pixel level-label detections of that row, so the same card can be
+    cropped a pixel or two apart between two page reads.  The archived frame
+    below is the live CN dock of the same flow.
+    """
+
+    @classmethod
+    def setUpClass(cls):
+        cls.image = cv2.cvtColor(cv2.imread(str(LOCK_DOCK_FRAME)), cv2.COLOR_BGR2RGB)
+        cls.cards = {card.name: card for card in dock_cards(cls.image)}
+
+    def portrait(self, name, shift=0):
+        x, y = self.cards[name].area[:2]
+        return self.image[y + 45 + shift:y + 150 + shift, x + 15:x + 120]
+
+    def test_a_one_pixel_row_offset_is_still_the_same_card(self):
+        base = self.portrait('TRAINING_CARD_4_302')
+        for shift in (1, 2, -1):
+            with self.subTest(shift=shift):
+                other = self.portrait('TRAINING_CARD_4_302', shift)
+                # The comparison used before the fix was `absdiff < 2`; on this
+                # frame one pixel of offset already measures 15.21, which is how
+                # one card became two matches.
+                self.assertGreaterEqual(cv2.absdiff(base, other).mean(), 2)
+                self.assertTrue(same_card_portrait(base, other))
+
+    def test_different_cards_are_not_merged(self):
+        for left, right in (('TRAINING_CARD_4_302', 'TRAINING_CARD_4_76'),
+                            ('TRAINING_CARD_0_302', 'TRAINING_CARD_0_76'),
+                            ('TRAINING_CARD_6_302', 'TRAINING_CARD_6_76')):
+            with self.subTest(left=left, right=right):
+                self.assertFalse(same_card_portrait(self.portrait(left),
+                                                    self.portrait(right)))
+
+    def test_an_unusable_crop_is_not_a_match(self):
+        self.assertFalse(same_card_portrait(None, self.portrait('TRAINING_CARD_4_76')))
+        self.assertFalse(same_card_portrait(self.portrait('TRAINING_CARD_4_76'), None))
+        self.assertFalse(same_card_portrait(np.zeros((10, 10, 3), dtype=np.uint8),
+                                            np.zeros((20, 20, 3), dtype=np.uint8)))
+
+
+class DuplicatePageScanTest(unittest.TestCase):
+    """The deployment scan has to survive that one-pixel offset end to end.
+
+    The two frames below carry the same dock content 227 px apart, so the target
+    card sits on grid row 2 in the first read and on grid row 1 in the second,
+    exactly as in the production log; the frame itself is shifted by one extra
+    pixel, which is what the per-row label detection rounding does in production.
+    """
+
+    def frames(self):
+        image = cv2.cvtColor(cv2.imread(str(LOCK_DOCK_FRAME)), cv2.COLOR_BGR2RGB)
+        cards = dock_cards(image)
+        return image, np.roll(image, -227, axis=0), cards
+
+    def test_one_card_on_two_page_reads_is_not_ambiguous(self):
+        image, shifted, cards = self.frames()
+        target = ShipCandidate('喀琅施塔得', '北联', 'vanguard', 1, True, False, None, 100, True)
+        # Read 1 sees the target on grid index 11, read 2 on index 4 (one row
+        # up), like the production log.
+        first = ['其他船'] * 14
+        first[11] = '喀琅施塔得'
+        second = ['其他船'] * 14
+        second[4] = '喀琅施塔得'
+
+        device = FrameDevice([image, shifted])
+        scroll = PageScroll(device)
+        manager = FrameScanManager(device, scroll, cards, [first, second], [1] * 14)
+
+        levels = SimpleNamespace(ocr=lambda frame: [1] * 14)
+        with patch('module.os.training.DOCK_SCROLL', scroll), \
+                patch('module.os.training.LevelOcr', return_value=levels), \
+                patch('module.os.training.dock_card_lock', return_value=True):
+            selected = manager._scan_selection(target)
+        self.assertEqual(selected.name, 'TRAINING_CARD_4_302')
+        self.assertEqual(len(device.swipes), 1)
 
 
 class DeploymentDockScanTest(unittest.TestCase):

@@ -13,7 +13,7 @@ from module.os.training_policy import ShipCandidate, ROTATION_SLOTS, decide_trai
 from module.os.deployment_cost import read_deployment_cost
 from module.os.training_ui import (TrainingShipInspector, DOCK_SCROLL,
                                    FILTER_FACTIONS, catalog_name, dock_card_lock, point_button, dock_cards,
-                                   same_dock_page)
+                                   same_card_portrait, same_dock_page)
 from module.retire.assets import DOCK_CHECK
 from module.retire.dock import OCR_DOCK_SELECTED
 from module.os_handler.assets import ORDER_ENTER
@@ -130,8 +130,12 @@ class TrainingFleetManager(TrainingShipInspector):
                         portrait = crop(self.device.image, (x + 15, y + 45, x + 120, y + 150), copy=True)
                         # A page turn overlaps one or two rows. Count the same
                         # card only once when it reappears at a new screen y.
-                        if not any(cv2.absdiff(portrait, old).mean() < 2
-                                   for old in match_images):
+                        # The crop origin is a whole-pixel row top, so the same
+                        # card can land a pixel or two off: the comparison has
+                        # to tolerate that or one card is counted twice and the
+                        # scan stops with 'Ambiguous duplicate deployment
+                        # cards'.
+                        if not any(same_card_portrait(portrait, old) for old in match_images):
                             matches.append(button)
                             match_images.append(portrait)
                 elif target is not None and name == target:
