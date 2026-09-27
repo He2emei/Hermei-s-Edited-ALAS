@@ -1,10 +1,9 @@
 from random import choice
 
-import cv2
-
 import module.config.server as server
+from module.base.button import Button
 from module.base.timer import Timer
-from module.base.utils import area_pad, rgb2luma
+from module.base.utils import area_pad
 from module.combat.assets import GET_ITEMS_1
 from module.exception import GameStuckError, ScriptError
 from module.logger import logger
@@ -20,6 +19,108 @@ if server.server != 'jp':
 else:
     OCR_DOCK_AMOUNT = DigitCounter(
         DOCK_AMOUNT, letter=(201, 201, 201), threshold=192)
+
+# Material slots of page_ship_enhance (CN 1280x720): 6 columns x 2 rows of 82x82
+# px cells on a 92x94 px pitch, inside ENHANCE_AREA_FULL.  Measured on archived
+# frames: the game draws the empty slot '+' at the centre of its cell (all ten
+# '+' of the 2026-05-13 frame sit within 1.6 px of these centres) and
+# EMPTY_ENHANCE_SLOT_PLUS's own asset area (737,402,773,437) is the first cell's
+# centre (1.9 px off).  The portrait templates TEMPLATE_ENHANCE_* are 42x18 /
+# 42x22 crops of the ship's eye region, which is *not* centred in the cell, so
+# anything derived from a portrait match has to be snapped back to this grid.
+ENHANCE_SLOT_ORIGIN = (713, 377)
+ENHANCE_SLOT_PITCH = (92, 94)
+ENHANCE_SLOT_SHAPE = (82, 82)
+ENHANCE_SLOT_GRID_SHAPE = (6, 2)
+ENHANCE_SLOT_COUNT = ENHANCE_SLOT_GRID_SHAPE[0] * ENHANCE_SLOT_GRID_SHAPE[1]
+
+# Search window around a cell centre when looking for the empty slot '+'.  The
+# game draws it within ~2 px of the centre, so 10 px is generous while staying
+# far below the 92 px pitch, i.e. a neighbouring slot can never be picked up.
+ENHANCE_SLOT_MATCH_OFFSET = 10
+# Archived frames match the '+' asset at 0.86-0.98; a filled slot reads 0.27 and
+# the material-selection list 0.51, so 0.8 keeps a margin on both sides.  A false
+# "empty" only skips a de-select, a false "filled" clicks an empty slot, which
+# opens the material-selection list.
+ENHANCE_SLOT_MATCH_SIMILARITY = 0.8
+
+# De-select clicks of one material slot.  Retries cover a swallowed touch, and
+# the budget keeps the loop from spinning: Device.click_record_check() aborts the
+# task after 12 clicks on one button.
+ENHANCE_DESELECT_MAX_CLICK = 3
+ENHANCE_DESELECT_CLICK_INTERVAL = 2
+
+# Bottom bar of the material-selection list (选择强化材料, 已选中 N/12) that a click
+# on an empty material slot opens.  Colors are the mean of the archived
+# 2026-09-27 frame; the ship detail page reads (116,118,133) and (94,96,108) at
+# the same areas, i.e. 102 and 96 apart in Photoshop tolerance.
+ENHANCE_SELECT_CANCEL = Button(
+    area=(714, 643, 886, 701), color=(176, 98, 91), button=(714, 643, 886, 701),
+    name='ENHANCE_SELECT_CANCEL')
+ENHANCE_SELECT_CONFIRM = Button(
+    area=(960, 660, 1080, 695), color=(100, 143, 198), button=(960, 660, 1080, 695),
+    name='ENHANCE_SELECT_CONFIRM')
+
+
+def enhance_slot_center(index):
+    """
+    Args:
+        index (int): Material slot index, row major, 0 to ENHANCE_SLOT_COUNT - 1
+
+    Returns:
+        tuple[float, float]: Center of that slot cell
+    """
+    row, col = divmod(index, ENHANCE_SLOT_GRID_SHAPE[0])
+    return (ENHANCE_SLOT_ORIGIN[0] + col * ENHANCE_SLOT_PITCH[0] + ENHANCE_SLOT_SHAPE[0] / 2,
+            ENHANCE_SLOT_ORIGIN[1] + row * ENHANCE_SLOT_PITCH[1] + ENHANCE_SLOT_SHAPE[1] / 2)
+
+
+def enhance_slot_area(index):
+    """
+    Args:
+        index (int): Material slot index, row major
+
+    Returns:
+        tuple: The area the game draws the empty slot '+' in, i.e. the clickable
+               centre of that material card.  Archived runs clicked there and
+               de-selected the material, so it is the verified click target.
+    """
+    cx, cy = enhance_slot_center(index)
+    w = EMPTY_ENHANCE_SLOT_PLUS.area[2] - EMPTY_ENHANCE_SLOT_PLUS.area[0]
+    h = EMPTY_ENHANCE_SLOT_PLUS.area[3] - EMPTY_ENHANCE_SLOT_PLUS.area[1]
+    return (int(round(cx - w / 2)), int(round(cy - h / 2)),
+            int(round(cx + w / 2)), int(round(cy + h / 2)))
+
+
+def enhance_slot_button(index):
+    """
+    Args:
+        index (int): Material slot index, row major
+
+    Returns:
+        Button: Clickable centre of that material card
+    """
+    area = enhance_slot_area(index)
+    return Button(area=area, color=(), button=area, name=f'ENHANCE_SLOT_{index}')
+
+
+def enhance_slot_index(area):
+    """
+    Args:
+        area (tuple): Area of a matched material card portrait
+
+    Returns:
+        int: Material slot index that area belongs to
+        None: If the area is not on the material slot grid
+    """
+    center = ((area[0] + area[2]) / 2, (area[1] + area[3]) / 2)
+    nearest = min(range(ENHANCE_SLOT_COUNT),
+                  key=lambda index: (enhance_slot_center(index)[0] - center[0]) ** 2
+                                    + (enhance_slot_center(index)[1] - center[1]) ** 2)
+    cx, cy = enhance_slot_center(nearest)
+    if ((cx - center[0]) ** 2 + (cy - center[1]) ** 2) ** 0.5 > max(ENHANCE_SLOT_PITCH) / 2:
+        return None
+    return nearest
 
 
 class Enhancement(Dock):
@@ -149,44 +250,123 @@ class Enhancement(Dock):
 
         return None
 
+    def _enhance_slot_empty(self, index):
+        """
+        Args:
+            index (int): Material slot index, row major
+
+        Returns:
+            bool: If that material slot currently shows the empty slot '+'
+        """
+        cx, cy = enhance_slot_center(index)
+        area = EMPTY_ENHANCE_SLOT_PLUS.area
+        dx = int(round(cx - (area[0] + area[2]) / 2))
+        dy = int(round(cy - (area[1] + area[3]) / 2))
+        offset = (dx - ENHANCE_SLOT_MATCH_OFFSET, dy - ENHANCE_SLOT_MATCH_OFFSET,
+                  dx + ENHANCE_SLOT_MATCH_OFFSET, dy + ENHANCE_SLOT_MATCH_OFFSET)
+        return EMPTY_ENHANCE_SLOT_PLUS.match(
+            self.device.image, offset=offset, similarity=ENHANCE_SLOT_MATCH_SIMILARITY)
+
+    def _enhance_selection_page(self):
+        """
+        Returns:
+            bool: If the material-selection list is open
+        """
+        return self.appear(ENHANCE_SELECT_CANCEL, threshold=30) \
+            and self.appear(ENHANCE_SELECT_CONFIRM, threshold=30)
+
+    def handle_enhance_selection_page(self):
+        """
+        Close the material-selection list (选择强化材料, 已选中 N/12), which a click
+        on an empty material slot opens.  It carries no ENHANCE_RECOMMEND, so no
+        other state of _enhance_choose() can leave it and the state machine would
+        spin on it until the 60s stuck check.
+
+        Pages:
+            in: material-selection list
+            out: page_ship_enhance
+
+        Returns:
+            bool: If the page appeared
+        """
+        if not self._enhance_selection_page():
+            return False
+
+        logger.info('Enhance material selection list is open, cancelling it')
+        self.interval_clear(ENHANCE_SELECT_CANCEL)
+        for _ in self.loop(timeout=5):
+            if not self._enhance_selection_page():
+                break
+            if self.appear_then_click(ENHANCE_SELECT_CANCEL, threshold=30, interval=1):
+                continue
+        else:
+            logger.warning('Enhance material selection list did not close')
+
+        if self._enhance_selection_page():
+            raise GameStuckError('Enhance material selection list cannot be cancelled')
+        return True
+
     def _enhance_deselect_cv(self):
         """
         De-select common rarity CV from enhance material slots
+
+        Pages:
+            in: page_ship_enhance
+            out: page_ship_enhance
         """
         cv = self._enhance_get_deselect_cv()
         if cv is None:
             return
 
-        logger.info(f'Enhance de-select common CV')
-        # get cv slot, outer pad from matched center
-        area = cv.area
-        center = ((area[0] + area[2]) / 2, (area[1] + area[3]) / 2)
-        radius = abs(EMPTY_ENHANCE_SLOT_PLUS.area[3] - EMPTY_ENHANCE_SLOT_PLUS.area[1]) / 2
-        radius = radius + 22
-        search = (center[0] - radius, center[1] - radius, center[0] + radius, center[1] + radius)
+        slot = enhance_slot_index(cv.area)
+        if slot is None:
+            logger.warning(f'Enhance de-select common CV: no material slot at {cv.area}')
+            return
 
+        logger.info(f'Enhance de-select common CV')
         self.interval_clear(ENHANCE_RECOMMEND, interval=2)
         EMPTY_ENHANCE_SLOT_PLUS.ensure_template()
-        EMPTY_ENHANCE_SLOT_PLUS.ensure_luma_template()
-        for _ in self.loop():
-            # if PLUS icon appear, slot is empty
-            image = self.image_crop(search, copy=False)
-            image = rgb2luma(image)
-            result = cv2.matchTemplate(EMPTY_ENHANCE_SLOT_PLUS.image_luma, image, cv2.TM_CCOEFF_NORMED)
-            _, similarity, _, _ = cv2.minMaxLoc(result)
-            if similarity > 0.75:
-                logger.info(f'Enhance de-select common CV done')
-                break
 
-            # if entered dock, meaning that slot is already empty
+        # Both the click and the exit test are anchored on the slot cell the
+        # portrait matched in, not on the portrait match itself.  The templates
+        # are 42x18 / 42x22 crops of the ship's eye region, which is not centred
+        # in the 82x82 cell, so a box around the match clips the '+' that the game
+        # draws at the cell centre: replayed on archived frames the old test
+        # needed the match within ~21 px of the centre and returned 0.47 instead
+        # of 0.91 beyond that.  A missed de-select then re-clicked the same spot,
+        # which is the empty slot's '+' once the material is gone; that click
+        # opens the material-selection list, and 12 runs between 2026-09-09 and
+        # 2026-09-27 died there on the 60s stuck check.
+        clicked = 0
+        click_timer = Timer(ENHANCE_DESELECT_CLICK_INTERVAL, count=1).start()
+        for _ in self.loop():
+            # Upstream handles entering the dock after an already empty slot is
+            # clicked; normalize that page before testing the material cell.
             if self.appear(DOCK_CHECK, offset=(20, 20)):
                 logger.info('Enhance de-select entered dock')
                 self._enhance_exit_dock()
                 logger.info('Enhance de-select common CV done (exit from dock)')
                 break
-            if self.appear(ENHANCE_RECOMMEND, offset=(5, 5), interval=5):
-                self.device.click(cv)
-                continue
+            if self._enhance_slot_empty(slot):
+                logger.info(f'Enhance de-select common CV done')
+                break
+
+            # Click only while that cell still holds the common CV: clicking an
+            # empty slot opens the material-selection list.
+            located = self._enhance_get_deselect_cv()
+            if located is None:
+                logger.info('Enhance de-select common CV done, no common CV material left')
+                break
+            if enhance_slot_index(located.area) != slot:
+                logger.info('Enhance de-select common CV done, common CV is not in that slot anymore')
+                break
+            if clicked >= ENHANCE_DESELECT_MAX_CLICK:
+                logger.warning('Enhance de-select common CV failed, material still selected')
+                break
+            if click_timer.reached():
+                self.device.click(enhance_slot_button(slot))
+                clicked += 1
+                click_timer.reset()
 
     def _enhance_exit_dock(self):
         for _ in self.loop():
@@ -244,6 +424,12 @@ class Enhancement(Dock):
             return "state_enhance_ready"
 
         def state_enhance_recommend():
+            # The material-selection list can be left open by a click on an empty
+            # material slot; close it before judging the slots, nothing else in
+            # this state machine can leave that page.
+            if self.handle_enhance_selection_page():
+                return "state_enhance_recommend"
+
             # Judge if enhance material appeared
             if not EMPTY_ENHANCE_SLOT_PLUS.match(self.device.image, offset=(20, 20)):
                 if self._retire_keep_common_cv:
