@@ -6,6 +6,7 @@ from module.combat.battle_result import handle_battle_result_screen, handle_comb
 from module.exception import (GameNotRunningError, GamePageUnknownError,
                               RequestHumanTakeover)
 from module.exercise.assets import EXERCISE_PREPARATION
+from module.handler.android_no_respond import handle_android_no_respond
 from module.handler.assets import (AUTO_SEARCH_MENU_EXIT, BATTLE_PASS_NEW_SEASON, BATTLE_PASS_NOTICE, GAME_TIPS,
                                    LOGIN_ANNOUNCE, LOGIN_ANNOUNCE_2, LOGIN_CHECK, LOGIN_RETURN_SIGN,
                                    MAINTENANCE_ANNOUNCE, MONTHLY_PASS_NOTICE)
@@ -196,6 +197,13 @@ class UI(InfoHandler):
 
             # Unknown page but able to handle
             logger.info("Unknown ui page")
+            # The emulator's Android "application not responding" dialog is not a page either, and
+            # it swallows every touch of the game while it is up, so every page check fails while
+            # it is on the display.  Dismissing it lets the poll see the page the game is really
+            # on instead of ending in GamePageUnknownError.
+            if handle_android_no_respond(self):
+                timeout.reset()
+                continue
             # A battle that is still running is not a page either, and its HUD covers the
             # screen until it is left. It is there when a scheduler is restarted during a
             # combat - the guard does exactly that when it finds a stopped scheduler, so the

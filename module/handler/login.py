@@ -9,6 +9,7 @@ from uiautomator2.xpath import XPath, XPathSelector
 import module.config.server as server
 from module.base.timer import Timer
 from module.base.utils import color_similarity_2d, crop
+from module.handler.android_no_respond import handle_android_no_respond
 from module.handler.assets import *
 from module.logger import logger
 from module.map.assets import *
@@ -71,11 +72,12 @@ class LoginHandler(UI):
             if login_page and not login_success:
                 logger.info('Login success')
                 login_success = True
-            if self.appear(ANDROID_NO_RESPOND, offset=(30, 30), interval=5):
-                logger.warning('Emulator no respond')
-                self.device.click_record_add(ANDROID_NO_RESPOND)
-                self.device.click_record_check()
-                self.device.click(ANDROID_NO_RESPOND, control_check=False)
+            # The emulator's Android "application not responding" dialog swallows every touch
+            # while it is up, and the app under it may already be answering again.  The login loop
+            # was the only place that answered the dialog (and only in its light appearance), so
+            # the handler now lives in module/handler/android_no_respond.py and is shared with the
+            # game loops that were blocked by it.
+            if handle_android_no_respond(self):
                 continue
             if self.appear_then_click(LOGIN_ANNOUNCE, offset=(30, 30), interval=5):
                 continue
