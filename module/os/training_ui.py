@@ -129,6 +129,39 @@ def same_dock_page(previous, current, threshold=0.5):
                for left, right in zip(previous, current))
 
 
+def same_card_portrait(left, right, tolerance=2.0, search=2):
+    """Whether two dock portraits show the same card art.
+
+    ``_scan_selection()`` counts a card once per page read by comparing the
+    portrait crop of every match against the crops it already holds.  The crop
+    origin is the card top from ``dock_cards()``, which is the median of the
+    whole-pixel level-label detections of that row, so the same card read at two
+    page positions can be cropped a pixel or two apart.  Measured on the
+    archived CN dock frame ``tests/fixtures/opsi_lock_dock_alas2_20260925.png``,
+    one pixel of offset already gives a mean absdiff of 15.21 on a card
+    portrait, while the exact comparison used before required less than 2: that
+    is how the 2026-09-27 07:50:37 ``alas`` deployment scan counted one card
+    twice and stopped the scheduler with ``Ambiguous duplicate deployment
+    cards``.  Different portraits stay far apart after the same shift search
+    (measured 60.0 and above on neighbouring cards of that frame), so a real
+    duplicate is still reported.
+    """
+    if left is None or right is None or left.shape != right.shape:
+        return False
+    height, width = left.shape[:2]
+    for dy in range(-search, search + 1):
+        for dx in range(-search, search + 1):
+            top, bottom = max(0, dy), min(height, height + dy)
+            left_col, right_col = max(0, dx), min(width, width + dx)
+            window = left[top:bottom, left_col:right_col]
+            shifted = right[top - dy:bottom - dy, left_col - dx:right_col - dx]
+            if not window.size or window.shape != shifted.shape:
+                continue
+            if cv2.absdiff(window, shifted).mean() < tolerance:
+                return True
+    return False
+
+
 def catalog_name(text):
     name = normalise_name(text)
     # Exact cnocr substitution verified against the 2026-09-08 detail screenshot.
