@@ -131,9 +131,12 @@ class TrainingFleetManager(TrainingShipInspector):
                         # A page turn overlaps one or two rows. Count the same
                         # card only once when it reappears at a new screen y.
                         # The crop origin is a whole-pixel row top, so the same
-                        # card can land a pixel or two off: the comparison has
-                        # to tolerate that or one card is counted twice and the
-                        # scan stops with 'Ambiguous duplicate deployment
+                        # card can land a pixel or two off *and* a fraction of a
+                        # pixel off: the dock grid is rasterised at fractional
+                        # positions (measured row pitch 226.44 px), so no integer
+                        # offset aligns the two crops of one card. The comparison
+                        # has to tolerate both or one card is counted twice and
+                        # the scan stops with 'Ambiguous duplicate deployment
                         # cards'.
                         if not any(same_card_portrait(portrait, old) for old in match_images):
                             matches.append(button)
