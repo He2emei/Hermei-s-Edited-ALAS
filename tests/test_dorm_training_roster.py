@@ -17,7 +17,8 @@ from unittest.mock import Mock, patch
 import cv2
 
 from module.base.timer import Timer
-from module.dorm.training import (ROSTER_CLOSE_AREA, ROSTER_CLOSE_FALLBACK, DormTraining,
+from module.combat.level import LevelOcr
+from module.dorm.training import (DORM_COUNT, ROSTER_CLOSE_AREA, ROSTER_CLOSE_FALLBACK, DormTraining,
                                   dismiss_training_roster, locate_roster_close,
                                   roster_close_timer)
 from module.exception import GamePageUnknownError, GameTooManyClickError, RequestHumanTakeover
@@ -30,6 +31,7 @@ ROSTER_OPEN = FIXTURES / 'roster-open-0350.png'
 # 2026-01-12 23:56:56, dump log/error/1768233416586, OpsiHazard1Leveling: the same
 # roster left open on the rest tab, where the training header is absent.
 ROSTER_REST_TAB = FIXTURES / 'roster-rest-tab-0112.png'
+ROSTER_ALAS2_DRAFT = FIXTURES / 'roster-alas2-20260929.png'
 OTHER_PAGE = Path(__file__).parent / 'fixtures' / 'new_ship_page' / 'campaign-map.png'
 
 
@@ -270,6 +272,48 @@ class UiGetCurrentPageEscapeTest(RosterTimerCase):
             ui.ui_get_current_page()
         self.assertEqual(len(device.clicks), 12)
         self.assertTrue(all(str(button) == 'DORM_TRAINING_CLOSE' for button in device.clicks))
+
+
+class RosterLevelInspectionTest(unittest.TestCase):
+    def _runner(self, image):
+        runner = DormTraining.__new__(DormTraining)
+        runner.device = SimpleNamespace(image=image, screenshot=Mock(), click=Mock())
+        runner._open_training = Mock()
+        runner._wait = Mock()
+        runner._detail_from_slot = Mock(
+            side_effect=lambda slot: SimpleNamespace(name=f'Ship{slot}'))
+        return runner
+
+    def test_real_header_ocr_misses_the_occupied_sixth_slot(self):
+        image = load_frame(ROSTER_ALAS2_DRAFT)
+        self.assertEqual(DORM_COUNT.ocr(image), (6, 0, 6))
+        levels = LevelOcr([(222+i*170, 208, 295+i*170, 238) for i in range(6)],
+                          name='DormRosterHeaderRegression').ocr(image)
+        self.assertEqual(levels, [20, 20, 116, 116, 116, 0])
+
+    def test_inspect_roster_uses_real_body_levels_for_all_six_slots(self):
+        runner = self._runner(load_frame(ROSTER_ALAS2_DRAFT))
+        self.assertEqual(runner._read_roster_levels(6), [120, 120, 116, 116, 116, 72])
+
+        ships, capacity = runner.inspect_roster()
+
+        self.assertEqual(capacity, 6)
+        self.assertEqual(list(ships), [1, 2, 3, 4, 5, 6])
+        self.assertEqual([ships[slot].name for slot in ships],
+                         ['Ship1', 'Ship2', 'Ship3', 'Ship4', 'Ship5', 'Ship6'])
+        self.assertEqual([call[0][0] for call in runner._detail_from_slot.call_args_list],
+                         [1, 2, 3, 4, 5, 6])
+
+    def test_missing_body_level_fails_closed_instead_of_assuming_capacity(self):
+        image = load_frame(ROSTER_ALAS2_DRAFT)
+        image[493:516, 257+5*170:296+5*170] = 0
+        runner = self._runner(image)
+
+        with self.assertRaises(RequestHumanTakeover):
+            runner.inspect_roster()
+
+        runner._detail_from_slot.assert_not_called()
+        runner.device.click.assert_not_called()
 
 
 class CloseTrainingRetryTest(unittest.TestCase):

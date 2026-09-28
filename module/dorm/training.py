@@ -10,7 +10,7 @@ from module.dorm.training_policy import plan_dorm_rotation, should_awaken_in_dor
 from module.equipment.assets import EQUIPMENT_OPEN
 from module.exception import RequestHumanTakeover
 from module.logger import logger
-from module.ocr.ocr import Ocr, DigitCounter
+from module.ocr.ocr import Ocr, Digit, DigitCounter
 from module.os.training_policy import decide_trainability
 from module.os.training_ui import TrainingShipInspector, point_button, catalog_name
 from module.retire.card_geometry import dock_cards
@@ -200,6 +200,12 @@ class DormTraining(TrainingShipInspector):
                 previous = (current, capacity)
         raise RequestHumanTakeover('Dorm occupied/unlocked slot count is uncertain')
 
+    def _read_roster_levels(self, capacity):
+        """Read occupied card levels from the body, below the clipped banners."""
+        areas = [(257 + i * 170, 493, 296 + i * 170, 516) for i in range(capacity)]
+        return Digit(areas, letter=(210, 210, 210), threshold=128,
+                     name='DormRosterBodyLevels').ocr(self.device.image)
+
     def _detail_from_slot(self, slot):
         for _ in range(3):
             if not self._training_visible():
@@ -222,8 +228,7 @@ class DormTraining(TrainingShipInspector):
     def inspect_roster(self):
         self._open_training()
         current, capacity = self._counts()
-        levels = LevelOcr([(round(142+i*170)+80, 208, round(142+i*170)+153, 238)
-                           for i in range(capacity)], name='DormRosterLevels').ocr(self.device.image)
+        levels = self._read_roster_levels(capacity)
         if not isinstance(levels, list):
             levels = [levels]
         occupied = [i+1 for i, level in enumerate(levels) if 1 <= level <= 125]
