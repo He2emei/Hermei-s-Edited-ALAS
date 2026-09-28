@@ -5,6 +5,7 @@ from functools import lru_cache
 from pathlib import Path
 
 import cv2
+import numpy as np
 
 from module.awaken.awaken import Awaken
 from module.awaken.assets import OCR_SHIP_LEVEL
@@ -129,7 +130,7 @@ def same_dock_page(previous, current, threshold=0.5):
                for left, right in zip(previous, current))
 
 
-def same_card_portrait(left, right, tolerance=2.0, search=2):
+def same_card_portrait(left, right, tolerance=2.0, search=3, correlation=0.8):
     """Whether two dock portraits show the same card art.
 
     ``_scan_selection()`` counts a card once per page read by comparing the
@@ -145,10 +146,38 @@ def same_card_portrait(left, right, tolerance=2.0, search=2):
     cards``.  Different portraits stay far apart after the same shift search
     (measured 60.0 and above on neighbouring cards of that frame), so a real
     duplicate is still reported.
+
+    The whole-pixel search alone is not enough.  The CN dock rasterises its grid
+    at fractional positions: on the archived frames the card top border starts
+    at y=74.9 on the upper row and at y=301.34 on the lower one, i.e. a row
+    pitch of 226.44 px, and the 105x105 crop origin is then rounded to a whole
+    pixel by the label detection.  One row of page turn therefore leaves a
+    fraction of a pixel of phase between the two crops of one card, and no
+    integer offset can align them: on dump 1789964197466 (2026-09-21 12:16:37)
+    the same card read on the two rows measures a mean absdiff of 10.04 (8.89
+    at a 226.5 px turn, 12.06 on the alas2 fixture) at every offset of the
+    search, so the 2026-09-28 19:16:39 ``alas`` scan counted the card twice and
+    stopped with the same ``Ambiguous duplicate deployment cards: 喀琅施塔得
+    level 1``.  The zero-mean normalised correlation of the same pair is 0.95 to
+    0.98 there, and it stays above 0.946 for every card of those frames over the
+    whole 0..1 px phase range, while 839 pairs of *different* ships measured on
+    the archived dock frames stay at or below 0.441 (their mean absdiff is 60
+    and above).  Two copies of one ship carry identical art and score ~1.0 under
+    both criteria, so a genuine same-name same-level duplicate is still merged,
+    exactly as before.
+
+    Both criteria run over the same offsets: the absdiff one accepts crops that
+    are aligned to the pixel (and identical flat crops), the correlation one
+    accepts the fractional phase the dock actually produces.  An unusable crop
+    or a window without contrast yields no correlation and stays a non-match, so
+    an unknown comparison is never silently treated as one card.
     """
     if left is None or right is None or left.shape != right.shape:
         return False
     height, width = left.shape[:2]
+    first = left.astype('float32')
+    second = right.astype('float32')
+    best = -1.0
     for dy in range(-search, search + 1):
         for dx in range(-search, search + 1):
             top, bottom = max(0, dy), min(height, height + dy)
@@ -159,7 +188,16 @@ def same_card_portrait(left, right, tolerance=2.0, search=2):
                 continue
             if cv2.absdiff(window, shifted).mean() < tolerance:
                 return True
-    return False
+            first_window = first[top:bottom, left_col:right_col].ravel()
+            second_window = second[top - dy:bottom - dy, left_col - dx:right_col - dx].ravel()
+            first_window = first_window - first_window.mean()
+            second_window = second_window - second_window.mean()
+            denominator = float(np.sqrt(float((first_window * first_window).sum())
+                                       * float((second_window * second_window).sum())))
+            if denominator <= 0:
+                continue
+            best = max(best, float((first_window * second_window).sum()) / denominator)
+    return best >= correlation
 
 
 def catalog_name(text):
