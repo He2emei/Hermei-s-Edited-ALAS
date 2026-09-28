@@ -205,7 +205,9 @@ def catalog_name(text):
     # Exact cnocr substitution verified against the 2026-09-08 detail screenshot.
     # The 2026-09-25 CN detail for 白龙 is read as 一白龙 by cnocr;
     # the dock card and the visible detail title both confirm 白龙.
-    name = {'朝咀': '朝凪', '一白龙': '白龙'}.get(name, name)
+    # The 2026-09-29 ALAS2 dorm detail reads this verified variant's μ as u.
+    name = {'朝咀': '朝凪', '一白龙': '白龙',
+            '大青花鱼(u兵装)': '大青花鱼(μ兵装)'}.get(name, name)
     # This combined character's name scrolls beyond the detail label width.
     # The distinctive exact prefix is verified in current-slot6.png.
     if '八舞耶俱矢八舞' in name.replace('·', ''):
@@ -290,7 +292,10 @@ class TrainingShipInspector(Awaken):
                 continue
             values = cv2.matchTemplate(crop(self.device.image, (285, 57, 425, 90)), star, cv2.TM_CCOEFF_NORMED)
             stars = 0
-            while float(values.max()) > 0.82:
+            # The fifth gold star in the verified 2026-09-29 μ detail scores
+            # 0.813 (background/glow); unfilled stars in the archived Azuma fixture
+            # stay below 0.39. Keep the color template, allowing that small drift.
+            while float(values.max()) > 0.80:
                 _, _, _, (x, _) = cv2.minMaxLoc(values)
                 stars += 1
                 values[:, max(0, x - 12):x + 13] = 0
