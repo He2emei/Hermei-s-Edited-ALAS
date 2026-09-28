@@ -160,6 +160,20 @@ class ShipyardDevelopment(ShipyardUI):
         # Their suffix OCR is unreliable (II is repeatedly read as I), so the
         # upper/lower visible row is the authoritative stage. A lone hull row
         # has no safe stage identity until both rows are visible together.
+        # These known breakthrough families can have nonadjacent stage I/II
+        # rows. cnocr can read both suffixes as I, so the upper/lower visible row
+        # is authoritative only when a complete same-family pair is on screen.
+        for anchor in ('先锋技术突破', '主力技术突破'):
+            breakthrough_rows = [
+                i for i, task in enumerate(tasks)
+                if normalise_cn_task_title(task.title) in (anchor, anchor + 'I', anchor + 'II')
+            ]
+            if len(breakthrough_rows) == 2:
+                for stage, i in enumerate(breakthrough_rows, 1):
+                    task = tasks[i]
+                    tasks[i] = DevelopmentTask(
+                        task.index, anchor + ('I' if stage == 1 else 'II'),
+                        task.complete, task.header_y)
         hull_rows = [i for i, task in enumerate(tasks) if HULL_SCULPT_ANCHOR in task.title]
         if len(hull_rows) == 2:
             for stage, i in enumerate(hull_rows, 1):
