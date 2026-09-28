@@ -363,6 +363,35 @@ class TrainingUiReviewTest(unittest.TestCase):
         self.assertEqual(ship.level_cap, 120)
         self.assertIsNone(ship.stored_exp)
 
+    def test_live_albacore_mu_detail_keeps_variant_identity(self):
+        path = ROOT / 'tests/fixtures/dorm_albacore_mu_detail_20260929.png'
+        image = cv2.cvtColor(cv2.imread(str(path)), cv2.COLOR_BGR2RGB)
+        inspector = TrainingShipInspector.__new__(TrainingShipInspector)
+        inspector.config = SimpleNamespace(SERVER='cn')
+        inspector.device = SimpleNamespace(image=image, screenshot=lambda: None)
+        inspector.appear = lambda *args, **kwargs: True
+        ship = inspector.read_ship()
+        self.assertEqual(ship.name, '大青花鱼(μ兵装)')
+        self.assertNotEqual(ship.name, catalog_name('大青花鱼'))
+        self.assertIsNone(catalog_name('未知舰船(u兵装)'))
+        self.assertEqual((ship.faction, ship.position, ship.level), ('白鹰', 'submarine', 120))
+        self.assertTrue(ship.is_locked)
+        self.assertTrue(ship.fully_limit_broken)
+        self.assertEqual((ship.stored_exp, ship.level_cap), (0, 120))
+
+    def test_live_incomplete_stars_remain_incomplete(self):
+        path = ROOT / 'tests/fixtures/opsi_locked_musashi_alas2_20260925.png'
+        image = cv2.cvtColor(cv2.imread(str(path)), cv2.COLOR_BGR2RGB)
+        inspector = TrainingShipInspector.__new__(TrainingShipInspector)
+        inspector.config = SimpleNamespace(SERVER='cn')
+        inspector.device = SimpleNamespace(image=image, screenshot=lambda: None)
+        inspector.appear = lambda *args, **kwargs: True
+        ship = inspector.read_ship()
+        # The legacy fixture filename says Musashi, but the actual title is Azuma.
+        self.assertEqual(ship.name, '吾妻')
+        self.assertTrue(ship.is_locked)
+        self.assertFalse(ship.fully_limit_broken)
+
     def test_live_locked_and_unlocked_detail_labels(self):
         for filename, expected in (
                 ('opsi_locked_musashi_alas2_20260925.png', True),
