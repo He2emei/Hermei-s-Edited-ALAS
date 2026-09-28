@@ -1,5 +1,5 @@
 from typing import Tuple
-from module.base.button import ButtonGrid
+from module.base.button import Button, ButtonGrid
 from module.base.decorator import cached_property
 from module.base.timer import Timer
 from module.base.utils import random_rectangle_vector
@@ -23,6 +23,18 @@ OS_SHOP_SCROLL.edge_threshold = 0.1
 
 
 class OSShopUI(UI):
+    def os_shop_wait_list_stable(self, skip_first_screenshot=False):
+        """Wait for the visible product list to stop changing before reading it."""
+        checker = Button(
+            area=(350, 210, 1182, 700), color=(), button=(350, 210, 1182, 700),
+            name='OS_SHOP_LIST_STABLE')
+        self.wait_until_stable(
+            checker,
+            timer=Timer(0.5, count=3).start(),
+            timeout=Timer(3, count=12).start(),
+            skip_first_screenshot=skip_first_screenshot,
+        )
+
     def os_shop_load_ensure(self, skip_first_screenshot=True):
         """
         Switching between sidebar clicks for some
@@ -99,6 +111,7 @@ class OSShopUI(UI):
         logger.info(f'OpsiShop side navbar set to {upper or bottom}')
         self.os_shop_load_ensure()
         self._os_shop_side_navbar.set(self, upper=upper, bottom=bottom)
+        self.os_shop_wait_list_stable(skip_first_screenshot=False)
 
     def init_slider(self) -> Tuple[float, float]:
         """Initialize the slider
@@ -113,7 +126,8 @@ class OSShopUI(UI):
         retry.start()
         while not OS_SHOP_SCROLL.at_top(main=self):
             logger.info('Scroll does not at top, try to scroll')
-            OS_SHOP_SCROLL.set_top(main=self)
+            OS_SHOP_SCROLL.set_top(main=self, skip_first_screenshot=False)
+            self.os_shop_wait_list_stable(skip_first_screenshot=False)
             if retry.reached():
                 raise GameStuckError('Scroll drag page error.')
         return -1.0, 0.0
@@ -151,6 +165,7 @@ class OSShopUI(UI):
             while True:
                 logger.warning('Scroll does not drag success, retrying scroll')
                 OS_SHOP_SCROLL.next_page(main=self, page=0.5, skip_first_screenshot=False)
+                self.os_shop_wait_list_stable(skip_first_screenshot=False)
                 cur_pos = OS_SHOP_SCROLL.cal_position(main=self)
                 if pre_pos != cur_pos:
                     logger.info(f'Scroll success drag page to {cur_pos}')
