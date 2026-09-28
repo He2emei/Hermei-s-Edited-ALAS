@@ -850,14 +850,18 @@ class ShipyardDevelopmentRealFrameLocateTest(unittest.TestCase):
     MAX_OFFSET = 46
 
     class ScrollingPanel:
-        def __init__(self, image, offset=0):
+        def __init__(self, image, offset=0, alternate_image=None):
             self.source = image
+            self.alternate_image = alternate_image
             self.offset = offset
             self.image = image
             self.render()
             self.swipes = []
 
         def render(self):
+            if self.alternate_image is not None and self.offset:
+                self.image = self.alternate_image.copy()
+                return
             out = self.source.copy()
             top, bottom = 130, 558
             out[top:bottom, 940:1280] = self.source[top + self.offset:bottom + self.offset, 940:1280]
@@ -898,6 +902,42 @@ class ShipyardDevelopmentRealFrameLocateTest(unittest.TestCase):
         self.assertEqual(inspector._task_key(task.title),
                          inspector._task_key('大型技术理论I'))
         self.assertIn(task.header_y, range(130, 559))
+
+    def test_breakthrough_pair_is_recovered_and_second_stage_located_live(self):
+        root = Path(__file__).parents[1] / 'tests/fixtures'
+        image = cv2.cvtColor(cv2.imread(str(root / 'shipyard_breakthrough_stages_20260929.png')),
+                             cv2.COLOR_BGR2RGB)
+        probe = self.inspector(self.ScrollingPanel(image))
+        self.assertEqual(probe._ocr_task_title(257), '先锋技术突破I')
+        self.assertEqual(probe._ocr_task_title(447), '先锋技术突破I')
+
+        visible = probe._scan_visible_tasks()
+        breakthrough = [task for task in visible if task.title.startswith('先锋技术突破')]
+        self.assertEqual([(task.title, task.header_y) for task in breakthrough],
+                         [('先锋技术突破I', 257), ('先锋技术突破II', 447)])
+
+        task = probe._locate_visible_task('先锋技术突破II')
+        self.assertEqual(task.header_y, 447)
+        self.assertEqual(probe._task_key(task.title),
+                         probe._task_key('先锋技术突破II'))
+
+    def test_breakthrough_pair_is_enumerated_as_distinct_tasks(self):
+        root = Path(__file__).parents[1] / 'tests/fixtures'
+        image = cv2.cvtColor(cv2.imread(str(root / 'shipyard_breakthrough_stages_20260929.png')),
+                             cv2.COLOR_BGR2RGB)
+        bottom = cv2.cvtColor(cv2.imread(str(root / 'shipyard_alas_bottom_rows_20260925.png')),
+                              cv2.COLOR_BGR2RGB)
+        # The new archived frame captures the same panel at its upper end; the
+        # existing archived lower-end frame supplies the eighth row to the
+        # established two-end ScrollingPanel sweep.
+        inspector = self.inspector(self.ScrollingPanel(image, alternate_image=bottom))
+
+        tasks = inspector._read_all_tasks()
+
+        breakthrough = [task for task in tasks if task.title.startswith('先锋技术突破')]
+        self.assertEqual(len(tasks), 8)
+        self.assertEqual({task.title for task in breakthrough},
+                         {'先锋技术突破I', '先锋技术突破II'})
 
     def test_live_first_row_is_located_from_the_bottom_state(self):
         # The live 2026-09-26 21:41:15 failure: the sweep had to find the first
