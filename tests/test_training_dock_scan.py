@@ -61,6 +61,24 @@ TRACK_END = 0.9450757575757576
 # Thumb colour measured on the archived frames (the calibrated colour is
 # (247, 211, 66), which color_similarity_2d matches with 34 levels of slack).
 THUMB_COLOR = (244, 206, 65)
+# Row pitch of the CN dock grid, measured from the card top border of the
+# archived frames: it starts at y=74.9 on the upper row and at y=301.34 on the
+# lower one.  A page turn moves the content by exactly this, not by a whole
+# number of pixels.
+DOCK_ROW_PITCH = 226.44
+
+
+def card_portrait(image, button):
+    """The 105x105 portrait crop ``_scan_selection()`` compares."""
+    x, y = button.area[:2]
+    return image[y + 45:y + 150, x + 15:x + 120]
+
+
+def turn_page(image, distance=DOCK_ROW_PITCH):
+    """Turn the dock by one row at the pitch the game actually rasterises."""
+    matrix = np.float32([[1, 0, 0], [0, 1, -distance]])
+    return cv2.warpAffine(image, matrix, (image.shape[1], image.shape[0]),
+                          flags=cv2.INTER_LINEAR)
 
 
 def card(name):
@@ -547,6 +565,50 @@ class DuplicateCardPortraitTest(unittest.TestCase):
         self.assertFalse(same_card_portrait(np.zeros((10, 10, 3), dtype=np.uint8),
                                             np.zeros((20, 20, 3), dtype=np.uint8)))
 
+    def test_a_fractional_page_turn_is_still_the_same_card(self):
+        """The dock grid is rasterised at fractional positions.
+
+        Production 2026-09-28 19:16:39 (alas, deployment slot 6): the scan read
+        the target at grid index 11, turned the page by one row and read it
+        again at index 4.  The card top border of this frame starts at y=74.9 on
+        the upper row and at y=301.34 on the lower one, so the turn leaves the
+        two crops a fraction of a pixel apart: measured below, the mean absdiff
+        of that pair is ~12 at every offset of the search, which is why the
+        whole-pixel comparison counted one card twice.
+        """
+        for distance in (DOCK_ROW_PITCH, 226.5, 226.0, 227.0):
+            with self.subTest(distance=distance):
+                turned = turn_page(self.image, distance)
+                turned_cards = dock_cards(turned)
+                target = [c for c in self.cards.values()
+                          if c.area[1] == max(c.area[1] for c in self.cards.values())][4]
+                # the same card after the turn: same column, one row up
+                same = [c for c in turned_cards
+                        if c.area[0] == target.area[0]
+                        and c.area[1] == min(c.area[1] for c in turned_cards)][0]
+                base = card_portrait(self.image, target)
+                other = card_portrait(turned, same)
+                if distance in (226.0, 227.0):
+                    # a whole-pixel turn keeps the crops aligned, which the
+                    # exact comparison already handled
+                    self.assertEqual(cv2.absdiff(base, other).mean(), 0)
+                else:
+                    self.assertGreaterEqual(cv2.absdiff(base, other).mean(), 2)
+                self.assertTrue(same_card_portrait(base, other))
+
+    def test_different_cards_are_never_merged_at_the_widest_search(self):
+        """The tolerant comparison must not eat the ambiguity check."""
+        portraits = {name: card_portrait(self.image, button)
+                     for name, button in self.cards.items()}
+        names = sorted(portraits)
+        checked = 0
+        for index, left in enumerate(names):
+            for right in names[index + 1:]:
+                checked += 1
+                with self.subTest(left=left, right=right):
+                    self.assertFalse(same_card_portrait(portraits[left], portraits[right]))
+        self.assertEqual(checked, 91)
+
 
 class DuplicatePageScanTest(unittest.TestCase):
     """The deployment scan has to survive that one-pixel offset end to end.
@@ -575,6 +637,66 @@ class DuplicatePageScanTest(unittest.TestCase):
         device = FrameDevice([image, shifted])
         scroll = PageScroll(device)
         manager = FrameScanManager(device, scroll, cards, [first, second], [1] * 14)
+
+        levels = SimpleNamespace(ocr=lambda frame: [1] * 14)
+        with patch('module.os.training.DOCK_SCROLL', scroll), \
+                patch('module.os.training.LevelOcr', return_value=levels), \
+                patch('module.os.training.dock_card_lock', return_value=True):
+            selected = manager._scan_selection(target)
+        self.assertEqual(selected.name, 'TRAINING_CARD_4_302')
+        self.assertEqual(len(device.swipes), 1)
+
+
+class FractionalPageScanManager(TrainingFleetManager):
+    """TrainingFleetManager whose reads come from the frames of one dock."""
+
+    def __init__(self, device, scroll, cards, layouts, levels):
+        self.device = device
+        self.scroll = scroll
+        self.cards = cards
+        self.layouts = layouts
+        self.levels = levels
+
+    def _visible_names(self):
+        raw = list(self.layouts[self.device.index])
+        self._raw_names = raw
+        self._visible_cards = list(self.cards[self.device.index])
+        return [catalog_name(name) for name in raw]
+
+
+class FractionalPageScanTest(unittest.TestCase):
+    """The 2026-09-28 19:16:39 crash: a turn of one row, not of whole pixels.
+
+    The two frames below are the archived dock frame and that frame turned by
+    exactly one row at the measured 226.44 px pitch, so the target card sits on
+    grid row 2 in the first read and on grid row 1 in the second, exactly as in
+    the production log (index 11 then index 4) - but with the sub-pixel phase
+    the game really produces.  The whole-pixel comparison counted the card twice
+    there and stopped the scheduler with ``Ambiguous duplicate deployment cards:
+    喀琅施塔得 level 1``.
+    """
+
+    def frames(self):
+        image = cv2.cvtColor(cv2.imread(str(LOCK_DOCK_FRAME)), cv2.COLOR_BGR2RGB)
+        turned = turn_page(image)
+        return image, turned, dock_cards(image), dock_cards(turned)
+
+    def test_one_card_on_two_page_reads_is_not_ambiguous(self):
+        image, turned, cards, turned_cards = self.frames()
+        self.assertEqual(len(cards), 14)
+        self.assertEqual(len(turned_cards), 14)
+        target = ShipCandidate('喀琅施塔得', '北联', 'vanguard', 1, True, False, None, 100, True)
+        # Read 1 sees the target on grid index 11, read 2 on index 4 (one row
+        # up), like the production log.
+        first = ['其他船'] * 14
+        first[11] = '喀琅施塔得'
+        second = ['其他船'] * 14
+        second[4] = '喀琅施塔得'
+
+        device = FrameDevice([image, turned])
+        scroll = PageScroll(device)
+        manager = FractionalPageScanManager(device, scroll, [cards, turned_cards],
+                                            [first, second], [1] * 14)
 
         levels = SimpleNamespace(ocr=lambda frame: [1] * 14)
         with patch('module.os.training.DOCK_SCROLL', scroll), \
