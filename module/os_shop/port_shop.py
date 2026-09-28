@@ -95,28 +95,58 @@ class PortShop(OSStatus, OSShopUI, Selector, MapEventHandler):
 
         return []
 
+    @staticmethod
+    def _os_shop_item_is_buyable_match(item, name, price):
+        return item.name == name and item.price == price and item.is_known_item() \
+            and item.count >= 1 and item.total_count >= 1 and item.count <= item.total_count
+
+    def _os_shop_read_viewport(self, shop_index):
+        """Read position and products from the same settled screenshot."""
+        self.os_shop_wait_list_stable(skip_first_screenshot=False)
+        scroll_pos = OS_SHOP_SCROLL.cal_position(main=self)
+        items = self.os_shop_get_items(shop_index, float(scroll_pos))
+        return items, float(scroll_pos)
+
     def os_shop_get_items_to_buy(self, name, price) -> Item:
-        """
-        Args:
-            name (str): Item name.
-            price (int): Item price.
-
-        Returns:
-            Item:
-        """
+        """Find an exact, known, in-stock item on the current settled viewport."""
         items = self.os_shop_get_items()
-        for _ in range(2):
-            if not len(items) or any(not item.is_known_item() for item in items):
-                logger.warning('Empty OS shop or empty items, confirming')
-                self.device.sleep((0.3, 0.5))
-                self.device.screenshot()
-                items = self.os_shop_get_items()
-                continue
-            else:
-                _items = [item for item in items if item.name == name and item.price == price]
-                if len(_items):
-                    return _items.pop()
+        for attempt in range(2):
+            for item in items:
+                if self._os_shop_item_is_buyable_match(item, name, price):
+                    return item
+            if attempt or (items and all(item.is_known_item() for item in items)):
+                break
+            logger.warning('Empty OS shop or unknown items while locating purchase, confirming')
+            self.device.sleep((0.3, 0.5))
+            self.os_shop_wait_list_stable(skip_first_screenshot=False)
+            items = self.os_shop_get_items()
+        return None
 
+    def os_shop_find_item_from_top(self, name, price, shop_index):
+        """Boundedly re-scan a port when its saved scroll position is stale."""
+        OS_SHOP_SCROLL.set_top(main=self, skip_first_screenshot=False)
+        self.os_shop_wait_list_stable(skip_first_screenshot=False)
+        stalled = 0
+        for page_index in range(17):
+            items, position = self._os_shop_read_viewport(shop_index)
+            for item in items:
+                if self._os_shop_item_is_buyable_match(item, name, price):
+                    return item
+            if page_index == 16 or OS_SHOP_SCROLL.at_bottom(main=self):
+                break
+
+            OS_SHOP_SCROLL.next_page(main=self, page=0.5, skip_first_screenshot=False)
+            self.os_shop_wait_list_stable(skip_first_screenshot=False)
+            next_position = OS_SHOP_SCROLL.cal_position(main=self)
+            if abs(next_position - position) <= 0.01:
+                stalled += 1
+                if stalled >= 3:
+                    logger.warning('OS shop fallback scan stopped after three pages without progress')
+                    break
+            else:
+                stalled = 0
+                self.device.click_record.clear()
+        logger.warning(f'Item {name} at {price} not found after bounded port re-scan')
         return None
 
     def scan_all(self) -> List[Item]:
@@ -137,11 +167,10 @@ class PortShop(OSStatus, OSShopUI, Selector, MapEventHandler):
 
                 _items = []
                 for _ in range(3):
-                    _items = self.os_shop_get_items(i, cur_pos)
+                    _items, cur_pos = self._os_shop_read_viewport(i)
                     if not len(_items) or any(not item.is_known_item() for item in _items):
                         logger.warning('Empty OS shop or empty items, confirming')
                         self.device.sleep((0.3, 0.5))
-                        self.device.screenshot()
                         continue
                     else:
                         logger.info(f'Found {len(_items)} items in shop {i + 1} at pos {cur_pos:.2f}')
@@ -155,6 +184,7 @@ class PortShop(OSStatus, OSShopUI, Selector, MapEventHandler):
                     break
                 else:
                     OS_SHOP_SCROLL.next_page(main=self, page=0.5, skip_first_screenshot=False)
+                    self.os_shop_wait_list_stable(skip_first_screenshot=False)
                     cur_pos = OS_SHOP_SCROLL.cal_position(main=self)
                     continue
             self.device.click_record.clear()
