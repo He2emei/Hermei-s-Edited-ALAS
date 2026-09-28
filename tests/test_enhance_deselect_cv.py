@@ -172,6 +172,20 @@ class DeselectExitTest(unittest.TestCase):
         self.assertTrue(805 <= x1 and x2 <= 887 and 377 <= y1 and y2 <= 459,
                         f'click target {clicked.button} outside the second material cell')
 
+    def test_entered_dock_returns_to_enhancement_without_clicking_material(self):
+        # Real archived frames exercise CV detection, dock detection, and the return
+        # transition. The first loop screenshot is the dock; BACK_ARROW advances to
+        # the enhancement page with the material card still present.
+        runner = self._runner([load_frame(DOCK_PAGE), load_frame(MATERIAL_CARDS)])
+        runner.device.image = load_frame(MATERIAL_CARDS)
+
+        runner._enhance_deselect_cv()
+
+        self.assertEqual([str(button) for button in runner.device.clicks], ['BACK_ARROW'])
+        self.assertEqual(runner.device.screenshots, 2)
+        self.assertFalse(runner._enhance_selection_page())
+        self.assertFalse(runner._enhance_slot_empty(1))
+
     def test_off_centre_portrait_does_not_reclick_the_empty_slot(self):
         # 2026-09-27: the portrait match sat far enough from the cell centre that the
         # old '+'-in-a-box test could not see the empty slot.  Clicking again opened
