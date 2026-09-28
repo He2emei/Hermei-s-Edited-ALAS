@@ -17,10 +17,10 @@ class ManualConfig:
     > Reward
     > ShopFrequent > EventShop > ShopOnce > Shipyard > Freebies
     > PrivateQuarters
-    > OpsiExplore
+    > OpsiVoucher > OpsiExplore
     > Minigame > Awaken
     > OpsiAshBeacon
-    > OpsiDaily > OpsiShop > OpsiVoucher
+    > OpsiDaily > OpsiShop
     > OpsiAbyssal > OpsiStronghold > OpsiObscure > OpsiArchive
     > IslandFreebie > IslandCollect
     > IslandBusiness > IslandSeasonTask
