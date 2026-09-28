@@ -246,6 +246,18 @@ class OSShop(PortShop, AkashiShop):
                 retry_on_uncertain=True,
             )
 
+    def os_shop_resolve_item_for_purchase(self, item):
+        """Treat the scanned position as a hint and return a fresh exact item."""
+        OS_SHOP_SCROLL.set(item.scroll_pos, main=self, skip_first_screenshot=False)
+        self.os_shop_wait_list_stable(skip_first_screenshot=False)
+        found = self.os_shop_get_items_to_buy(item.name, item.price)
+        if found is not None:
+            return found
+        logger.warning(
+            f'Item {item.name} not found at saved position {item.scroll_pos:.2f}; '
+            'rescanning this port from the top')
+        return self.os_shop_find_item_from_top(item.name, item.price, item.shop_index)
+
     def _handle_port_supply_buy(self, select_func, update_storage,
                                 retry_on_uncertain) -> bool:
         """
@@ -310,8 +322,7 @@ class OSShop(PortShop, AkashiShop):
                 continue
             logger.info(f'Buying item: {item.name}. In shop {item.shop_index + 1}. At pos {item.scroll_pos:.2f}.')
             self.os_shop_side_navbar_ensure(upper=item.shop_index + 1)
-            OS_SHOP_SCROLL.set(item.scroll_pos, main=self, skip_first_screenshot=False)
-            _item = self.os_shop_get_items_to_buy(name=item.name, price=item.price)
+            _item = self.os_shop_resolve_item_for_purchase(item)
             if _item is None:
                 logger.warning(f'Item {item.name} not found in shop {item.shop_index + 1} at pos {item.scroll_pos:.2f}, skip.')
                 continue
