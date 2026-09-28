@@ -33,6 +33,7 @@ from unittest.mock import patch
 import numpy as np
 import cv2
 
+from module.base.button import Button
 from module.base.timer import Timer
 from module.combat.assets import GET_SHIP
 from module.device.control import Control
@@ -349,12 +350,19 @@ class LoginPagePatienceTest(unittest.TestCase):
         the title screen is 15.25, so the check passes on a page that has no such button.
         """
         image = load_frame(FIXTURES / 'login-title-1557.png')
-        area = image[GET_SHIP.area[1]:GET_SHIP.area[3], GET_SHIP.area[0]:GET_SHIP.area[2]]
-        tolerance = float(np.abs(area.mean(axis=(0, 1)) - np.array(GET_SHIP.color)).max())
-        self.assertTrue(GET_SHIP.appear_on(image, threshold=30),
+        # Keep the incident's original asset geometry: upstream #5936 replaced
+        # GET_SHIP, so the historical false positive must not depend on the
+        # current asset continuing to be broken.
+        legacy = Button(area=(1104, 610, 1110, 630), color=(255, 255, 255),
+                        button=(1000, 631, 1055, 689), name='LEGACY_GET_SHIP')
+        area = image[legacy.area[1]:legacy.area[3], legacy.area[0]:legacy.area[2]]
+        tolerance = float(np.abs(area.mean(axis=(0, 1)) - np.array(legacy.color)).max())
+        self.assertTrue(legacy.appear_on(image, threshold=30),
                         'the frame no longer reproduces the colour-only false positive')
-        self.assertFalse(GET_SHIP.appear_on(image, threshold=10))
+        self.assertFalse(legacy.appear_on(image, threshold=10))
         self.assertLess(tolerance, 30)
+        self.assertFalse(GET_SHIP.appear_on(image, threshold=30),
+                         'the updated upstream asset must reject this title screen')
         self.assertFalse(GET_SHIP.match_template_color(image, offset=(30, 30)),
                          'the template check does not match, only the colour check does')
 
