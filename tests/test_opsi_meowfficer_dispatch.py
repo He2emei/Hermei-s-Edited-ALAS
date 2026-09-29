@@ -1,7 +1,8 @@
 import unittest
 from contextlib import nullcontext
-from datetime import datetime
+from datetime import datetime, timedelta
 from types import SimpleNamespace
+from unittest.mock import patch
 
 from module.campaign.os_run import OSCampaignRun
 from module.os.task_dispatch import (
@@ -150,14 +151,15 @@ class OpsiMeowfficerDispatchTest(unittest.TestCase):
 
     def test_cooling_down_task_delays_without_bypassing_policy_into_shortcat(self):
         config = FakeConfig(enabled_tasks={'OpsiHazard1Leveling'})
-        next_run = datetime(2026, 8, 19, 13, 30)
+        next_run = datetime.now() + timedelta(minutes=30)
         campaign = PriorityCampaignHarness(config, {
             'OpsiStronghold': True,
             'OpsiAbyssal': True,
             'OpsiObscure': True,
         }, cooling_down=SimpleNamespace(next_run=next_run))
 
-        result = campaign.os_meowfficer_farming_priority()
+        with patch('module.os.tasks.meowfficer_farming_priority.get_os_reset_remain', return_value=1):
+            result = campaign.os_meowfficer_farming_priority()
 
         self.assertIsNone(result)
         self.assertEqual(campaign.run_calls, [])
