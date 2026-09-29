@@ -153,11 +153,11 @@ class TrainingInventoryMockTest(unittest.TestCase):
         inventory._storage_in_material = Mock(return_value=True)
         scroll = FakeScroll(inventory.device)
 
-        def find_book(_image, key):
-            return (400, 300) if scroll.page >= 13 else None
+        def match_book(_image, key):
+            return ((400, 300), 0.99) if scroll.page >= 13 else (None, 0.0)
 
         with patch('module.storage.training_inventory.INVENTORY_SCROLL', scroll), \
-                patch('module.storage.training_inventory.item_position', side_effect=find_book), \
+                patch('module.storage.training_inventory.item_match', side_effect=match_book), \
                 patch.object(inventory, '_read_item', return_value=1957):
             self.assertEqual(inventory.read_counts(['exp_book_t1']), {'exp_book_t1': 1957})
 
@@ -203,7 +203,7 @@ class TrainingInventoryMockTest(unittest.TestCase):
         inventory._wait_until_storage_stable = Mock()
         inventory._storage_in_material = Mock(return_value=True)
         with patch('module.storage.training_inventory.INVENTORY_SCROLL', StuckScroll()), \
-                patch('module.storage.training_inventory.item_position', return_value=None):
+                patch('module.storage.training_inventory.item_match', return_value=(None, 0.0)):
             with self.assertRaises(RequestHumanTakeover):
                 inventory.read_counts(['exp_book_t1'])
         inventory.device.click_record_clear.assert_not_called()
@@ -225,7 +225,7 @@ class TrainingInventoryMockTest(unittest.TestCase):
         inventory._storage_enter_material = Mock()
         inventory._wait_until_storage_stable = Mock()
         inventory._storage_in_material = Mock(return_value=True)
-        with patch('module.storage.training_inventory.item_position', return_value=None), \
+        with patch('module.storage.training_inventory.item_match', return_value=(None, 0.0)), \
                 patch('module.storage.training_inventory.INVENTORY_SCROLL.set_top'), \
                 patch('module.storage.training_inventory.INVENTORY_SCROLL.at_bottom', return_value=True):
             with self.assertRaises(RequestHumanTakeover):
@@ -285,11 +285,11 @@ class TrainingInventoryMockTest(unittest.TestCase):
         inventory._storage_in_material = Mock(return_value=True)
         scroll = StalledScroll()
 
-        def find_book(_image, key):
-            return (400, 300) if scroll.position >= scroll.END else None
+        def match_book(_image, key):
+            return ((400, 300), 0.99) if scroll.position >= scroll.END else (None, 0.0)
 
         with patch('module.storage.training_inventory.INVENTORY_SCROLL', scroll), \
-                patch('module.storage.training_inventory.item_position', side_effect=find_book), \
+                patch('module.storage.training_inventory.item_match', side_effect=match_book), \
                 patch.object(inventory, '_read_item', return_value=1957):
             self.assertEqual(inventory.read_counts(['exp_book_t1']), {'exp_book_t1': 1957})
 
@@ -361,12 +361,12 @@ class TrainingInventoryMockTest(unittest.TestCase):
         inventory._wait_until_storage_stable = Mock()
         inventory._storage_in_material = Mock(return_value=True)
 
-        def find_book(_image, key):
+        def match_book(_image, key):
             # Only visible on the last screenful, i.e. after the scroll stalled.
-            return (400, 300) if scroll.stalled else None
+            return ((400, 300), 0.99) if scroll.stalled else (None, 0.0)
 
         with patch('module.storage.training_inventory.INVENTORY_SCROLL', scroll.ready()), \
-                patch('module.storage.training_inventory.item_position', side_effect=find_book), \
+                patch('module.storage.training_inventory.item_match', side_effect=match_book), \
                 patch.object(inventory, '_read_item', return_value=1957):
             self.assertEqual(inventory.read_counts(['exp_book_t1']), {'exp_book_t1': 1957})
 
@@ -413,12 +413,12 @@ class TrainingInventoryMockTest(unittest.TestCase):
         inventory._wait_until_storage_stable = Mock()
         inventory._storage_in_material = Mock(return_value=True)
         with patch('module.storage.training_inventory.INVENTORY_SCROLL', StalledScroll()), \
-                patch('module.storage.training_inventory.item_position', return_value=None):
+                patch('module.storage.training_inventory.item_match', return_value=(None, 0.0)):
             with self.assertRaises(RequestHumanTakeover) as caught:
                 inventory.read_counts(['exp_book_t1'])
         self.assertIn('stalled', str(caught.exception))
 
-    def test_absent_blueprint_is_zero_stock_after_two_verified_sweeps(self):
+    def test_absent_blueprint_is_zero_stock_after_a_verified_sweep(self):
         """A blueprint the account does not own is not a scan failure.
 
         Production signature (2026-09-30 00:45:12 / 00:52:21, `alas`): the CN
@@ -430,57 +430,48 @@ class TrainingInventoryMockTest(unittest.TestCase):
         inventory, scroll = self._sweep_inventory()
         found = {'destroyer': 13, 'cruiser': 2, 'carrier': 9}
 
-        def find(_image, key):
+        def match(_image, key):
             if key == 'battleship':
-                return None
-            return (400, 300) if scroll.position >= 0.2 else None
+                # The measured score of the absent icon, on 巡洋's cell.
+                return None, 0.513
+            return ((400, 300), 0.99) if scroll.position >= 0.2 else (None, 0.2)
 
         with patch('module.storage.training_inventory.INVENTORY_SCROLL', scroll), \
-                patch('module.storage.training_inventory.item_position', side_effect=find), \
-                patch.object(inventory, '_read_item', side_effect=lambda key, position: found[key]):
+                patch('module.storage.training_inventory.item_match', side_effect=match), \
+                patch.object(inventory, '_read_item', side_effect=lambda key, position: found[key]), \
+                patch('module.storage.training_inventory.logger') as log:
             counts = inventory.read_counts(['destroyer', 'cruiser', 'battleship', 'carrier'])
 
         self.assertEqual(counts, {'destroyer': 13, 'cruiser': 2, 'carrier': 9, 'battleship': 0})
-        # The absent item was re-verified with the finer page turn before the
-        # zero was recorded.
-        self.assertIn(TrainingInventory.VERIFY_PAGE, scroll.pages)
-        self.assertLess(TrainingInventory.VERIFY_PAGE, TrainingInventory.SCAN_PAGE)
+        # The zero is recorded with the evidence that says why it is a zero and
+        # not an unrecognized icon.
+        log.warning.assert_called_once()
+        message = log.warning.call_args[0][0]
+        self.assertIn('battleship', message)
+        self.assertIn('0.513', message)
 
-    def test_item_found_only_by_the_finer_sweep_keeps_its_count(self):
-        """The finer sweep exists so a present item is never reported as zero."""
-        inventory, scroll = self._sweep_inventory()
+    def test_scan_page_turn_moves_the_thumb_beyond_the_drag_threshold(self):
+        """A finer sweep is not available on this page: set() would not swipe.
 
-        def find(_image, key):
-            if key == 'cruiser':
-                return (400, 300) if scroll.position >= 0.2 else None
-            # Visible only while the fine sweep is running.
-            return (400, 300) if TrainingInventory.VERIFY_PAGE in scroll.pages else None
-
-        with patch('module.storage.training_inventory.INVENTORY_SCROLL', scroll), \
-                patch('module.storage.training_inventory.item_position', side_effect=find), \
-                patch.object(inventory, '_read_item', return_value=47):
-            counts = inventory.read_counts(['cruiser', 'battleship'])
-
-        self.assertEqual(counts, {'cruiser': 47, 'battleship': 47})
-        self.assertIn(TrainingInventory.VERIFY_PAGE, scroll.pages)
-
-    def test_verify_sweep_losing_the_material_page_fails_closed(self):
-        inventory, scroll = self._sweep_inventory()
-        inventory._storage_in_material = Mock(
-            side_effect=lambda: TrainingInventory.VERIFY_PAGE not in scroll.pages)
-
-        def find(_image, key):
-            if key == 'destroyer':
-                return (400, 300) if scroll.position >= 0.2 else None
-            return None
-
-        with patch('module.storage.training_inventory.INVENTORY_SCROLL', scroll), \
-                patch('module.storage.training_inventory.item_position', side_effect=find), \
-                patch.object(inventory, '_read_item', return_value=13):
-            with self.assertRaises(RequestHumanTakeover) as caught:
-                inventory.read_counts(['destroyer', 'battleship'])
-
-        self.assertIn('Lost inventory material page', str(caught.exception))
+        drag_page() turns a page into a position delta of
+        page * length / (total - length), and set() drops a swipe whose target is
+        within Scroll.drag_threshold of the current position.  A 0.15-page
+        verification sweep was measured to leave the thumb where it was and
+        abort the scan with `Inventory scan stopped before verified bottom`
+        (2026-09-30 01:17:17, both profiles), so the scan keeps one sweep and
+        reports the best icon score instead of re-scanning finer.
+        """
+        from module.ui.scroll import Scroll
+        scroll = Scroll((1257, 94, 1264, 635), color=(247, 211, 66))
+        # Measured thumb lengths on the CN material page, 68 to 80 px, and the
+        # measured end of the list at 0.893 of the calibrated track.
+        for length in (68, 78, 80):
+            with self.subTest(length=length):
+                scroll.length = length
+                step = TrainingInventory.SCAN_PAGE * length / (scroll.total - length)
+                self.assertGreater(step, Scroll.drag_threshold)
+                # The page-turn budget still covers the whole list.
+                self.assertLess(0.893 / step, TrainingInventory.SCAN_BOUND)
 
     def _sweep_inventory(self):
         """A TrainingInventory whose scrollbar saturates at the measured 0.893."""
@@ -495,7 +486,6 @@ class TrainingInventoryMockTest(unittest.TestCase):
             def __init__(self):
                 self.position = 0.0
                 self.stalled = False
-                self.pages = []
 
             def set_top(self, main):
                 self.position = 0.0
@@ -508,7 +498,6 @@ class TrainingInventoryMockTest(unittest.TestCase):
                 return self.position
 
             def next_page(self, main, page=0.45):
-                self.pages.append(page)
                 self.position = min(self.position + page * self.MULTIPLY, self.END)
                 self.stalled = self.position >= self.END
 

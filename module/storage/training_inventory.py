@@ -19,19 +19,36 @@ ITEM_NAMES = {
 }
 ASSET_ROOT = Path('./assets/cn/training_inventory')
 INVENTORY_SCROLL = Scroll((1257, 94, 1264, 635), color=(247, 211, 66), name='TrainingInventoryScroll')
+# Template score above which an icon on the material page is the item itself.
+# Cross matches between the four gold retrofit blueprints measure 0.44 - 0.70
+# (see tests/fixtures/training_inventory/README.md), the item's own icon 0.97+.
+ITEM_MATCH_THRESHOLD = 0.9
 
 
-def item_position(image, key):
-    """Find the exact item icon including its rarity background, excluding count."""
+def item_match(image, key):
+    """Best match of an item icon, including its rarity background.
+
+    Returns:
+        tuple: (position, score) of the best match, score in 0..1.  The score is
+            reported even when the icon is not on the page at all, because it
+            tells an absent item (no cell, ~0.5) from an unrecognized one (a cell
+            whose icon does not match the asset any more).
+    """
     template = cv2.imread(str(ASSET_ROOT / (key + '.png')))
     if template is None:
         raise RequestHumanTakeover('Training inventory icon missing: ' + key)
     template = cv2.cvtColor(template, cv2.COLOR_BGR2RGB)
     scores = cv2.matchTemplate(image[55:637, 140:1240], template, cv2.TM_CCOEFF_NORMED)
     _, score, _, (x, y) = cv2.minMaxLoc(scores)
-    if score < 0.9:
+    return (x + 140 + template.shape[1] // 2, y + 55 + template.shape[0] // 2), float(score)
+
+
+def item_position(image, key):
+    """Find the exact item icon including its rarity background, excluding count."""
+    position, score = item_match(image, key)
+    if score < ITEM_MATCH_THRESHOLD:
         return None
-    return x + 140 + template.shape[1] // 2, y + 55 + template.shape[0] // 2
+    return position
 
 
 def parse_owned_count(text, key):
@@ -71,20 +88,21 @@ class TrainingInventory(StorageUI):
     # The measured end of the list reads 0.893 (see _inventory_at_end), and a
     # stall in the middle of the list is a different, genuine failure.
     END_POSITION_FLOOR = 0.7
-    # Page turn of the first sweep, and of the second one that re-verifies the
-    # keys the first sweep never matched.  Measured on the live CN page
+    # Page turn and page-turn budget of one sweep.  Measured on the live CN page
     # (2026-09-30, both accounts): one 0.45-page turn moves the list by ~300 px,
     # while an item icon stays fully inside the scan crop for 582 - 88 = 494 px
-    # of travel, so the first sweep samples every listed item at least once; the
-    # 0.15-page turn leaves an icon fully visible in several frames, which is the
-    # corroboration used before an item is called out of stock.
+    # of travel, so every listed item is fully visible in at least one sampled
+    # frame.  The turn cannot be made much finer: drag_page() turns a page into a
+    # position delta of page * length / (total - length), i.e. ~0.065 of the
+    # track here, and set() drops a swipe whose target is within
+    # Scroll.drag_threshold (0.05) of the current position -- a 0.15-page
+    # "verification" sweep was measured to leave the thumb where it was and
+    # abort the scan with `Inventory scan stopped before verified bottom`
+    # (2026-09-30 01:17:17, both profiles).  The whole list spans 0.893 of the
+    # track, i.e. ~13 turns, so the budget leaves room for the thumb length to
+    # change while scanning.
     SCAN_PAGE = 0.45
-    VERIFY_PAGE = 0.15
-    # Page-turn budget of one sweep.  The whole list spans 0.893 of the track,
-    # i.e. ~13 turns at 0.45 and ~36 at 0.15; both budgets leave room for the
-    # thumb length to change while scanning.
     SCAN_BOUND = 40
-    VERIFY_BOUND = 80
 
     def _wait(self, predicate, description):
         for _ in range(30):
@@ -162,36 +180,34 @@ class TrainingInventory(StorageUI):
                 self.device.click(point_button(895, 197, 'TRAINING_ITEM_CLOSE'))
                 self._wait(self._storage_in_material, 'return to materials')
 
-    def _sweep(self, keys, counts, page, bound):
+    def _sweep(self, keys):
         """Look for `keys` from the top of the material list to its verified end.
 
-        Args:
-            keys (tuple[str]): Keys to look for, in the order of the request.
-            counts (dict): Already known counts; those keys are not looked for.
-            page (float): Page turn per iteration.
-            bound (int): Page-turn budget.
-
         Returns:
-            dict: `counts` plus every key this sweep matched.
+            tuple: (counts, scores) of everything this sweep matched, and the
+                best icon score seen for each key whether matched or not.
         """
         INVENTORY_SCROLL.set_top(main=self)
         self.device.sleep(0.5)
-        for _ in range(bound):
+        counts = {}
+        scores = {}
+        for _ in range(self.SCAN_BOUND):
             self.device.screenshot()
             if not self._storage_in_material():
                 raise RequestHumanTakeover('Lost inventory material page during scan')
             for key in keys:
                 if key in counts:
                     continue
-                position = item_position(self.device.image, key)
-                if position is not None:
+                position, score = item_match(self.device.image, key)
+                scores[key] = max(scores.get(key, 0.0), score)
+                if score >= ITEM_MATCH_THRESHOLD:
                     counts[key] = self._read_item(key, position)
             if len(counts) == len(keys):
-                return counts
+                return counts, scores
             if INVENTORY_SCROLL.at_bottom(main=self) or self._inventory_at_end():
-                return counts
+                return counts, scores
             before = INVENTORY_SCROLL.cal_position(main=self)
-            INVENTORY_SCROLL.next_page(main=self, page=page)
+            INVENTORY_SCROLL.next_page(main=self, page=self.SCAN_PAGE)
             self.device.sleep(0.5)
             self.device.screenshot()
             after = INVENTORY_SCROLL.cal_position(main=self)
@@ -221,13 +237,7 @@ class TrainingInventory(StorageUI):
         self._storage_enter_material()
         self._wait_until_storage_stable()
 
-        counts = self._sweep(keys, {}, self.SCAN_PAGE, self.SCAN_BOUND)
-        if len(counts) < len(keys):
-            # A second, finer sweep for what the first one never matched.  The
-            # coarse step can leave an icon fully visible in a single frame, so
-            # absence is only called after the same list was sampled again with
-            # several frames per icon.
-            counts = self._sweep(keys, counts, self.VERIFY_PAGE, self.VERIFY_BOUND)
+        counts, scores = self._sweep(keys)
         missing = [key for key in keys if key not in counts]
         if missing:
             if not counts:
@@ -236,15 +246,19 @@ class TrainingInventory(StorageUI):
                 raise RequestHumanTakeover(
                     'No training inventory item was recognized: ' + ', '.join(missing))
             # The CN material page lists an item only while the account owns it,
-            # so an item that two complete sweeps never matched is out of stock
-            # rather than unrecognized.  Verified on 2026-09-30: the blueprint
-            # row of the `alas` account holds 驱逐13 / 巡洋2 / 航母9 with no cell
-            # at all between 巡洋 and 航母, while both other tiers of the same
-            # family list all four items (`tests/fixtures/training_inventory/
-            # material-absent-battleship.png`).
+            # so an item a complete sweep never matched is out of stock rather
+            # than unrecognized.  Verified on 2026-09-30: the blueprint row of
+            # the `alas` account holds 驱逐13 / 巡洋2 / 航母9 in adjacent grid
+            # columns with no cell at all between 巡洋 and 航母, and the
+            # battleship icon scores 0.513 on 巡洋's cell -- the same level as
+            # the cross matches between different blueprints -- while both other
+            # tiers of the family list all four items
+            # (tests/fixtures/training_inventory/material-absent-battleship.png).
             for key in missing:
-                logger.warning(f'Training inventory {key} is not listed in the material page; '
-                               f'recording 0')
+                logger.warning(
+                    f'Training inventory {key} is not listed in the material page '
+                    f'(best icon score {scores.get(key, 0.0):.3f} over a complete sweep); '
+                    f'recording 0')
                 counts[key] = 0
         logger.info(f'Complete inventory scan: {counts}')
         return counts
