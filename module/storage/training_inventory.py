@@ -44,6 +44,11 @@ def parse_owned_count(text, key):
 
 
 class TrainingInventory(StorageUI):
+    # Lowest thumb position that still counts as the end of the material list.
+    # The measured end of the list reads 0.893 (see _inventory_at_end), and a
+    # stall in the middle of the list is a different, genuine failure.
+    END_POSITION_FLOOR = 0.7
+
     def _wait(self, predicate, description):
         for _ in range(30):
             self.device.screenshot()
@@ -59,6 +64,33 @@ class TrainingInventory(StorageUI):
         template = cv2.cvtColor(template, cv2.COLOR_BGR2RGB)
         return cv2.matchTemplate(self.device.image[170:228, 350:465], template,
                                  cv2.TM_CCOEFF_NORMED).max() > 0.9
+
+    def _inventory_at_end(self):
+        """Whether the last page turn hit the end of the material list.
+
+        The calibrated INVENTORY_SCROLL track runs past the end of the drawn
+        scrollbar on the CN material page, so cal_position() saturates below
+        1.0 at the end of the list and at_bottom() never fires.  Measured on the
+        2026-09-30 00:08:22 incident: the thumb is drawn at crop y 38.0 at the
+        top and 452.5 at the end, i.e. it travels 414.5 px of the 541 px
+        calibrated track, so the highest reachable position is 0.893 -- while
+        at_bottom() needs more than 0.95, and next_page(0.45) targets 0.969.
+        The scan therefore swiped at an unreachable position until it gave up.
+        What the end of the list *is* observable as: Scroll.set() reports
+        `stalled` when three swipes issued over the whole remaining distance
+        left the thumb where it was.
+
+        A stall below END_POSITION_FLOOR means the scroll broke somewhere in the
+        middle of the list instead -- fail closed, as before.
+        """
+        if not getattr(INVENTORY_SCROLL, 'stalled', False):
+            return False
+        position = INVENTORY_SCROLL.cal_position(main=self)
+        if position < self.END_POSITION_FLOOR:
+            raise RequestHumanTakeover(
+                f'Inventory scroll stalled at {position:.3f}, before the end of the list')
+        logger.info(f'Inventory reached the end of the list at {position:.3f}')
+        return True
 
     def _read_item(self, key, position):
         if not self._storage_in_material():
@@ -115,11 +147,9 @@ class TrainingInventory(StorageUI):
                     counts[key] = self._read_item(key, position)
             if len(counts) == len(keys):
                 return counts
-            if INVENTORY_SCROLL.at_bottom(main=self):
+            if INVENTORY_SCROLL.at_bottom(main=self) or self._inventory_at_end():
                 self.device.sleep(0.4)
                 self.device.screenshot()
-                if not INVENTORY_SCROLL.at_bottom(main=self):
-                    raise RequestHumanTakeover('Inventory bottom is unstable')
                 # Absence cannot distinguish zero stock from an unrecognized icon.
                 for key in keys:
                     if key not in counts:
@@ -134,6 +164,13 @@ class TrainingInventory(StorageUI):
             self.device.sleep(0.5)
             self.device.screenshot()
             after = INVENTORY_SCROLL.cal_position(main=self)
+            if getattr(INVENTORY_SCROLL, 'stalled', False):
+                # The swipe was issued over the whole remaining distance and the
+                # thumb did not move, so this was the end of the list after all:
+                # see _inventory_at_end().  Looping on would only keep swiping at
+                # an unreachable position and abort the task with this same
+                # RequestHumanTakeover.
+                continue
             if after <= before + 0.001:
                 raise RequestHumanTakeover('Inventory scan stopped before verified bottom')
             # A verified page advance means the recorded scroll action made progress.
