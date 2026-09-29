@@ -43,11 +43,48 @@ def parse_owned_count(text, key):
     return count
 
 
+def title_matches(observed, expected):
+    """Whether a read item name is the expected one, tolerating bounded noise.
+
+    The CN item dialog is read with cnocr and the reading carries the usual
+    recognition noise: a residual leading character ('占战列改造图纸T3',
+    2026-09-30 00:23:28) or a dropped interior character ('航母改造纸T3', same
+    run, both from `Use/log/2026-09-30_alas2.txt`).  Requiring character-exact
+    equality threw those readings away, so the item had to be opened and read
+    again from scratch.  What actually tells the four retrofit blueprints apart
+    is the ship type and the tier, so both stay required while at most one
+    dropped or residual character is tolerated.
+    """
+    if not isinstance(observed, str):
+        return False
+    if observed == expected:
+        return True
+    if not len(expected) - 1 <= len(observed) <= len(expected) + 1:
+        return False
+    # Ship type in front, tier at the end: a name that lost its ship type or
+    # drifted to another tier is a different item, not the same one read badly.
+    return expected[:2] in observed and observed.endswith(expected[-2:])
+
+
 class TrainingInventory(StorageUI):
     # Lowest thumb position that still counts as the end of the material list.
     # The measured end of the list reads 0.893 (see _inventory_at_end), and a
     # stall in the middle of the list is a different, genuine failure.
     END_POSITION_FLOOR = 0.7
+    # Page turn of the first sweep, and of the second one that re-verifies the
+    # keys the first sweep never matched.  Measured on the live CN page
+    # (2026-09-30, both accounts): one 0.45-page turn moves the list by ~300 px,
+    # while an item icon stays fully inside the scan crop for 582 - 88 = 494 px
+    # of travel, so the first sweep samples every listed item at least once; the
+    # 0.15-page turn leaves an icon fully visible in several frames, which is the
+    # corroboration used before an item is called out of stock.
+    SCAN_PAGE = 0.45
+    VERIFY_PAGE = 0.15
+    # Page-turn budget of one sweep.  The whole list spans 0.893 of the track,
+    # i.e. ~13 turns at 0.45 and ~36 at 0.15; both budgets leave room for the
+    # thumb length to change while scanning.
+    SCAN_BOUND = 40
+    VERIFY_BOUND = 80
 
     def _wait(self, predicate, description):
         for _ in range(30):
@@ -109,33 +146,37 @@ class TrainingInventory(StorageUI):
                 raw = Ocr([(450, 405, 522, 433)], letter=(239, 239, 0),
                           alphabet='0123456789', name='TrainingItemCount').ocr(self.device.image)
                 count = parse_owned_count(raw, key)
-                if title != ITEM_NAMES[key] or count is None:
+                if not title_matches(title, ITEM_NAMES[key]) or count is None:
                     previous = None
                     continue
-                if previous == (title, count):
+                # The stable reading is the item and its count, not the raw OCR
+                # string: two readings of the same item whose noise differs
+                # ('占战列改造图纸T3' then '战列改造图纸T3') are the same reading.
+                if previous == count:
                     logger.info(f'Training inventory {key}: {count}')
                     return count
-                previous = (title, count)
+                previous = count
             raise RequestHumanTakeover(f'Unreliable inventory item details for {key}: {title}, {raw}')
         finally:
             if self._info_visible():
                 self.device.click(point_button(895, 197, 'TRAINING_ITEM_CLOSE'))
                 self._wait(self._storage_in_material, 'return to materials')
 
-    def read_counts(self, keys):
-        keys = tuple(dict.fromkeys(keys))
-        if not keys or any(k not in ITEM_NAMES for k in keys):
-            raise ValueError('Unsupported training inventory keys')
-        self.device.screenshot()
-        if self.config.SERVER != 'cn' or self.device.image.shape[:2] != (720, 1280):
-            raise RequestHumanTakeover('Training inventory requires CN 1280x720')
-        self.ui_goto_storage()
-        self._storage_enter_material()
-        self._wait_until_storage_stable()
+    def _sweep(self, keys, counts, page, bound):
+        """Look for `keys` from the top of the material list to its verified end.
+
+        Args:
+            keys (tuple[str]): Keys to look for, in the order of the request.
+            counts (dict): Already known counts; those keys are not looked for.
+            page (float): Page turn per iteration.
+            bound (int): Page-turn budget.
+
+        Returns:
+            dict: `counts` plus every key this sweep matched.
+        """
         INVENTORY_SCROLL.set_top(main=self)
         self.device.sleep(0.5)
-        counts = {}
-        for _ in range(40):
+        for _ in range(bound):
             self.device.screenshot()
             if not self._storage_in_material():
                 raise RequestHumanTakeover('Lost inventory material page during scan')
@@ -148,19 +189,9 @@ class TrainingInventory(StorageUI):
             if len(counts) == len(keys):
                 return counts
             if INVENTORY_SCROLL.at_bottom(main=self) or self._inventory_at_end():
-                self.device.sleep(0.4)
-                self.device.screenshot()
-                # Absence cannot distinguish zero stock from an unrecognized icon.
-                for key in keys:
-                    if key not in counts:
-                        position = item_position(self.device.image, key)
-                        if position is None:
-                            raise RequestHumanTakeover('Inventory item absent or unrecognized: ' + key)
-                        counts[key] = self._read_item(key, position)
-                logger.info(f'Complete inventory scan: {counts}')
                 return counts
             before = INVENTORY_SCROLL.cal_position(main=self)
-            INVENTORY_SCROLL.next_page(main=self, page=0.45)
+            INVENTORY_SCROLL.next_page(main=self, page=page)
             self.device.sleep(0.5)
             self.device.screenshot()
             after = INVENTORY_SCROLL.cal_position(main=self)
@@ -178,3 +209,42 @@ class TrainingInventory(StorageUI):
             # preventing a long but healthy inventory from accumulating history.
             self.device.click_record_clear()
         raise RequestHumanTakeover('Inventory scan exceeded page bound')
+
+    def read_counts(self, keys):
+        keys = tuple(dict.fromkeys(keys))
+        if not keys or any(k not in ITEM_NAMES for k in keys):
+            raise ValueError('Unsupported training inventory keys')
+        self.device.screenshot()
+        if self.config.SERVER != 'cn' or self.device.image.shape[:2] != (720, 1280):
+            raise RequestHumanTakeover('Training inventory requires CN 1280x720')
+        self.ui_goto_storage()
+        self._storage_enter_material()
+        self._wait_until_storage_stable()
+
+        counts = self._sweep(keys, {}, self.SCAN_PAGE, self.SCAN_BOUND)
+        if len(counts) < len(keys):
+            # A second, finer sweep for what the first one never matched.  The
+            # coarse step can leave an icon fully visible in a single frame, so
+            # absence is only called after the same list was sampled again with
+            # several frames per icon.
+            counts = self._sweep(keys, counts, self.VERIFY_PAGE, self.VERIFY_BOUND)
+        missing = [key for key in keys if key not in counts]
+        if missing:
+            if not counts:
+                # Nothing at all was recognized: the page or the icon assets are
+                # unusable, so every count would be a guess.
+                raise RequestHumanTakeover(
+                    'No training inventory item was recognized: ' + ', '.join(missing))
+            # The CN material page lists an item only while the account owns it,
+            # so an item that two complete sweeps never matched is out of stock
+            # rather than unrecognized.  Verified on 2026-09-30: the blueprint
+            # row of the `alas` account holds 驱逐13 / 巡洋2 / 航母9 with no cell
+            # at all between 巡洋 and 航母, while both other tiers of the same
+            # family list all four items (`tests/fixtures/training_inventory/
+            # material-absent-battleship.png`).
+            for key in missing:
+                logger.warning(f'Training inventory {key} is not listed in the material page; '
+                               f'recording 0')
+                counts[key] = 0
+        logger.info(f'Complete inventory scan: {counts}')
+        return counts
