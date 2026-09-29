@@ -5,6 +5,8 @@ from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import Mock, patch
 
+import collections
+
 from module.dorm.training import DormTraining, maintain_dorm_if_due
 from module.exception import RequestHumanTakeover
 from module.exception import GameTooManyClickError
@@ -219,6 +221,193 @@ class TrainingInventoryMockTest(unittest.TestCase):
                 patch('module.storage.training_inventory.INVENTORY_SCROLL.at_bottom', return_value=True):
             with self.assertRaises(RequestHumanTakeover):
                 inventory.read_counts(['destroyer'])
+
+    def test_stalled_scroll_at_the_list_end_completes_the_scan(self):
+        import numpy as np
+
+        class FakeDevice:
+            def __init__(self):
+                self.image = np.zeros((720, 1280, 3), dtype=np.uint8)
+
+            def screenshot(self):
+                return None
+
+            def sleep(self, _seconds):
+                return None
+
+            def click_record_clear(self):
+                return None
+
+        class StalledScroll:
+            """The real CN material page: the thumb stops at 0.893 of the track.
+
+            Scroll.set() only reports a stall once it has given up, i.e. with the
+            thumb already sitting at the last reachable position.
+            """
+
+            END = 0.893
+
+            def __init__(self):
+                self.position = 0.0
+                self.stalled = False
+
+            def set_top(self, main):
+                self.position = 0.0
+                self.stalled = False
+
+            def at_bottom(self, main):
+                return False
+
+            def cal_position(self, main):
+                return self.position
+
+            def next_page(self, main, page=0.45):
+                # 541 px of calibrated track, 414.5 px of thumb travel: the last
+                # reachable position is 0.893 and set() gives up there.
+                self.position = min(self.position + 0.075, self.END)
+                self.stalled = self.position >= self.END
+
+        inventory = TrainingInventory.__new__(TrainingInventory)
+        inventory.config = SimpleNamespace(SERVER='cn')
+        inventory.device = FakeDevice()
+        inventory.ui_goto_storage = Mock()
+        inventory._storage_enter_material = Mock()
+        inventory._wait_until_storage_stable = Mock()
+        inventory._storage_in_material = Mock(return_value=True)
+        scroll = StalledScroll()
+
+        def find_book(_image, key):
+            return (400, 300) if scroll.position >= scroll.END else None
+
+        with patch('module.storage.training_inventory.INVENTORY_SCROLL', scroll), \
+                patch('module.storage.training_inventory.item_position', side_effect=find_book), \
+                patch.object(inventory, '_read_item', return_value=1957):
+            self.assertEqual(inventory.read_counts(['exp_book_t1']), {'exp_book_t1': 1957})
+
+        self.assertTrue(scroll.stalled)
+
+    def test_the_real_scroll_stall_completes_the_scan(self):
+        """End to end through Scroll.set(), not a stubbed ``stalled`` flag.
+
+        The calibration is the production one, 541 px of track, while the thumb
+        only travels 414.5 px (38.0 -> 452.5, measured on the incident): the last
+        reachable position is 0.893, ``at_bottom()`` needs > 0.95 and
+        ``next_page(0.45)`` targets 0.969, so the scan used to give up with
+        ``Inventory scan stopped before verified bottom``.
+        """
+        import numpy as np
+        from module.ui.scroll import Scroll
+        from tests.test_training_dock_scan import Main, ProbeDevice, ProbeTimer
+
+        class PageScroll(Scroll):
+            """INVENTORY_SCROLL whose reported position is driven by the device."""
+
+            def __init__(self):
+                super().__init__((1257, 94, 1264, 635), (247, 211, 66),
+                                 name='TrainingInventoryScroll')
+                self.length = 78
+                self.position = 0.0
+
+            def ready(self):
+                self.drag_interval = ProbeTimer()
+                self.drag_timeout = collections.namedtuple('_Timer', 'reset reached')(
+                    lambda: None, lambda: False)
+                return self
+
+            def cal_position(self, main):
+                return self.position
+
+        class FakeDevice:
+            def __init__(self):
+                self.image = np.zeros((720, 1280, 3), dtype=np.uint8)
+                self.clear_count = 0
+
+            def screenshot(self):
+                return None
+
+            def sleep(self, _seconds):
+                return None
+
+            def swipe(self, p1, p2, duration=(0.1, 0.2), name='SWIPE', distance_check=True):
+                if np.linalg.norm(np.subtract(p1, p2)) < 10:
+                    return
+                direction = 1 if p2[1] > p1[1] else -1
+                # The page turn the incident log measured: the thumb moved
+                # 452.5 - 389.5 = 63 px of a 415 px travel, 0.075 of the track.
+                self.scroll.position = min(max(self.scroll.position + direction * 0.075, 0.0),
+                                           self.scroll.END)
+
+            def click_record_clear(self):
+                self.clear_count += 1
+
+        scroll = PageScroll()
+        scroll.END = 0.893
+        device = FakeDevice()
+        device.scroll = scroll
+        inventory = TrainingInventory.__new__(TrainingInventory)
+        inventory.config = SimpleNamespace(SERVER='cn')
+        inventory.device = device
+        inventory.ui_goto_storage = Mock()
+        inventory._storage_enter_material = Mock()
+        inventory._wait_until_storage_stable = Mock()
+        inventory._storage_in_material = Mock(return_value=True)
+
+        def find_book(_image, key):
+            # Only visible on the last screenful, i.e. after the scroll stalled.
+            return (400, 300) if scroll.stalled else None
+
+        with patch('module.storage.training_inventory.INVENTORY_SCROLL', scroll.ready()), \
+                patch('module.storage.training_inventory.item_position', side_effect=find_book), \
+                patch.object(inventory, '_read_item', return_value=1957):
+            self.assertEqual(inventory.read_counts(['exp_book_t1']), {'exp_book_t1': 1957})
+
+        self.assertTrue(scroll.stalled)
+        self.assertAlmostEqual(scroll.position, scroll.END)
+
+    def test_scroll_stalled_in_the_middle_of_the_list_still_aborts(self):
+        import numpy as np
+
+        class FakeDevice:
+            def __init__(self):
+                self.image = np.zeros((720, 1280, 3), dtype=np.uint8)
+
+            def screenshot(self):
+                return None
+
+            def sleep(self, _seconds):
+                return None
+
+            def click_record_clear(self):
+                return None
+
+        class StalledScroll:
+            def __init__(self):
+                self.stalled = False
+
+            def set_top(self, main):
+                self.stalled = False
+
+            def at_bottom(self, main):
+                return False
+
+            def cal_position(self, main):
+                return 0.2
+
+            def next_page(self, main, page=0.45):
+                self.stalled = True
+
+        inventory = TrainingInventory.__new__(TrainingInventory)
+        inventory.config = SimpleNamespace(SERVER='cn')
+        inventory.device = FakeDevice()
+        inventory.ui_goto_storage = Mock()
+        inventory._storage_enter_material = Mock()
+        inventory._wait_until_storage_stable = Mock()
+        inventory._storage_in_material = Mock(return_value=True)
+        with patch('module.storage.training_inventory.INVENTORY_SCROLL', StalledScroll()), \
+                patch('module.storage.training_inventory.item_position', return_value=None):
+            with self.assertRaises(RequestHumanTakeover) as caught:
+                inventory.read_counts(['exp_book_t1'])
+        self.assertIn('stalled', str(caught.exception))
 
     def test_item_templates_and_count_limits_are_type_specific(self):
         self.assertEqual(ITEM_NAMES['destroyer'], '驱逐改造图纸T3')
