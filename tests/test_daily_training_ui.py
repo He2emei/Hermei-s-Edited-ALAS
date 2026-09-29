@@ -11,7 +11,9 @@ from module.dorm.training import DormTraining, maintain_dorm_if_due
 from module.exception import RequestHumanTakeover
 from module.exception import GameTooManyClickError
 from module.os.training_policy import ShipCandidate
-from module.storage.training_inventory import ITEM_NAMES, TrainingInventory, item_position, parse_owned_count
+from module.storage.training_inventory import (
+    ITEM_NAMES, TrainingInventory, item_position, parse_owned_count, title_matches,
+)
 
 
 def submarine(name='U-test', level=90, cap=None):
@@ -207,6 +209,13 @@ class TrainingInventoryMockTest(unittest.TestCase):
         inventory.device.click_record_clear.assert_not_called()
 
     def test_missing_item_at_verified_bottom_never_becomes_zero(self):
+        """A lone unrecognized item is still a failure, not a zero.
+
+        An item is only called out of stock when the same page proved it can be
+        read at all, i.e. when at least one requested item was recognized.  With
+        nothing recognized the page or the icon assets are unusable, so the count
+        would be a guess and the scan fails closed.
+        """
         import numpy as np
         inventory = TrainingInventory.__new__(TrainingInventory)
         inventory.config = SimpleNamespace(SERVER='cn')
@@ -409,6 +418,111 @@ class TrainingInventoryMockTest(unittest.TestCase):
                 inventory.read_counts(['exp_book_t1'])
         self.assertIn('stalled', str(caught.exception))
 
+    def test_absent_blueprint_is_zero_stock_after_two_verified_sweeps(self):
+        """A blueprint the account does not own is not a scan failure.
+
+        Production signature (2026-09-30 00:45:12 / 00:52:21, `alas`): the CN
+        material page lists an item only while the account owns it, so the T3
+        blueprint row of both accounts has one cell fewer and the missing icon
+        was never matched, which aborted the whole `Hard` task and left the
+        scheduler in a crash loop.
+        """
+        inventory, scroll = self._sweep_inventory()
+        found = {'destroyer': 13, 'cruiser': 2, 'carrier': 9}
+
+        def find(_image, key):
+            if key == 'battleship':
+                return None
+            return (400, 300) if scroll.position >= 0.2 else None
+
+        with patch('module.storage.training_inventory.INVENTORY_SCROLL', scroll), \
+                patch('module.storage.training_inventory.item_position', side_effect=find), \
+                patch.object(inventory, '_read_item', side_effect=lambda key, position: found[key]):
+            counts = inventory.read_counts(['destroyer', 'cruiser', 'battleship', 'carrier'])
+
+        self.assertEqual(counts, {'destroyer': 13, 'cruiser': 2, 'carrier': 9, 'battleship': 0})
+        # The absent item was re-verified with the finer page turn before the
+        # zero was recorded.
+        self.assertIn(TrainingInventory.VERIFY_PAGE, scroll.pages)
+        self.assertLess(TrainingInventory.VERIFY_PAGE, TrainingInventory.SCAN_PAGE)
+
+    def test_item_found_only_by_the_finer_sweep_keeps_its_count(self):
+        """The finer sweep exists so a present item is never reported as zero."""
+        inventory, scroll = self._sweep_inventory()
+
+        def find(_image, key):
+            if key == 'cruiser':
+                return (400, 300) if scroll.position >= 0.2 else None
+            # Visible only while the fine sweep is running.
+            return (400, 300) if TrainingInventory.VERIFY_PAGE in scroll.pages else None
+
+        with patch('module.storage.training_inventory.INVENTORY_SCROLL', scroll), \
+                patch('module.storage.training_inventory.item_position', side_effect=find), \
+                patch.object(inventory, '_read_item', return_value=47):
+            counts = inventory.read_counts(['cruiser', 'battleship'])
+
+        self.assertEqual(counts, {'cruiser': 47, 'battleship': 47})
+        self.assertIn(TrainingInventory.VERIFY_PAGE, scroll.pages)
+
+    def test_verify_sweep_losing_the_material_page_fails_closed(self):
+        inventory, scroll = self._sweep_inventory()
+        inventory._storage_in_material = Mock(
+            side_effect=lambda: TrainingInventory.VERIFY_PAGE not in scroll.pages)
+
+        def find(_image, key):
+            if key == 'destroyer':
+                return (400, 300) if scroll.position >= 0.2 else None
+            return None
+
+        with patch('module.storage.training_inventory.INVENTORY_SCROLL', scroll), \
+                patch('module.storage.training_inventory.item_position', side_effect=find), \
+                patch.object(inventory, '_read_item', return_value=13):
+            with self.assertRaises(RequestHumanTakeover) as caught:
+                inventory.read_counts(['destroyer', 'battleship'])
+
+        self.assertIn('Lost inventory material page', str(caught.exception))
+
+    def _sweep_inventory(self):
+        """A TrainingInventory whose scrollbar saturates at the measured 0.893."""
+        import numpy as np
+
+        class SweepScroll:
+            END = 0.893
+            # The measured page turn: 0.45 page moves the thumb 0.0758 of the
+            # 541 px calibrated track (thumb 78 px, travel 463 px).
+            MULTIPLY = 0.1685
+
+            def __init__(self):
+                self.position = 0.0
+                self.stalled = False
+                self.pages = []
+
+            def set_top(self, main):
+                self.position = 0.0
+                self.stalled = False
+
+            def at_bottom(self, main):
+                return False
+
+            def cal_position(self, main):
+                return self.position
+
+            def next_page(self, main, page=0.45):
+                self.pages.append(page)
+                self.position = min(self.position + page * self.MULTIPLY, self.END)
+                self.stalled = self.position >= self.END
+
+        inventory = TrainingInventory.__new__(TrainingInventory)
+        inventory.config = SimpleNamespace(SERVER='cn')
+        inventory.device = SimpleNamespace(
+            image=np.zeros((720, 1280, 3), dtype=np.uint8),
+            screenshot=Mock(), sleep=Mock(), click_record_clear=Mock())
+        inventory.ui_goto_storage = Mock()
+        inventory._storage_enter_material = Mock()
+        inventory._wait_until_storage_stable = Mock()
+        inventory._storage_in_material = Mock(return_value=True)
+        return inventory, SweepScroll()
+
     def test_item_templates_and_count_limits_are_type_specific(self):
         self.assertEqual(ITEM_NAMES['destroyer'], '驱逐改造图纸T3')
         self.assertEqual(ITEM_NAMES['cruiser'], '巡洋改造图纸T3')
@@ -420,7 +534,7 @@ class TrainingInventoryMockTest(unittest.TestCase):
         self.assertIsNone(parse_owned_count('3001', 'exp_book_t1'))
         self.assertIsNone(parse_owned_count('x', 'destroyer'))
 
-    def test_detail_ocr_requires_exact_title_and_stable_count(self):
+    def test_detail_ocr_requires_a_stable_reading(self):
         inventory = TrainingInventory.__new__(TrainingInventory)
         inventory.device = SimpleNamespace(image=object(), click=Mock(), screenshot=Mock())
         inventory._storage_in_material = Mock(return_value=True)
@@ -435,6 +549,86 @@ class TrainingInventoryMockTest(unittest.TestCase):
         with patch('module.storage.training_inventory.Ocr', side_effect=ocr_factory):
             self.assertEqual(inventory._read_item('destroyer', (100, 100)), 47)
         inventory.device.click.assert_called()
+
+    def test_item_title_tolerates_dropped_and_residual_characters(self):
+        """The CN item dialog reads carry the noise seen in the production log.
+
+        `Use/log/2026-09-30_alas2.txt` 00:23:28 reads `占战列改造图纸T3` (residual
+        leading character) and 00:23:29 reads `航母改造纸T3` (dropped 图); both are
+        the expected item, and character-exact equality threw them away.
+        """
+        self.assertTrue(title_matches('战列改造图纸T3', ITEM_NAMES['battleship']))
+        self.assertTrue(title_matches('占战列改造图纸T3', ITEM_NAMES['battleship']))
+        self.assertTrue(title_matches('航母改造纸T3', ITEM_NAMES['carrier']))
+        # A different tier, a lost ship type or an unreadable tier stay rejected:
+        # the count of another tier is a different number.
+        self.assertFalse(title_matches('战列改造图纸T2', ITEM_NAMES['battleship']))
+        self.assertFalse(title_matches('巡洋改造图纸T3', ITEM_NAMES['battleship']))
+        self.assertFalse(title_matches('战列改造图纸', ITEM_NAMES['battleship']))
+        self.assertFalse(title_matches('战列改造图纸T3T3', ITEM_NAMES['battleship']))
+        self.assertFalse(title_matches(None, ITEM_NAMES['battleship']))
+
+    def test_detail_ocr_accepts_two_differently_noisy_readings_of_one_item(self):
+        inventory = TrainingInventory.__new__(TrainingInventory)
+        inventory.device = SimpleNamespace(image=object(), click=Mock(), screenshot=Mock())
+        inventory._storage_in_material = Mock(return_value=True)
+        inventory._wait = Mock()
+        inventory._info_visible = Mock(return_value=True)
+
+        ocr_values = iter(('占战列改造图纸T3', '9', '战列改造图纸T3', '9'))
+
+        def ocr_factory(*args, **kwargs):
+            return SimpleNamespace(ocr=lambda image: next(ocr_values))
+
+        with patch('module.storage.training_inventory.Ocr', side_effect=ocr_factory):
+            self.assertEqual(inventory._read_item('battleship', (100, 100)), 9)
+
+    def test_detail_ocr_rejects_a_different_tier_until_it_gives_up(self):
+        inventory = TrainingInventory.__new__(TrainingInventory)
+        inventory.device = SimpleNamespace(image=object(), click=Mock(), screenshot=Mock())
+        inventory._storage_in_material = Mock(return_value=True)
+        inventory._wait = Mock()
+        inventory._info_visible = Mock(return_value=True)
+
+        ocr_values = iter(('战列改造图纸T2', '1012') * 4)
+
+        def ocr_factory(*args, **kwargs):
+            return SimpleNamespace(ocr=lambda image: next(ocr_values))
+
+        with patch('module.storage.training_inventory.Ocr', side_effect=ocr_factory):
+            with self.assertRaises(RequestHumanTakeover) as caught:
+                inventory._read_item('battleship', (100, 100))
+        self.assertIn('Unreliable inventory item details', str(caught.exception))
+
+    def test_checked_in_absent_blueprint_frame_is_not_recognized(self):
+        """The live 2026-09-30 frame behind the crash loop.
+
+        The `alas` T3 blueprint row holds 驱逐 / 巡洋 / 航母 in adjacent columns
+        with no cell between 巡洋 and 航母, because the account owns no
+        战列改造图纸T3 and the CN material page only lists owned items.  The
+        `battleship` template scores 0.513 on 巡洋's cell, i.e. the item is
+        absent rather than unrecognized.
+        """
+        import cv2
+        fixtures = Path(__file__).parent / 'fixtures' / 'training_inventory'
+        frame = cv2.imread(str(fixtures / 'material-absent-battleship.png'), cv2.IMREAD_COLOR)
+        self.assertIsNotNone(frame)
+        frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+
+        destroyer = item_position(frame, 'destroyer')
+        cruiser = item_position(frame, 'cruiser')
+        carrier = item_position(frame, 'carrier')
+        self.assertIsNotNone(destroyer)
+        self.assertIsNotNone(cruiser)
+        self.assertIsNotNone(carrier)
+        self.assertIsNone(item_position(frame, 'battleship'))
+        # One grid column apart in the same row: 巡洋 and 航母 are neighbours, so
+        # there is no unread cell left for the missing blueprint.
+        self.assertEqual(destroyer[1], cruiser[1])
+        self.assertEqual(cruiser[1], carrier[1])
+        self.assertEqual(destroyer[0], 524)
+        self.assertEqual(cruiser[0], 683)
+        self.assertEqual(carrier[0], 842)
 
     def test_checked_in_storage_fixtures_distinguish_t3_and_t2(self):
         import cv2
