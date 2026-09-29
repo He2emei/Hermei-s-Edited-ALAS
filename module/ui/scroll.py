@@ -46,6 +46,15 @@ class Scroll:
         self.length = self.total / 2
         self.drag_interval = Timer(1, count=2)
         self.drag_timeout = Timer(5, count=10)
+        # Set by set() when the requested position turned out to be unreachable:
+        # the swipe was issued over the whole remaining distance but the thumb
+        # did not move, so the list ends here.  A calibrated track that runs past
+        # the end of the drawn scrollbar makes cal_position() saturate below 1.0
+        # at the end of the list, which leaves at_bottom() permanently false.
+        # Callers that must not treat "cannot scroll any further" as a failure
+        # (the training inventory scan, see module/storage/training_inventory.py)
+        # read this flag instead of guessing from a position threshold.
+        self.stalled = False
 
     def match_color(self, main):
         """
@@ -145,12 +154,18 @@ class Scroll:
 
         Returns:
             bool: If dragged.
+
+        Attributes:
+            stalled (bool): True if the loop stopped because the thumb did not
+                move any more, i.e. the scroll cannot reach the requested
+                position.  Meaningless before the first set() call.
         """
         logger.info(f'{self.name} set to {position}')
         self.drag_interval.clear()
         self.drag_timeout.reset()
         dragged = 0
         stalled = 0
+        self.stalled = False
         swiped_position = None
         if position <= self.edge_threshold:
             random_range = np.subtract(0, self.edge_add)
@@ -188,6 +203,7 @@ class Scroll:
                         and abs(current - swiped_position) >= self.drag_threshold
                     stalled = 0 if moved else stalled + 1
                     if stalled >= self.stall_limit:
+                        self.stalled = True
                         logger.warning(f'{self.name} stopped at {current}, '
                                        f'cannot reach {position}, assume scroll set')
                         break
