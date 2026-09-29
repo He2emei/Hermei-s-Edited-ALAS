@@ -443,6 +443,9 @@ class ScrollStallTest(unittest.TestCase):
         self.assertEqual(dragged, scroll.stall_limit)
         self.assertEqual(device.swipes, ['DOCK_SCROLL'] * scroll.stall_limit)
         self.assertEqual(scroll.position, TRACK_END)
+        # The caller of set() cannot tell an unreachable position from a reached
+        # one by the return value: both are just a drag count.
+        self.assertTrue(scroll.stalled)
 
     def test_scroll_still_reaches_a_position_inside_the_track(self):
         scroll = ProbeScroll(position=0.0, end=TRACK_END, page_step=0.45).ready()
@@ -450,6 +453,15 @@ class ScrollStallTest(unittest.TestCase):
         dragged = scroll.set(0.45, main=Main(device))
         self.assertEqual(dragged, 1)
         self.assertAlmostEqual(scroll.position, 0.45)
+        self.assertFalse(scroll.stalled)
+
+    def test_a_new_set_clears_the_stalled_flag(self):
+        scroll = ProbeScroll(position=TRACK_END, end=TRACK_END, page_step=TRACK_END).ready()
+        device = ProbeDevice(scroll, step=0.5)
+        scroll.set(1.0, main=Main(device))
+        self.assertTrue(scroll.stalled)
+        scroll.set(TRACK_END, main=Main(device))
+        self.assertFalse(scroll.stalled)
 
     def test_scroll_still_reaches_the_track_top(self):
         scroll = ProbeScroll(position=TRACK_END, end=TRACK_END, page_step=0.45).ready()
@@ -458,6 +470,7 @@ class ScrollStallTest(unittest.TestCase):
         self.assertGreater(dragged, 0)
         self.assertLess(dragged, scroll.stall_limit)
         self.assertLess(abs(scroll.position), scroll.drag_threshold)
+        self.assertFalse(scroll.stalled)
 
     def test_the_probe_device_reproduces_the_click_guard(self):
         # The stub is only useful if it aborts like the production device does.
