@@ -1,15 +1,13 @@
 from datetime import datetime
 
-from module.config.utils import get_os_next_reset, get_os_reset_remain
+from module.config.utils import get_os_reset_remain
+from module.exception import RequestHumanTakeover
 from module.logger import logger
 from module.os.cl1 import get_cl1_yellow_coins_preserve
 from module.os.config import OSConfig
 from module.os.map_operation import OSMapOperation
 from module.os.operation_siren import OperationSiren
-from module.os.tasks.cross_month import (
-    is_cross_month_catch_up,
-    monthly_shop_clearout_start,
-)
+from module.os.tasks.cross_month import is_cross_month_catch_up
 from module.os_handler.action_point import ActionPointLimit
 
 
@@ -155,18 +153,15 @@ class OSCampaignRun(OSMapOperation):
         catch_up = is_cross_month_catch_up(self.config.task.next_run, datetime.now())
         if catch_up:
             # os_init() enters OpSi from other pages and would refresh the world.
-            # An overdue run is safe only if the client is already inside it.
+            # A battle or overlay can hide the map while the old world still
+            # exists. Stop the scheduler instead of letting another task exit it.
             self.device.screenshot()
             if not (self.is_in_map() or self.is_in_globe()):
-                logger.warning(
-                    'Overdue OpsiCrossMonth found outside Operation Siren; '
-                    'the old instance is no longer safely reachable, skip it'
+                raise RequestHumanTakeover(
+                    'Overdue OpsiCrossMonth cannot confirm the old Operation Siren '
+                    'map; finish manual work and return to its map before restarting. '
+                    'Refusing to run other tasks that could exit and refresh it.'
                 )
-                self.config.task_delay(
-                    target=monthly_shop_clearout_start(get_os_next_reset())
-                )
-                self.config.task_stop()
-                return
         campaign = self.load_campaign(skip_first_auto_search=catch_up)
         try:
             campaign.os_cross_month(catch_up=catch_up)
