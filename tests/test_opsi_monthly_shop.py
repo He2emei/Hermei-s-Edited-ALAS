@@ -4,7 +4,7 @@ from types import SimpleNamespace
 from unittest.mock import patch
 
 from module.campaign.os_run import OSCampaignRun
-from module.exception import ScriptError
+from module.exception import RequestHumanTakeover, ScriptError
 from module.os.tasks.cross_month import (
     OpsiCrossMonth,
     is_cross_month_catch_up,
@@ -183,6 +183,21 @@ class MonthlyShopRetryTest(unittest.TestCase):
     def test_missing_shop_page_is_retried(self):
         campaign = SimpleNamespace(_os_shop_visit=lambda monthly_clearout: None)
         self.assertTrue(OpsiShopTask.os_shop_monthly_clearout(campaign))
+
+    def test_live_tuning_offense_name_does_not_block_sold_out_ap_boxes(self):
+        class CrossMonthBuyHarness(MonthlyBuyHarness):
+            def items_filter_in_cross_month(self, items):
+                return Selector().items_filter_in_cross_month(items)
+
+        campaign = CrossMonthBuyHarness([
+            shop_item('ActionPoint100', 1, count=0, total_count=4),
+            shop_item('TuningOffenseT2', 0, count=2, total_count=2),
+        ])
+        self.assertFalse(campaign.handle_cross_month_port_supply_buy())
+
+    def test_live_tuning_offense_name_is_eligible_for_monthly_clearout(self):
+        item = shop_item('TuningOffenseT2', 3, count=2, total_count=2)
+        self.assertEqual(Selector().items_filter_in_monthly_clearout([item]), [item])
 
 
 class FakeConfig:
@@ -373,7 +388,7 @@ class CrossMonthCatchUpRunnerTest(unittest.TestCase):
         self.assertTrue(runner.skip_first_auto_search)
         self.assertTrue(runner.campaign.catch_up)
 
-    def test_overdue_run_outside_opsi_skips_lost_old_world_and_reschedules(self):
+    def test_overdue_run_on_unconfirmed_page_stops_entire_scheduler(self):
         runner = self.Runner(in_map=False)
 
         with patch('module.campaign.os_run.datetime') as mocked_datetime, \
@@ -383,14 +398,12 @@ class CrossMonthCatchUpRunnerTest(unittest.TestCase):
                     create=True,
                 ):
             mocked_datetime.now.return_value = self.NOW
-            runner.opsi_cross_month()
+            with self.assertRaisesRegex(RequestHumanTakeover, 'old Operation Siren'):
+                runner.opsi_cross_month()
 
         self.assertEqual(runner.load_calls, 0)
-        self.assertEqual(
-            runner.config.task_delays,
-            [{'target': datetime(2026, 9, 28, 0, 0)}],
-        )
-        self.assertEqual(runner.config.task_stops, 1)
+        self.assertEqual(runner.config.task_delays, [])
+        self.assertEqual(runner.config.task_stops, 0)
 
 
 if __name__ == '__main__':
