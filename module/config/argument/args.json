@@ -9839,6 +9839,16 @@
         "display": "hide"
       }
     },
+    "OpsiCrossMonth": {
+      "SkipPendingCatchUp": {
+        "type": "checkbox",
+        "value": false,
+        "option": [
+          true,
+          false
+        ]
+      }
+    },
     "Storage": {
       "Storage": {
         "type": "storage",
