@@ -2633,6 +2633,18 @@
       "help": "OpsiExplore.LastZone.help"
     }
   },
+  "OpsiCrossMonth": {
+    "_info": {
+      "name": "Cross-month recovery",
+      "help": ""
+    },
+    "SkipPendingCatchUp": {
+      "name": "Confirm old month handled and skip catch-up",
+      "help": "Enable only after confirming that old-month work is complete or the old world is unavailable. Skips remaining old-month tasks and Action Point box use, schedules the next monthly shop clearout, and switches itself off after one run.",
+      "True": "True",
+      "False": "False"
+    }
+  },
   "OpsiShop": {
     "_info": {
       "name": "OpsiShop._info.name",
