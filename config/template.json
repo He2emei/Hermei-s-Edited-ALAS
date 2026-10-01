@@ -1970,6 +1970,9 @@
       "FailureInterval": 120,
       "ServerUpdate": "00:00"
     },
+    "OpsiCrossMonth": {
+      "SkipPendingCatchUp": false
+    },
     "Storage": {
       "Storage": {}
     }
