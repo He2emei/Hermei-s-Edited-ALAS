@@ -338,6 +338,7 @@ Opsi:
       - OpsiTraining
     OpsiCrossMonth:
       - Scheduler
+      - OpsiCrossMonth
 
 # =================== Island ===================
 Island:
