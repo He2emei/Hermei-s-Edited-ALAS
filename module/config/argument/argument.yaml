@@ -763,6 +763,11 @@ OpsiExplore:
   SpecialRadar: false
   ForceRun: false
   LastZone: 0
+OpsiCrossMonth:
+  SkipPendingCatchUp:
+    type: checkbox
+    value: false
+    option: [ true, false ]
 OpsiShop:
   PresetFilter:
     value: max_benefit_meta
