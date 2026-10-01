@@ -204,6 +204,21 @@ class FakeConfig:
     def __init__(self):
         self.task_delays = []
         self.task_stops = 0
+        self.OpsiCrossMonth_SkipPendingCatchUp = False
+        self.multi_set_calls = 0
+
+    class MultiSet:
+        def __init__(self, config):
+            self.config = config
+
+        def __enter__(self):
+            self.config.multi_set_calls += 1
+
+        def __exit__(self, *args):
+            return False
+
+    def multi_set(self):
+        return self.MultiSet(self)
 
     def task_delay(self, **kwargs):
         self.task_delays.append(kwargs)
@@ -354,11 +369,12 @@ class CrossMonthCatchUpRunnerTest(unittest.TestCase):
     class Runner:
         opsi_cross_month = OSCampaignRun.opsi_cross_month
 
-        def __init__(self, in_map):
+        def __init__(self, in_map, skip=False):
             self.config = FakeConfig()
             self.config.task = SimpleNamespace(
                 next_run=CrossMonthCatchUpRunnerTest.SCHEDULED,
             )
+            self.config.OpsiCrossMonth_SkipPendingCatchUp = skip
             self.device = CrossMonthCatchUpRunnerTest.Device()
             self.in_map = in_map
             self.campaign = CrossMonthCatchUpRunnerTest.Campaign()
@@ -402,6 +418,36 @@ class CrossMonthCatchUpRunnerTest(unittest.TestCase):
                 runner.opsi_cross_month()
 
         self.assertEqual(runner.load_calls, 0)
+        self.assertEqual(runner.config.task_delays, [])
+        self.assertEqual(runner.config.task_stops, 0)
+
+    def test_confirmed_skip_resets_flag_and_reschedules_without_game_access(self):
+        runner = self.Runner(in_map=False, skip=True)
+
+        with patch('module.campaign.os_run.datetime') as mocked_datetime, \
+                patch('module.campaign.os_run.get_os_next_reset',
+                      return_value=datetime(2026, 10, 1, 0, 0)):
+            mocked_datetime.now.return_value = self.NOW
+            runner.opsi_cross_month()
+
+        self.assertFalse(runner.config.OpsiCrossMonth_SkipPendingCatchUp)
+        self.assertEqual(runner.config.multi_set_calls, 1)
+        self.assertEqual(runner.config.task_delays, [{'target': datetime(2026, 9, 28, 0, 0)}])
+        self.assertEqual(runner.config.task_stops, 1)
+        self.assertEqual(runner.device.screenshots, 0)
+        self.assertEqual(runner.load_calls, 0)
+
+    def test_normal_run_clears_misplaced_skip_flag_and_continues(self):
+        runner = self.Runner(in_map=False, skip=True)
+        runner.config.task.next_run = datetime(2026, 9, 20, 0, 0)
+
+        with patch('module.campaign.os_run.datetime') as mocked_datetime:
+            mocked_datetime.now.return_value = datetime(2026, 10, 2, 0, 0)
+            runner.opsi_cross_month()
+
+        self.assertFalse(runner.config.OpsiCrossMonth_SkipPendingCatchUp)
+        self.assertEqual(runner.config.multi_set_calls, 1)
+        self.assertEqual(runner.load_calls, 1)
         self.assertEqual(runner.config.task_delays, [])
         self.assertEqual(runner.config.task_stops, 0)
 
