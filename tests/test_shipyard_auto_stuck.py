@@ -5,6 +5,7 @@ from unittest import mock
 from module.shipyard.assets import SHIPYARD_MINUS_DEV, SHIPYARD_MINUS_FATE
 from module.shipyard.auto import AutoShipyard
 from module.exception import RequestHumanTakeover
+from module.ui.page import page_shipyard
 
 
 class ShipyardUnstartedProjectTest(unittest.TestCase):
@@ -82,7 +83,7 @@ class ShipyardUnstartedProjectTest(unittest.TestCase):
         # reports retry; it must not fall through to the quantity controls again.
         self.assertEqual(calls, [1])
 
-    def test_unreadable_level_target_defers_instead_of_stopping_the_pass(self):
+    def test_unreadable_level_target_defers_and_closes_book_dialog_on_leveler(self):
         """One bad level target must not end the whole daily catch-up.
 
         Live 2026-09-19 04:38: the Shipyard pass died with "Request human
@@ -90,6 +91,44 @@ class ShipyardUnstartedProjectTest(unittest.TestCase):
         scheduler and, with it, every later task in the queue.
         """
 
+        fake = self._make_leveling_fake()
+        with mock.patch('module.shipyard.auto.required_level', return_value=10), \
+                mock.patch('module.shipyard.auto.ShipyardLeveler') as leveler:
+            leveler_instance = leveler.return_value
+            leveler_instance.meet_level.side_effect = RequestHumanTakeover(
+                'dock filter does not surface the level target')
+            leveler_instance._book_dialog.return_value = True
+            self.assertEqual(fake._candidate(4, 1, '埃吉尔', 'DR', True), 'level')
+            leveler_instance._book_dialog.assert_called_once_with()
+            leveler_instance._book_click.assert_called_once_with(986, 132, 'SHIPYARD_BOOK_CLOSE')
+            fake.ui_ensure.assert_called_once_with(page_shipyard)
+
+    def test_unreadable_level_target_without_book_dialog_only_returns_to_shipyard(self):
+        fake = self._make_leveling_fake()
+        with mock.patch('module.shipyard.auto.required_level', return_value=10), \
+                mock.patch('module.shipyard.auto.ShipyardLeveler') as leveler:
+            leveler_instance = leveler.return_value
+            leveler_instance.meet_level.side_effect = RequestHumanTakeover('target unavailable')
+            leveler_instance._book_dialog.return_value = False
+            self.assertEqual(fake._candidate(4, 1, '埃吉尔', 'DR', True), 'level')
+            leveler_instance._book_dialog.assert_called_once_with()
+            leveler_instance._book_click.assert_not_called()
+            fake.ui_ensure.assert_called_once_with(page_shipyard)
+
+    def test_unreadable_level_target_ignores_close_request_and_still_returns_to_shipyard(self):
+        fake = self._make_leveling_fake()
+        with mock.patch('module.shipyard.auto.required_level', return_value=10), \
+                mock.patch('module.shipyard.auto.ShipyardLeveler') as leveler:
+            leveler_instance = leveler.return_value
+            leveler_instance.meet_level.side_effect = RequestHumanTakeover('target unavailable')
+            leveler_instance._book_dialog.return_value = True
+            leveler_instance._book_click.side_effect = RequestHumanTakeover('close failed')
+            self.assertEqual(fake._candidate(4, 1, '埃吉尔', 'DR', True), 'level')
+            leveler_instance._book_click.assert_called_once_with(986, 132, 'SHIPYARD_BOOK_CLOSE')
+            fake.ui_ensure.assert_called_once_with(page_shipyard)
+
+    @staticmethod
+    def _make_leveling_fake():
         class Fake(AutoShipyard):
             def auto_enter(self):
                 return True
@@ -103,17 +142,11 @@ class ShipyardUnstartedProjectTest(unittest.TestCase):
             def ui_ensure(self, page):
                 return None
 
-            def _book_dialog(self):
-                return False
-
         fake = Fake.__new__(Fake)
         fake.device = SimpleNamespace(image=None)
         fake.config = SimpleNamespace(ShipyardAuto_UseExpBooks=True)
-        with mock.patch('module.shipyard.auto.required_level', return_value=10), \
-                mock.patch('module.shipyard.auto.ShipyardLeveler') as leveler:
-            leveler.return_value.meet_level.side_effect = RequestHumanTakeover(
-                'dock filter does not surface the level target')
-            self.assertEqual(fake._candidate(4, 1, '埃吉尔', 'DR', True), 'level')
+        fake.ui_ensure = mock.Mock()
+        return fake
 
 
 if __name__ == '__main__':

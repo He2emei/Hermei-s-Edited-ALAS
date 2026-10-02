@@ -128,9 +128,9 @@ class AutoShipyard(AutoShipyardUI):
                     # the next task would then start on a page it cannot detect
                     # ("Game page unknown", live 2026-09-19 04:46).  Close it
                     # before returning to the shipyard.
-                    if self._book_dialog():
+                    if leveler._book_dialog():
                         try:
-                            self._book_click(986, 132, 'SHIPYARD_BOOK_CLOSE')
+                            leveler._book_click(986, 132, 'SHIPYARD_BOOK_CLOSE')
                         except RequestHumanTakeover:
                             pass
                     self.ui_ensure(page_shipyard)
