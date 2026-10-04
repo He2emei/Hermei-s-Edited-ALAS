@@ -146,6 +146,10 @@ class ShipyardUI(UI):
             return True
         if self.appear(SHIPYARD_IN_FATE, offset=(20, 20)):
             return True
+        if self.appear(SHIPYARD_SERIES_SELECT_ENTER, offset=(20, 20)) and (
+                self.appear(SHIPYARD_MINUS_DEV, offset=(20, 20))
+                or self.appear(SHIPYARD_MINUS_FATE, offset=(20, 20))):
+            return True
 
         return False
 
