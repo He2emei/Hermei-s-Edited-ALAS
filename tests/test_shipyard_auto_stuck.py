@@ -1,8 +1,14 @@
 import unittest
+from pathlib import Path
 from types import SimpleNamespace
 from unittest import mock
 
+import numpy as np
+from PIL import Image
+
 from module.shipyard.assets import SHIPYARD_MINUS_DEV, SHIPYARD_MINUS_FATE
+from module.shipyard.assets import SHIPYARD_SERIES_SELECT_CHECK, SHIPYARD_SERIES_SELECT_ENTER
+from module.shipyard.ui import ShipyardUI
 from module.shipyard.auto import AutoShipyard
 from module.exception import RequestHumanTakeover
 from module.ui.page import page_shipyard
@@ -147,6 +153,52 @@ class ShipyardUnstartedProjectTest(unittest.TestCase):
         fake.config = SimpleNamespace(ShipyardAuto_UseExpBooks=True)
         fake.ui_ensure = mock.Mock()
         return fake
+
+
+class ShipyardSeriesDetectionTest(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        fixture = Path(__file__).parent / 'fixtures' / 'shipyard_series_current_20261004.png'
+        cls.image = np.asarray(Image.open(fixture).convert('RGB'))
+        selector_fixture = Path(__file__).parent / 'fixtures' / 'shipyard_series_selector_20261004.png'
+        cls.selector_image = np.asarray(Image.open(selector_fixture).convert('RGB'))
+
+    def make_ui(self, image=None):
+        ui = ShipyardUI.__new__(ShipyardUI)
+        ui.device = SimpleNamespace(image=self.image if image is None else image,
+                                    stuck_record_add=lambda button: None)
+        return ui
+
+    def test_built_shipyard_with_series_entry_and_dev_control_is_recognized(self):
+        ui = self.make_ui()
+        self.assertTrue(ui.appear(SHIPYARD_SERIES_SELECT_ENTER, offset=(20, 20)))
+        self.assertTrue(ui.appear(SHIPYARD_MINUS_DEV, offset=(20, 20)))
+        self.assertTrue(ui._shipyard_in_ui())
+
+    def test_empty_frame_is_not_shipyard(self):
+        self.assertFalse(self.make_ui(np.zeros_like(self.image))._shipyard_in_ui())
+
+    def test_series_entry_alone_is_not_shipyard(self):
+        image = self.image.copy()
+        image[429:463, 1049:1084] = 0
+        image[453:487, 1028:1063] = 0
+        ui = self.make_ui(image)
+        self.assertTrue(ui.appear(SHIPYARD_SERIES_SELECT_ENTER, offset=(20, 20)))
+        self.assertFalse(ui.appear(SHIPYARD_MINUS_FATE, offset=(20, 20)))
+        self.assertFalse(ui._shipyard_in_ui())
+
+    def test_dev_control_alone_is_not_shipyard(self):
+        image = self.image.copy()
+        image[659:701, 33:161] = 0
+        ui = self.make_ui(image)
+        self.assertFalse(ui.appear(SHIPYARD_SERIES_SELECT_ENTER, offset=(20, 20)))
+        self.assertTrue(ui.appear(SHIPYARD_MINUS_DEV, offset=(20, 20)))
+        self.assertFalse(ui._shipyard_in_ui())
+
+    def test_series_selection_overlay_is_not_mistaken_for_shipyard(self):
+        ui = self.make_ui(self.selector_image)
+        self.assertTrue(ui.appear(SHIPYARD_SERIES_SELECT_CHECK, offset=(20, 20)))
+        self.assertFalse(ui._shipyard_in_ui())
 
 
 if __name__ == '__main__':
