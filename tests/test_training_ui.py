@@ -2,12 +2,12 @@ import json
 import unittest
 from pathlib import Path
 from types import SimpleNamespace
-from unittest.mock import patch
+from unittest.mock import Mock, patch
 
 import cv2
 import numpy as np
 
-from module.exception import RequestHumanTakeover
+from module.exception import RequestHumanTakeover, ScriptError
 from module.os import training_ui
 from module.os.training_policy import ShipCandidate, TrainingRequirement
 from module.os.training_ui import (
@@ -438,6 +438,81 @@ class TrainingUiReviewTest(unittest.TestCase):
             self.assertEqual(inspector.find_candidates('vanguard', frozenset({'铁血'}),
                                                        set(), rarity='ultra'), [])
         set_top.assert_not_called()
+
+
+class TrainingUnavailableProjectRecoveryTest(unittest.TestCase):
+    def make_manager(self):
+        writes = []
+
+        class Manager(TrainingFleetManager):
+            def __init__(self):
+                self.config = SimpleNamespace(
+                    SERVER='cn', OpsiFleet_Fleet=4,
+                    cross_set=lambda **kwargs: writes.append(kwargs))
+                self.device = SimpleNamespace(image=np.zeros((720, 1280, 3), dtype=np.uint8))
+
+            def _check_cn(self):
+                return None
+
+            def ui_ensure(self, page):
+                return None
+
+            def inspect_map_fleet(self, opsi):
+                self.fail('unavailable project must preserve the deployed fleet')
+
+            def find_candidates(self, *args, **kwargs):
+                self.fail('unavailable project must not search candidates')
+
+            def _awaken_planned_ship(self, *args, **kwargs):
+                self.fail('unavailable project must not awaken ships')
+
+            def _deploy(self, *args, **kwargs):
+                self.fail('unavailable project must not deploy ships')
+
+            def fail(self, message):
+                raise AssertionError(message)
+
+        return Manager(), writes
+
+    def test_unavailable_working_project_recovers_map_and_schedules_retry(self):
+        from module.shipyard.development import WorkingProjectUnavailable
+
+        manager, writes = self.make_manager()
+        opsi = SimpleNamespace(os_init=Mock(), globe_goto=Mock())
+        with patch('module.shipyard.development.ShipyardDevelopment') as shipyard, \
+                patch('module.os.training.time.time', return_value=1234):
+            shipyard.return_value.inspect_current_project.side_effect = WorkingProjectUnavailable(
+                'No visible working ship found in shipyard series')
+            self.assertFalse(manager.maintain(opsi))
+        opsi.os_init.assert_called_once_with(skip_first_auto_search=True)
+        opsi.globe_goto.assert_not_called()
+        self.assertEqual(writes, [{
+            'keys': 'OpsiHazard1Leveling.OpsiTraining.LastCheck', 'value': 1234,
+        }])
+
+    def test_other_script_errors_still_propagate_without_retry_timestamp(self):
+        manager, writes = self.make_manager()
+        opsi = SimpleNamespace(os_init=Mock())
+        with patch('module.shipyard.development.ShipyardDevelopment') as shipyard:
+            shipyard.return_value.inspect_current_project.side_effect = ScriptError('unknown page')
+            with self.assertRaisesRegex(ScriptError, 'unknown page'):
+                manager.maintain(opsi)
+        opsi.os_init.assert_not_called()
+        self.assertEqual(writes, [])
+
+    def test_map_recovery_error_propagates_without_retry_timestamp(self):
+        from module.shipyard.development import WorkingProjectUnavailable
+
+        manager, writes = self.make_manager()
+        opsi = SimpleNamespace(os_init=Mock(side_effect=ScriptError('map recovery failed')))
+        with patch('module.shipyard.development.ShipyardDevelopment') as shipyard, \
+                patch('module.os.training.time.time', return_value=1234):
+            shipyard.return_value.inspect_current_project.side_effect = WorkingProjectUnavailable(
+                'No visible working ship found in shipyard series')
+            with self.assertRaisesRegex(ScriptError, 'map recovery failed'):
+                manager.maintain(opsi)
+        opsi.os_init.assert_called_once_with(skip_first_auto_search=True)
+        self.assertEqual(writes, [])
 
 
 if __name__ == '__main__':

@@ -38,6 +38,10 @@ class DevelopmentTask:
     header_y: int
 
 
+class WorkingProjectUnavailable(ScriptError):
+    """A complete series scan found no visible working project marker."""
+
+
 class ShipyardDevelopment(ShipyardUI):
     """Inspect an already selected ship without starting or changing research."""
 
@@ -95,7 +99,7 @@ class ShipyardDevelopment(ShipyardUI):
             self.device.screenshot()
             if self._working_marker_visible():
                 return self._read_ship_name()
-        raise ScriptError('No visible working ship found in shipyard series')
+        raise WorkingProjectUnavailable('No visible working ship found in shipyard series')
 
     def _ocr_task_title(self, header_y):
         ocr = Ocr([task_title_area(header_y)], lang='cnocr', letter=(214, 225, 235), threshold=128, name='SHIPYARD_DEVELOPMENT_TASK')
