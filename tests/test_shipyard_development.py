@@ -15,11 +15,40 @@ from module.shipyard.development_assets import (
     task_identity,
     task_title_area,
 )
-from module.shipyard.development import DevelopmentTask, ShipyardDevelopment
+from module.shipyard.development import (DevelopmentTask, ShipyardDevelopment,
+                                         WorkingProjectUnavailable)
 from module.os.training_policy import parse_training_requirement
 
 
 class ShipyardDevelopmentPolicyTest(unittest.TestCase):
+    def test_complete_working_project_scan_uses_specific_unavailable_error(self):
+        class Scanner(ShipyardDevelopment):
+            def __init__(self):
+                self.device = SimpleNamespace(image=np.zeros((720, 1280, 3), dtype=np.uint8),
+                                              sleep=lambda *_: None, screenshot=lambda: None)
+                self.scanned = []
+
+            def _shipyard_in_ui(self):
+                return True
+
+            def _working_marker_visible(self):
+                return False
+
+            def _shipyard_set_series(self, series, skip_first_screenshot=False):
+                self.scanned.append(series)
+                return True
+
+            def shipyard_bottom_navbar_ensure(self, **kwargs):
+                self.fail('No working card marker should be found in the empty frame')
+
+            def fail(self, message):
+                raise AssertionError(message)
+
+        scanner = Scanner()
+        with self.assertRaises(WorkingProjectUnavailable):
+            scanner._scan_working_ship()
+        self.assertEqual(scanner.scanned, list(range(1, 10)))
+
     def test_alert_badge_does_not_hide_second_compact_task(self):
         path = Path(__file__).parent / 'fixtures' / 'shipyard_target2_obscured.png'
         image = cv2.imread(str(path), cv2.IMREAD_COLOR)
