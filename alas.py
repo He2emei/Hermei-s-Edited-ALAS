@@ -8,6 +8,7 @@ import inflection
 from cached_property import cached_property
 
 from module.base.decorator import del_cached_property
+from module.base import runtime_health
 from module.config.config import AzurLaneConfig, TaskEnd
 from module.config.deep import deep_get, deep_set
 from module.exception import *
@@ -124,6 +125,7 @@ class AzurLaneAutoScript:
                 self._notify_error(command, e)
                 exit(1)
             else:
+                runtime_health.waiting()
                 self.checker.wait_until_available()
                 return False
         except ScriptError as e:
@@ -504,6 +506,7 @@ class AzurLaneAutoScript:
             bool: True if wait finished, False if config changed.
         """
         future = future + timedelta(seconds=1)
+        runtime_health.waiting()
         self.config.start_watching()
         while 1:
             if datetime.now() > future:
@@ -577,10 +580,12 @@ class AzurLaneAutoScript:
         return task.command
 
     def loop(self):
+        runtime_health.start(self.config_name)
         logger.set_file_logger(self.config_name)
         logger.info(f'Start scheduler loop: {self.config_name}')
 
         while 1:
+            runtime_health.waiting()
             # Check update event from GUI
             if self.stop_event is not None:
                 if self.stop_event.is_set():
@@ -599,6 +604,7 @@ class AzurLaneAutoScript:
                 self.config.task_call('Restart')
             # Get task
             task = self.get_next_task()
+            runtime_health.begin_task(task)
             # Init device and change server
             _ = self.device
             self.device.config = self.config
@@ -615,6 +621,7 @@ class AzurLaneAutoScript:
             self.device.click_record_clear()
             logger.hr(task, level=0)
             success = self.run(inflection.underscore(task))
+            runtime_health.waiting()
             logger.info(f'Scheduler: End task `{task}`')
             self.is_first_task = False
 
