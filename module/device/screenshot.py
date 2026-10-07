@@ -8,6 +8,7 @@ import numpy as np
 from PIL import Image
 
 from module.base.decorator import cached_property
+from module.base import runtime_health
 from module.base.timer import Timer
 from module.base.utils import get_color, image_size, limit_in, save_image
 from module.device.method.adb import Adb
@@ -53,6 +54,7 @@ class Screenshot(Adb, WSA, DroidCast, AScreenCap, Scrcpy, NemuIpc, LDOpenGL):
         Returns:
             np.ndarray:
         """
+        runtime_health.pulse()
         self._screenshot_interval.wait()
         self._screenshot_interval.reset()
 
@@ -63,6 +65,7 @@ class Screenshot(Adb, WSA, DroidCast, AScreenCap, Scrcpy, NemuIpc, LDOpenGL):
                 method = self.config.Emulator_ScreenshotMethod
             method = self.screenshot_methods.get(method, self.screenshot_adb)
             self.image = method()
+            runtime_health.pulse()
 
             if self.config.Emulator_ScreenshotDedithering:
                 # This will take 40-60ms
