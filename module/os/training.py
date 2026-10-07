@@ -64,10 +64,39 @@ class TrainingFleetManager(TrainingShipInspector):
             raise RequestHumanTakeover('Fleet deployment command unavailable')
         self.device.click(point_button(1065, 164, 'TRAINING_DEPLOY_ENTER'))
         self._wait(self._is_selector, 'fleet selector')
-        self.device.swipe_vector((0, -300), box=(700, 190, 880, 500))
-        self.device.sleep(0.6)
-        self.device.screenshot()
-        self._fourth_row_y()
+        previous = None
+        stalled = 0
+        error = None
+        for attempt in range(5):
+            if not self._is_selector():
+                raise RequestHumanTakeover('Fleet selector changed to unknown UI during row acquisition')
+            try:
+                self._fourth_row_y()
+                return
+            except RequestHumanTakeover as caught:
+                if str(caught) != 'Cannot locate fourth fleet row':
+                    raise
+                error = caught
+            current = crop(self.device.image, (214, 140, 1060, 543), copy=True)
+            if previous is not None:
+                difference = cv2.absdiff(current, previous).mean()
+                stalled = stalled + 1 if difference < 0.5 else 0
+                if stalled >= 2:
+                    break
+            if attempt == 4:
+                break
+            previous = current
+            self.device.swipe_vector((0, -300), box=(700, 190, 880, 500), duration=(0.4, 0.6))
+            self.device.sleep(0.6)
+            self.device.screenshot()
+        if self._is_selector():
+            try:
+                self._close_selector(opsi)
+            except Exception as cleanup_error:
+                # Preserve the row-acquisition failure; cleanup itself must not
+                # turn an otherwise safe takeover into an unrelated error.
+                logger.warning(f'Could not close untouched fleet selector: {cleanup_error}')
+        raise error
 
     def _close_selector(self, opsi):
         if not self._is_selector():
