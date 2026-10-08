@@ -97,6 +97,28 @@ class EventFleetPreparation(Dock):
             self.device.sleep(0.2)
         raise RequestHumanTakeover('Event fleet levels are unstable')
 
+    def _read_roman_title(self):
+        # The CN title can drop the Roman suffix when Chinese and Latin are
+        # read together. These separate crops are verified on Yorktown II.
+        prefixes = Ocr([(275, 88, 350, 120), (280, 90, 350, 117),
+                        (285, 91, 352, 118)], lang='cnocr',
+                       name='EventPreparedTitlePrefix').ocr(self.device.image)
+        votes = Counter(normalize_ship_name(value) for value in prefixes)
+        known = [prefix for prefix, count in votes.items()
+                 if count >= 2 and prefix + 'II' in KNOWN_SHIP_NAMES]
+        if not known:
+            return None
+        if len(known) != 1:
+            return ''
+        suffixes = Ocr([(345, 88, 378, 120), (345, 90, 380, 118),
+                        (345, 93, 380, 115)], lang='azur_lane',
+                       name='EventPreparedRomanSuffix').ocr(self.device.image)
+        suffixes = [str(value).strip() for value in suffixes]
+        if suffixes.count('II') >= 2:
+            return known[0] + 'II'
+        # A recognized II-name prefix with an unconfirmed suffix stays unknown.
+        return ''
+
     def _read_slot(self, index):
         if not self._at_preparation():
             raise RequestHumanTakeover('Refusing ship inspection outside fleet preparation')
@@ -131,6 +153,10 @@ class EventFleetPreparation(Dock):
             ranked = (known or votes).most_common()
             name = ranked[0][0] if ranked and ranked[0][1] >= 2 \
                 and (len(ranked) == 1 or ranked[0][1] > ranked[1][1]) else ''
+            if not name or name not in KNOWN_SHIP_NAMES:
+                roman_title = self._read_roman_title()
+                if roman_title is not None:
+                    name = roman_title
             level = Digit(OCR_SHIP_LEVEL, letter=(255, 255, 255), threshold=128,
                           name='EventPreparedLevel').ocr(self.device.image)
             current = {'name': name, 'level': level}

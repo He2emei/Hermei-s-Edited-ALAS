@@ -52,6 +52,36 @@ class EventFleetDetailRecoveryTest(unittest.TestCase):
         self.assertEqual(prep.device.click.call_count, 3)
         self.assertTrue(prep._at_preparation())
 
+    def test_real_yorktown_ii_detail_is_read_as_exact_catalog_name(self):
+        prep = self.prepare([frame('alas2-yorktown-detail.png')])
+        self.assertEqual(prep._read_slot(7), {'name': '约克城II', 'level': 125})
+
+    def test_unconfirmed_roman_suffix_cannot_become_an_unknown_or_base_ship(self):
+        for suffix in ('I', '', '?'):
+            with self.subTest(suffix=suffix):
+                prep = self.prepare([frame('alas2-yorktown-detail.png')])
+                def reader(*args, **kwargs):
+                    title = kwargs.get('name')
+                    value = suffix if title == 'EventPreparedRomanSuffix' else \
+                        '约克城' if title == 'EventPreparedTitlePrefix' else '约克城I'
+                    return SimpleNamespace(ocr=lambda image: [value] * 3)
+                with patch('module.event.fleet_preparation.Ocr', side_effect=reader), \
+                        patch('module.event.fleet_preparation.EventFleetNameOcr') as color:
+                    color.return_value.ocr.return_value = ['约克城I'] * 3
+                    with self.assertRaisesRegex(RequestHumanTakeover, 'detail is unreadable'):
+                        prep._read_slot(0)
+                self.assertTrue(prep._at_preparation())
+
+    def test_complete_known_base_name_remains_distinct_from_roman_ship(self):
+        prep = self.prepare([frame('detail-calibration.png')])
+        with patch('module.event.fleet_preparation.Ocr') as ocr, \
+                patch('module.event.fleet_preparation.EventFleetNameOcr') as color, \
+                patch('module.event.fleet_preparation.Digit') as digit:
+            ocr.return_value.ocr.return_value = ['约克城'] * 3
+            color.return_value.ocr.return_value = ['约克城'] * 3
+            digit.return_value.ocr.return_value = 100
+            self.assertEqual(prep._read_slot(0), {'name': '约克城', 'level': 100})
+
     def test_unknown_page_is_never_cancelled_or_retried(self):
         prep = self.prepare([np.zeros((720, 1280, 3), dtype='uint8')])
         with self.assertRaises(RequestHumanTakeover):
