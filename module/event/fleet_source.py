@@ -76,7 +76,8 @@ class EventFleetSource(Dock):
 
     @staticmethod
     def _level_areas():
-        return [(x + 77, CARD_LEVEL_Y[0], x + 154, CARD_LEVEL_Y[1]) for x in CARD_X]
+        # Exclude the animated skin-frame corners beside LV digits (125 -> 1255).
+        return [(x + 95, CARD_LEVEL_Y[0], x + 146, CARD_LEVEL_Y[1]) for x in CARD_X]
 
     def _read_selected_fleet(self):
         for area, alphabet in (
@@ -176,6 +177,8 @@ class EventFleetSource(Dock):
         if cards is None:
             logger.info('Event fleet details are not visible, opening details')
             self.device.click(point_button(*DETAILS_TOGGLE_CLICK, 'EVENT_FLEET_DETAILS'))
+            self.device.sleep(self._DETAILS_LOAD_WAIT)
+            self.device.screenshot()
             cards = self._read_consistent_cards()
         if cards is None:
             raise RequestHumanTakeover('Unable to read six consistent event fleet cards')
