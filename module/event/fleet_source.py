@@ -158,7 +158,8 @@ class EventFleetSource(Dock):
                 self.device.screenshot()
             current = self._read_cards()
             if current is None:
-                previous = None
+                # An unreadable frame (e.g. 125 misread as 1255) is not a
+                # conflicting roster. Require matching complete valid reads.
                 continue
             if current == previous:
                 return current

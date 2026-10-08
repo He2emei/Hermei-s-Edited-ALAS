@@ -1,16 +1,18 @@
 import unittest
 from pathlib import Path
 from types import SimpleNamespace
-from unittest.mock import Mock
+from unittest.mock import Mock, patch
 
 import cv2
 import numpy as np
 
 from module.event.fleet_preparation import EventFleetPreparation, c_roster_matches, event_fleet_stage
 from module.exception import RequestHumanTakeover
+from module.retire.assets import DOCK_EMPTY
 
 
 FIXTURE = Path(__file__).parent / 'fixtures' / 'event_fleet' / 'prep-alas2-c1.png'
+EMPTY_DOCK_FIXTURE = Path(__file__).parent / 'fixtures' / 'event_fleet' / 'alas2-c-slot1-carrier-empty.png'
 SOURCE = [
     {'name': '苏维埃同盟', 'level': 125},
     {'name': '武藏', 'level': 125},
@@ -90,6 +92,48 @@ class EventFleetPreparationTest(unittest.TestCase):
                          [False, True, True, False, True, True] + [False] * 6)
         self.assertEqual(prep._stable_levels(), expected)
         self.assertEqual(prep.device.screenshot.call_count, 2)
+
+    def test_find_default_main_ship_uses_main_filter_and_reports_real_empty_dock(self):
+        image = cv2.imread(str(EMPTY_DOCK_FIXTURE), cv2.IMREAD_COLOR)
+        self.assertIsNotNone(image)
+        image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+        prep = object.__new__(EventFleetPreparation)
+        prep.device = SimpleNamespace(image=image, stuck_record_add=Mock(), screenshot=Mock(), drag=Mock())
+        prep.dock_favourite_set = Mock()
+        prep.dock_sort_method_dsc_set = Mock()
+
+        def require_main_filter(**kwargs):
+            self.assertEqual(kwargs, {'index': 'main', 'faction': 'all'})
+
+        prep.dock_filter_set = Mock(side_effect=require_main_filter)
+        with patch('module.event.fleet_preparation.DOCK_SCROLL.set_top') as set_top:
+            with patch('module.event.fleet_preparation.dock_cards') as cards:
+                with self.assertRaisesRegex(RequestHumanTakeover, 'candidate not found: main ship'):
+                    prep._find_ship(None)
+
+        prep.device.stuck_record_add.assert_called_once_with(DOCK_EMPTY)
+        prep.device.drag.assert_not_called()
+        cards.assert_not_called()
+        prep.dock_favourite_set.assert_called_once_with(False)
+        prep.dock_filter_set.assert_called_once_with(index='main', faction='all')
+        prep.dock_sort_method_dsc_set.assert_called_once_with(True)
+        set_top.assert_called_once_with(main=prep)
+
+    def test_find_ship_unknown_geometry_remains_distinct_from_empty_dock(self):
+        prep = object.__new__(EventFleetPreparation)
+        prep.device = SimpleNamespace(image=np.zeros((720, 1280, 3), dtype='uint8'),
+                                     screenshot=Mock(), drag=Mock())
+        prep.appear = Mock(return_value=False)
+        prep.dock_favourite_set = Mock()
+        prep.dock_filter_set = Mock()
+        prep.dock_sort_method_dsc_set = Mock()
+
+        with patch('module.event.fleet_preparation.DOCK_SCROLL.set_top'):
+            with patch('module.event.fleet_preparation.dock_cards', return_value=[]):
+                with self.assertRaisesRegex(RequestHumanTakeover, 'dock card geometry is unreadable'):
+                    prep._find_ship(None)
+
+        prep.device.drag.assert_not_called()
 
     def test_run_without_submarine_config_does_not_touch_submarine(self):
         prep = object.__new__(EventFleetPreparation)
