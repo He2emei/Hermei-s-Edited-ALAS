@@ -28,7 +28,8 @@ class EventFleetSourceTest(unittest.TestCase):
 
     def test_read_opens_details_only_when_first_read_is_not_valid(self):
         source = object.__new__(EventFleetSource)
-        source.device = SimpleNamespace(click=Mock(), image=np.zeros((720, 1280, 3), dtype='uint8'))
+        source.device = SimpleNamespace(click=Mock(), sleep=Mock(), screenshot=Mock(),
+                                        image=np.zeros((720, 1280, 3), dtype='uint8'))
         source.ui_ensure = Mock()
         source._select_fleet = Mock()
         source._read_consistent_cards = Mock(side_effect=(
@@ -42,6 +43,8 @@ class EventFleetSourceTest(unittest.TestCase):
         source._select_fleet.assert_called_once_with(5)
         detail_button = source.device.click.call_args[0][0]
         self.assertEqual(detail_button.button, (947, 665, 953, 671))
+        source.device.sleep.assert_called_once_with(source._DETAILS_LOAD_WAIT)
+        source.device.screenshot.assert_called_once()
         self.assertEqual([record['side'] for record in result],
                          ['main', 'main', 'main', 'vanguard', 'vanguard', 'vanguard'])
         self.assertEqual([record['name'] for record in result],
@@ -94,6 +97,15 @@ class EventFleetSourceTest(unittest.TestCase):
         source._read_cards = Mock(side_effect=[('first', [125]), None,
                                               ('second', [120]), None])
         self.assertIsNone(source._read_consistent_cards())
+
+    def test_real_skin_card_border_does_not_add_digits_to_source_levels(self):
+        image = cv2.imread(str(FIXTURE.parent / 'alas2-source-level-border.png'))
+        source = object.__new__(EventFleetSource)
+        source.device = SimpleNamespace(image=cv2.cvtColor(image, cv2.COLOR_BGR2RGB))
+        self.assertEqual(source._read_cards(), (
+            ['新泽西', '苏维埃同盟', '阿尔萨斯', '莫斯科', '岛风', '关岛'],
+            [125, 125, 125, 125, 120, 125],
+        ))
 
     def test_real_fixture_ocr_reads_all_six_expected_names(self):
         image = cv2.imread(str(FIXTURE), cv2.IMREAD_COLOR)
