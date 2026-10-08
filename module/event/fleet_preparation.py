@@ -12,7 +12,7 @@ from module.logger import logger
 from module.map.assets import FLEET_PREPARATION
 from module.ocr.ocr import Ocr, Digit
 from module.os.training_ui import CATALOG, point_button
-from module.retire.assets import DOCK_CHECK, SHIP_CONFIRM
+from module.retire.assets import DOCK_CHECK, DOCK_EMPTY, SHIP_CONFIRM
 from module.retire.card_geometry import dock_cards
 from module.retire.dock import Dock, DOCK_SCROLL, OCR_DOCK_SELECTED
 from module.ui.assets import BACK_ARROW
@@ -107,6 +107,14 @@ class EventFleetPreparation(Dock):
                 self._wait(lambda: self.appear(EQUIPMENT_OPEN, offset=(5, 5)), 'ship details', attempts=12)
                 break
             except RequestHumanTakeover:
+                if self.appear(DOCK_CHECK, offset=(20, 20)):
+                    # A long press can be interpreted as opening selection.
+                    # Cancel only a verified one-slot dock with nothing selected.
+                    if OCR_DOCK_SELECTED.ocr(self.device.image) != (0, 1, 1):
+                        raise
+                    self.device.click(point_button(800, 670, 'EVENT_DETAIL_DOCK_CANCEL'))
+                    self._wait(self._at_preparation, 'return from unintended ship selection')
+                    logger.warning('Event ship detail press opened selection; returned to preparation')
                 if attempt == 2 or not self._at_preparation():
                     raise
         previous = None
@@ -142,13 +150,16 @@ class EventFleetPreparation(Dock):
 
     def _find_ship(self, target, *, auxiliary=False, excluded=()):
         self.dock_favourite_set(False)
-        self.dock_filter_set(index='dd' if auxiliary else ('bb' if target is None else 'all'),
+        self.dock_filter_set(index='dd' if auxiliary else ('main' if target is None else 'all'),
                              faction='eagle' if auxiliary else 'all')
         self.dock_sort_method_dsc_set(True)
         DOCK_SCROLL.set_top(main=self)
         previous = None
         for page in range(80):
             self.device.screenshot()
+            if self.appear(DOCK_EMPTY, offset=(20, 20)):
+                candidate = target['name'] if target else 'Downes/Cassin' if auxiliary else 'main ship'
+                raise RequestHumanTakeover('Event fleet candidate not found: ' + candidate + ' (dock is empty)')
             cards = dock_cards(self.device.image)
             if not cards:
                 raise RequestHumanTakeover('Event fleet dock card geometry is unreadable')
