@@ -71,6 +71,30 @@ class EventFleetSourceTest(unittest.TestCase):
             server.server = old_server
         source.ui_ensure.assert_not_called()
 
+    def test_read_skips_invalid_ocr_frame_without_toggling_visible_details(self):
+        # The live Alzas level flickered 125 -> 1255 -> 125 on 2026-10-09.
+        source = object.__new__(EventFleetSource)
+        source.device = SimpleNamespace(click=Mock(), screenshot=Mock(),
+                                        image=np.zeros((720, 1280, 3), dtype='uint8'))
+        source.ui_ensure = Mock()
+        source._select_fleet = Mock()
+        cards = (['新泽西', '苏维埃同盟', '阿尔萨斯', '莫斯科', '岛风', '关岛'],
+                 [125, 125, 125, 125, 120, 125])
+        source._read_cards = Mock(side_effect=[cards, None, cards, None] * 2)
+
+        result = source.read(4)
+
+        self.assertEqual([ship['level'] for ship in result], cards[1])
+        source.device.click.assert_not_called()
+        self.assertEqual(source._read_cards.call_count, 3)
+
+    def test_invalid_ocr_does_not_allow_conflicting_complete_rosters(self):
+        source = object.__new__(EventFleetSource)
+        source.device = SimpleNamespace(screenshot=Mock())
+        source._read_cards = Mock(side_effect=[('first', [125]), None,
+                                              ('second', [120]), None])
+        self.assertIsNone(source._read_consistent_cards())
+
     def test_real_fixture_ocr_reads_all_six_expected_names(self):
         image = cv2.imread(str(FIXTURE), cv2.IMREAD_COLOR)
         self.assertIsNotNone(image)
