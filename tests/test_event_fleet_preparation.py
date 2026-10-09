@@ -8,11 +8,14 @@ import numpy as np
 
 from module.event.fleet_preparation import EventFleetPreparation, c_roster_matches, event_fleet_stage
 from module.exception import RequestHumanTakeover
+from module.map.assets import FLEET_PREPARATION
 from module.retire.assets import DOCK_EMPTY
 
 
 FIXTURE = Path(__file__).parent / 'fixtures' / 'event_fleet' / 'prep-alas2-c1.png'
 EMPTY_DOCK_FIXTURE = Path(__file__).parent / 'fixtures' / 'event_fleet' / 'alas2-c-slot1-carrier-empty.png'
+D3_TOTAL_RED_FIXTURE = Path(__file__).parent / 'fixtures' / 'event_fleet' / 'd3-total-red-source.png'
+D3_TOTAL_GREEN_FIXTURE = Path(__file__).parent / 'fixtures' / 'event_fleet' / 'd3-total-green-source.png'
 SOURCE = [
     {'name': '苏维埃同盟', 'level': 125},
     {'name': '武藏', 'level': 125},
@@ -140,6 +143,7 @@ class EventFleetPreparationTest(unittest.TestCase):
         prep.config = config_for('D1')
         prep.device = SimpleNamespace(image=np.zeros((720, 1280, 3), dtype='uint8'), screenshot=Mock())
         prep._stable_levels = Mock(return_value=[125] * 12)
+        prep._stable_total_stats_satisfied = Mock(return_value=True)
         fleet_1 = SimpleNamespace(is_hard=Mock(return_value=True), is_hard_satisfied=Mock(return_value=True),
                                   raise_hard_not_satisfied=Mock())
         fleet_2 = SimpleNamespace(is_hard=Mock(return_value=True), is_hard_satisfied=Mock(return_value=True),
@@ -149,11 +153,124 @@ class EventFleetPreparationTest(unittest.TestCase):
         fleet_1.raise_hard_not_satisfied.assert_called_once()
         fleet_2.raise_hard_not_satisfied.assert_called_once()
 
+    def _real_total_stat_prep(self, *, satisfied=False):
+        fixture = D3_TOTAL_GREEN_FIXTURE if satisfied else D3_TOTAL_RED_FIXTURE
+        image = cv2.imread(str(fixture), cv2.IMREAD_COLOR)
+        self.assertIsNotNone(image)
+        image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+        prep = object.__new__(EventFleetPreparation)
+        prep.config = config_for('D3')
+        prep.device = SimpleNamespace(image=image, screenshot=Mock())
+        FLEET_PREPARATION.clear_offset()
+        prep.device.stuck_record_add = Mock()
+        prep._stable_levels = Mock(return_value=[125] * 12)
+        return prep
+
+    def test_real_red_total_stat_recommends_both_then_satisfied_frame_passes(self):
+        prep = self._real_total_stat_prep()
+        self.assertFalse(prep._total_stats_satisfied())
+        fleets = [SimpleNamespace(is_hard=Mock(return_value=True),
+                                  is_hard_satisfied=Mock(return_value=True),
+                                  raise_hard_not_satisfied=Mock()) for _ in range(2)]
+
+        def recommend(_fleet):
+            prep.device.image = cv2.cvtColor(cv2.imread(str(D3_TOTAL_GREEN_FIXTURE)), cv2.COLOR_BGR2RGB)
+
+        prep._recommend = Mock(side_effect=recommend)
+        self.assertTrue(prep.run(*fleets))
+        self.assertEqual(prep._recommend.call_args_list, [((fleet,), {}) for fleet in fleets])
+        for fleet in fleets:
+            fleet.raise_hard_not_satisfied.assert_called_once()
+
+    def test_real_red_still_red_after_both_recommendations_takes_over_once(self):
+        prep = self._real_total_stat_prep()
+        fleets = [SimpleNamespace(is_hard=Mock(return_value=True),
+                                  is_hard_satisfied=Mock(return_value=True),
+                                  raise_hard_not_satisfied=Mock()) for _ in range(2)]
+        prep._recommend = Mock()
+
+        with self.assertRaisesRegex(RequestHumanTakeover, 'total stats remain unsatisfied'):
+            prep.run(*fleets)
+        self.assertEqual(prep._recommend.call_args_list, [((fleet,), {}) for fleet in fleets])
+        for fleet in fleets:
+            fleet.raise_hard_not_satisfied.assert_not_called()
+
+    def test_actual_green_total_stat_runs_without_recommendation(self):
+        prep = self._real_total_stat_prep(satisfied=True)
+        fleets = [SimpleNamespace(is_hard=Mock(return_value=True),
+                                  is_hard_satisfied=Mock(return_value=True),
+                                  raise_hard_not_satisfied=Mock()) for _ in range(2)]
+        prep._recommend = Mock()
+
+        self.assertTrue(prep.run(*fleets))
+        prep._recommend.assert_not_called()
+        for fleet in fleets:
+            fleet.raise_hard_not_satisfied.assert_called_once()
+
+    def test_all_red_requirement_text_is_unsatisfied_and_unknown_page_or_color_fails_closed(self):
+        prep = self._real_total_stat_prep()
+        # The live red frame includes yellow requirements plus aviation red.
+        # Recolor all requirement text red; red is still a known unsatisfied
+        # state even though the satisfied-yellow evidence disappears.
+        y = 549
+        crop = prep.device.image[y:y + 50, 120:484]
+        red, green, blue = (crop[:, :, i].astype('int16') for i in range(3))
+        yellow = (red > 90) & (green > 90) & (blue < 110) & (green > blue * 1.25)
+        crop[yellow] = (156, 62, 63)
+        self.assertFalse(prep._total_stats_satisfied())
+
+        prep.device.image[:] = 0
+        with self.assertRaisesRegex(RequestHumanTakeover, 'outside fleet preparation'):
+            prep._total_stats_satisfied()
+        FLEET_PREPARATION.clear_offset()
+        prep.device.image = cv2.cvtColor(cv2.imread(str(D3_TOTAL_RED_FIXTURE)), cv2.COLOR_BGR2RGB)
+        prep.device.image[549:599, 120:484] = (32, 46, 48)
+        with self.assertRaisesRegex(RequestHumanTakeover, 'color is unreadable'):
+            prep._total_stats_satisfied()
+
+    def test_c_blank_stats_with_yellow_xp_icon_outside_text_crop_fail_closed(self):
+        image = cv2.imread(str(FIXTURE), cv2.IMREAD_COLOR)
+        self.assertIsNotNone(image)
+        prep = object.__new__(EventFleetPreparation)
+        prep.device = SimpleNamespace(image=cv2.cvtColor(image, cv2.COLOR_BGR2RGB),
+                                      stuck_record_add=Mock())
+        FLEET_PREPARATION.clear_offset()
+        self.assertTrue(prep._at_preparation())
+        button_y = FLEET_PREPARATION.button[1]
+        prep.device.image[button_y:button_y + 50, 120:484] = (32, 46, 48)
+        # The C fixture's yellow XP-book icon remains visible at x497..560.
+        self.assertTrue(prep.device.image[button_y:button_y + 50, 497:560, 0].max() > 100)
+        with self.assertRaisesRegex(RequestHumanTakeover, 'color is unreadable'):
+            prep._total_stats_satisfied()
+
+    def test_c_total_stat_failure_preserves_exact_source_roster_without_filling(self):
+        prep = object.__new__(EventFleetPreparation)
+        prep.config = config_for('C1')
+        prep.config._event_source_roster = SOURCE
+        image = cv2.imread(str(D3_TOTAL_RED_FIXTURE), cv2.IMREAD_COLOR)
+        prep.device = SimpleNamespace(image=cv2.cvtColor(image, cv2.COLOR_BGR2RGB), screenshot=Mock())
+        FLEET_PREPARATION.clear_offset()
+        prep.device.stuck_record_add = Mock()
+        current = [{'name': '主力', 'level': 100}, None, None,
+                   {'name': '唐斯', 'level': 125}, None, None] + SOURCE
+        prep.read_roster = Mock(return_value=current)
+        prep._fill_slot = Mock()
+        prep._clear_fleet = Mock()
+        fleets = [SimpleNamespace(is_hard=Mock(return_value=True), raise_hard_not_satisfied=Mock())
+                  for _ in range(2)]
+
+        with self.assertRaisesRegex(RequestHumanTakeover, 'C source fleet does not satisfy total-stat'):
+            prep.run(*fleets)
+        prep._fill_slot.assert_not_called()
+        prep._clear_fleet.assert_not_called()
+        prep.read_roster.assert_called_once()
+
     def test_run_with_submarine_config_recommends_and_verifies_it(self):
         prep = object.__new__(EventFleetPreparation)
         prep.config = config_for('SP')
         prep.device = SimpleNamespace(image=np.zeros((720, 1280, 3), dtype='uint8'))
         prep._stable_levels = Mock(return_value=[125] * 12)
+        prep._stable_total_stats_satisfied = Mock(return_value=True)
         prep._recommend = Mock()
         hard_fleet = lambda: SimpleNamespace(is_hard=Mock(return_value=True),
                                              is_hard_satisfied=Mock(return_value=True),
@@ -173,6 +290,7 @@ class EventFleetPreparationTest(unittest.TestCase):
             prep.config = config_for('C1')
             prep.config._event_source_roster = SOURCE
             prep.device = SimpleNamespace(image=np.zeros((720, 1280, 3), dtype='uint8'))
+            prep._stable_total_stats_satisfied = Mock(return_value=True)
             prep.read_roster = Mock(side_effect=(current, final))
             events = []
             prep._clear_fleet = Mock(side_effect=lambda fleet, row: events.append(('clear', row)))
