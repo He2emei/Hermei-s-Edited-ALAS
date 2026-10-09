@@ -65,6 +65,40 @@ class EventFleetPreparation(Dock):
     def _at_preparation(self):
         return self.appear(FLEET_PREPARATION, offset=(20, 50))
 
+    def _total_stats_satisfied(self):
+        """Read the colored total-stat requirements above the CN start button.
+
+        Anchor the crop to the detected start button. Yellow requirement text
+        is satisfied and red text is not; missing color evidence fails closed.
+        """
+        if not self._at_preparation():
+            raise RequestHumanTakeover('Event total-stat check is outside fleet preparation')
+        image = self.device.image
+        y = FLEET_PREPARATION.button[1]
+        crop = image[y:y + 50, 120:484]
+        if crop.shape[:2] != (50, 364):
+            raise RequestHumanTakeover('Event total-stat requirement area is unreadable')
+        red, green, blue = (crop[:, :, i].astype('int16') for i in range(3))
+        red_mask = (red > 115) & (red > green * 1.5) & (red > blue * 1.35)
+        yellow_mask = (red > 90) & (green > 90) & (blue < 110) & (green > blue * 1.25)
+        red_count = int(red_mask.sum())
+        yellow_count = int(yellow_mask.sum())
+        if red_count >= 40:
+            return False
+        if yellow_count >= 40:
+            return True
+        raise RequestHumanTakeover('Event total-stat requirement color is unreadable')
+
+    def _stable_total_stats_satisfied(self):
+        previous = None
+        for _ in range(3):
+            self.device.screenshot()
+            state = self._total_stats_satisfied()
+            if state is previous:
+                return state
+            previous = state
+        raise RequestHumanTakeover('Event total-stat requirement is unstable')
+
     @staticmethod
     def _slot(index):
         return point_button(SLOT_X[index % 6] + 40, SLOT_Y[index // 6] + 40,
@@ -333,12 +367,18 @@ class EventFleetPreparation(Dock):
             logger.info('Event C fleet verified: one main + Downes/Cassin; fleet 2 matches normal source')
         else:
             levels = self._stable_levels()
+            total_satisfied = self._stable_total_stats_satisfied()
             for index, fleet in enumerate((fleet_1, fleet_2)):
-                if not all(levels[index * 6:index * 6 + 6]) or not fleet.is_hard_satisfied():
+                if not all(levels[index * 6:index * 6 + 6]) or not fleet.is_hard_satisfied() \
+                        or total_satisfied is False:
                     self._recommend(fleet)
             if not all(self._stable_levels()):
                 raise RequestHumanTakeover('Event recommended fleets do not fill all 12 positions')
+            if not self._stable_total_stats_satisfied():
+                raise RequestHumanTakeover('Event total stats remain unsatisfied after fleet recommendations')
             logger.info(f'Event {stage.upper()} recommended fleet verified: 12 occupied positions')
+        if stage.startswith('c') and not self._stable_total_stats_satisfied():
+            raise RequestHumanTakeover('Event C source fleet does not satisfy total-stat requirements')
         fleet_1.raise_hard_not_satisfied()
         fleet_2.raise_hard_not_satisfied()
         # SP has its own submarine roster. Honor the profile's existing request
