@@ -36,6 +36,11 @@ def candidate(name, faction='白鹰', position='main', level=90, cap=None):
 
 
 class TrainingUiReviewTest(unittest.TestCase):
+    def test_cn_york_shared_name_cannot_select_royal_identity(self):
+        self.assertIsNone(catalog_name("约克"))
+        self.assertIsNone(catalog_name("_约克"))
+        self.assertEqual(catalog_name("约克城"), "约克城")
+
     def test_fleet_inspection_rejects_non_map_overlay_before_switching(self):
         inspector = TrainingShipInspector.__new__(TrainingShipInspector)
         inspector.appear = lambda *args, **kwargs: False
@@ -128,6 +133,34 @@ class TrainingUiReviewTest(unittest.TestCase):
         )
         manager._return_to_ny_map_after_deploy(opsi)
         self.assertEqual(exits, [{'skip_first_screenshot': True}])
+
+    def test_deployment_return_exits_port_before_os_init(self):
+        state = ["port"]
+        order = []
+        manager = TrainingFleetManager.__new__(TrainingFleetManager)
+        manager.device = SimpleNamespace(screenshot=lambda: None, sleep=lambda _: None)
+        manager.appear = lambda asset, **kwargs: (
+            asset is PORT_CHECK and state[0] == "port"
+            or asset is ORDER_ENTER and state[0] == "map")
+
+        def port_quit(**kwargs):
+            order.append("port_quit")
+            state[0] = "map"
+
+        def os_init(**kwargs):
+            order.append("os_init")
+            if state[0] == "port":
+                raise ScriptError("zone_init looped from NY port")
+
+        opsi = SimpleNamespace(
+            os_init=os_init,
+            globe_goto=lambda zone: order.append("globe_goto"),
+            name_to_zone=lambda zone: zone,
+            is_in_map=lambda: state[0] == "map",
+            port_quit=port_quit,
+        )
+        manager._return_to_ny_map_after_deploy(opsi)
+        self.assertEqual(order, ["port_quit", "os_init", "globe_goto"])
 
     def test_unknown_and_empty_name_ocr_are_rejected_without_identity_guess(self):
         inspector = TrainingShipInspector.__new__(TrainingShipInspector)
@@ -330,6 +363,54 @@ class TrainingUiReviewTest(unittest.TestCase):
             self.assertEqual(ship.stored_exp, 3_000_000)
             self.assertEqual(ship.level_cap, 120)
             self.assertTrue(ship.fully_limit_broken)
+
+    def test_live_regensburg_stored_exp_uses_verified_max_suffix_fallback(self):
+        path = ROOT / 'tests/fixtures/opsi_training_regensburg_1166908_max.png'
+        image = cv2.cvtColor(cv2.imread(str(path)), cv2.COLOR_BGR2RGB)
+        inspector = TrainingShipInspector.__new__(TrainingShipInspector)
+        inspector.config = SimpleNamespace(SERVER='cn')
+        inspector.device = SimpleNamespace(image=image, screenshot=lambda: None)
+        inspector.appear = lambda *args, **kwargs: True
+        real_ocr = training_ui.Ocr
+
+        def ocr_factory(buttons, **kwargs):
+            if kwargs.get('name') == 'TrainingName':
+                return SimpleNamespace(ocr=lambda current_image: ['雷根斯堡', '雷根斯堡'])
+            return real_ocr(buttons, **kwargs)
+
+        with patch('module.os.training_ui.Ocr', side_effect=ocr_factory):
+            ship = inspector.read_ship()
+        self.assertEqual(ship.name, '雷根斯堡')
+        self.assertEqual(ship.level, 120)
+        self.assertEqual(ship.stored_exp, 1_166_908)
+        self.assertEqual(ship.level_cap, 120)
+
+    def test_stored_exp_fallback_rejects_unknown_suffix_and_over_cap_value(self):
+        path = ROOT / 'tests/fixtures/opsi_training_regensburg_1166908_max.png'
+        image = cv2.cvtColor(cv2.imread(str(path)), cv2.COLOR_BGR2RGB)
+        for tail, value in (('/M?X', 1_166_908), ('/M8X', 3_000_001)):
+            inspector = TrainingShipInspector.__new__(TrainingShipInspector)
+            inspector.config = SimpleNamespace(SERVER='cn')
+            inspector.device = SimpleNamespace(image=image, screenshot=lambda: None)
+            inspector.appear = lambda *args, **kwargs: True
+
+            def ocr_factory(buttons, **kwargs):
+                if kwargs.get('name') == 'TrainingName':
+                    text = ['雷根斯堡', '雷根斯堡']
+                elif kwargs.get('name') == 'TrainingStoredExp':
+                    text = '1I166908/M8X'
+                elif kwargs.get('name') == 'TrainingStoredExpTail':
+                    text = tail
+                else:
+                    return training_ui.Ocr(buttons, **kwargs)
+                return SimpleNamespace(ocr=lambda current_image: text)
+
+            with self.subTest(tail=tail, value=value), \
+                    patch('module.os.training_ui.Ocr', side_effect=ocr_factory), \
+                    patch('module.os.training_ui.Digit') as digit, \
+                    self.assertRaises(RequestHumanTakeover):
+                digit.return_value.ocr.return_value = value
+                inspector.read_ship()
 
     def test_live_z23_retrofit_detail_is_identifiable(self):
         path = ROOT / 'tests/fixtures/opsi_z23_retrofit_detail.png'
