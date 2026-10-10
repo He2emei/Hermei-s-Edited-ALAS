@@ -274,11 +274,28 @@ class TrainingFleetManager(TrainingShipInspector):
         return self.awaken_for_training(actual)
 
     def _return_to_ny_map_after_deploy(self, opsi):
+        def wait_for_port_or_map(description):
+            for _ in range(40):
+                self.device.screenshot()
+                if self.appear(PORT_CHECK, offset=(20, 20)):
+                    return 'port'
+                if opsi.is_in_map() and self.appear(ORDER_ENTER, offset=(20, 20)):
+                    return 'map'
+                self.device.sleep(0.15)
+            raise RequestHumanTakeover('Training UI timeout: ' + description)
+
+        # Deployment can return to the NY port. Establish a known page before
+        # os_init, whose zone initialization is not safe from the port overlay.
+        page = wait_for_port_or_map('NY map or port after deployment')
+        if page == 'port':
+            opsi.port_quit(skip_first_screenshot=True)
+            if wait_for_port_or_map('map controls after leaving NY port') != 'map':
+                raise RequestHumanTakeover('Training UI timeout: map controls after leaving NY port')
+
         opsi.os_init(skip_first_auto_search=True)
         opsi.globe_goto(opsi.name_to_zone('NY'))
-        # The NY port may become visible after os_init/globe_goto have already
-        # mistaken a transitional frame for the NY map.  Resolve the port
-        # explicitly before relying on the map's ORDER_ENTER control.
+        # globe_goto may open the NY port; exit it only after its page is
+        # explicitly recognized, then require visible map controls again.
         for _ in range(40):
             self.device.screenshot()
             if self.appear(PORT_CHECK, offset=(20, 20)):
