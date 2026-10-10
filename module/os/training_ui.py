@@ -202,6 +202,12 @@ def same_card_portrait(left, right, tolerance=2.0, search=3, correlation=0.8):
 
 def catalog_name(text):
     name = normalise_name(text)
+    # CN HMS York and SMS Yorck share the exact name 约克. The verified
+    # 2026-10-10 iron-filtered SMS Yorck detail was incorrectly assigned to
+    # the royal catalog entry. Reject the ambiguous label until an independent
+    # identity resolver can distinguish the two; do not guess a faction.
+    if name == "约克":
+        return None
     # Exact cnocr substitution verified against the 2026-09-08 detail screenshot.
     # The 2026-09-25 CN detail for 白龙 is read as 一白龙 by cnocr;
     # the dock card and the visible detail title both confirm 白龙.
@@ -309,10 +315,20 @@ class TrainingShipInspector(Awaken):
                 if match and int(match.group(1)) <= 3_000_000:
                     at_cap = True
                     stored = int(match.group(1))
-                elif not re.fullmatch(r'\d{1,7}/[1-9]\d{1,6}', text.replace(' ', '')):
-                    continue
-                elif level == 125:
-                    continue
+                elif re.fullmatch(r'\d{1,7}/[1-9]\d{1,6}', text.replace(' ', '')):
+                    if level == 125:
+                        continue
+                else:
+                    # The full-width stored-XP OCR can merge the leftmost digit
+                    # with UI noise. Recover only when an independent, exact MAX
+                    # suffix read confirms the cap label.
+                    tail = Ocr([(1208, 277, 1248, 308)], name='TrainingStoredExpTail').ocr(self.device.image)
+                    if not re.fullmatch(r'/M[a8][xX]', tail.replace(' ', '')):
+                        continue
+                    stored = Digit((1130, 277, 1208, 308), name='TrainingStoredExpDigits').ocr(self.device.image)
+                    if not isinstance(stored, int) or not 0 <= stored <= 3_000_000:
+                        continue
+                    at_cap = True
             cap = level if at_cap else 100 if level < 100 else min(125, (level // 5 + 1) * 5)
             ship = ShipCandidate(name, faction, side, level, data['rarity'] == 6, full, stored, cap,
                                  is_locked)

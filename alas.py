@@ -31,6 +31,15 @@ class AzurLaneAutoScript:
 
     def _notify_error(self, task, error):
         try:
+            from module.base.repair_event import emit_terminal_failure
+            result = emit_terminal_failure(self.config_name, task, error)
+            if result.get('dispatched'):
+                logger.info('ALAS-Repair task started')
+            elif result.get('reason') == 'launcher_failed':
+                logger.warning('ALAS-Repair task could not be started')
+        except Exception as repair_error:
+            logger.warning(f'Unexpected repair event failure: {repair_error}')
+        try:
             return send_error_notification(self.config_name, task, error)
         except Exception as notify_error:
             logger.warning(f'Unexpected NapCat notification failure: {notify_error}')
