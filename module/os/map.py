@@ -514,6 +514,10 @@ class OSMap(OSFleet, Map, GlobeCamera, StrategicSearchHandler):
         self.on_auto_search_battle_count_reset()
         unlock_checked = False
         unlock_check_timer = Timer(5, count=10).start()
+        task_switch_timer = Timer(5).start()
+        # Screenshots and page recognition are not business progress. A new
+        # daemon invocation always gets its own local, monotonic deadline.
+        progress_deadline = time.monotonic() + 300
         self.ash_popup_canceled = False
 
         success = True
@@ -529,6 +533,11 @@ class OSMap(OSFleet, Map, GlobeCamera, StrategicSearchHandler):
                 raise RequestHumanTakeover
             if self.is_in_map():
                 self.device.stuck_record_clear()
+                if strategic and self.config.task.command != 'OpsiCrossMonth' \
+                        and task_switch_timer.reached():
+                    task_switch_timer.reset()
+                    if self.config.task_switched():
+                        self.interrupt_auto_search()
                 if not success:
                     if died_timer.reached():
                         logger.warning('Fleet died confirm')
@@ -550,17 +559,23 @@ class OSMap(OSFleet, Map, GlobeCamera, StrategicSearchHandler):
                     drop=drop,
                     enable=success
             ):
+                progress_deadline = time.monotonic() + 300
                 unlock_checked = True
                 continue
             if self.handle_retirement():
                 # Retire will interrupt auto search, need a retry
+                progress_deadline = time.monotonic() + 300
                 self.ash_popup_canceled = True
                 continue
             if self.combat_appear():
-                self.on_auto_search_battle_count_add()
                 if strategic and self.config.task_switched():
                     self.interrupt_auto_search()
+                # A real battle is progress, and its duration must not count
+                # against the time spent waiting on the map.
+                progress_deadline = time.monotonic() + 300
+                self.on_auto_search_battle_count_add()
                 result = self.auto_search_combat(drop=drop)
+                progress_deadline = time.monotonic() + 300
                 if result:
                     finished_combat += 1
                 else:
@@ -571,7 +586,26 @@ class OSMap(OSFleet, Map, GlobeCamera, StrategicSearchHandler):
                         continue
             if self.handle_map_event():
                 # Auto search can not handle siren searching device.
+                progress_deadline = time.monotonic() + 300
                 continue
+
+            # Check only after examining actionable battle/event states, so a
+            # newly appeared battle is handled before an overdue map wait.
+            if time.monotonic() >= progress_deadline:
+                command = self.config.task.command
+                if command == 'OpsiCrossMonth':
+                    raise RequestHumanTakeover(
+                        'Overdue OpsiCrossMonth cannot confirm the old Operation Siren '
+                        'map after 300 seconds without auto-search progress; finish '
+                        'manual work and return to its map before restarting, or use '
+                        'SkipPendingCatchUp only after confirming the old-month work '
+                        'is complete or the old world is unavailable. Refusing to '
+                        'interrupt or skip old-month work.'
+                    )
+                raise RequestHumanTakeover(
+                    f'Operation Siren auto-search task {command} made no business '
+                    'progress for 300 seconds; stopping for human review.'
+                )
 
         return finished_combat
 
