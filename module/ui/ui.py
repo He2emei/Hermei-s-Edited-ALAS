@@ -9,14 +9,15 @@ from module.exercise.assets import EXERCISE_PREPARATION
 from module.handler.android_no_respond import handle_android_no_respond
 from module.handler.assets import (AUTO_SEARCH_MENU_EXIT, BATTLE_PASS_NEW_SEASON, BATTLE_PASS_NOTICE, GAME_TIPS,
                                    LOGIN_ANNOUNCE, LOGIN_ANNOUNCE_2, LOGIN_CHECK, LOGIN_RETURN_SIGN,
-                                   MAINTENANCE_ANNOUNCE, MONTHLY_PASS_NOTICE)
+                                   MAINTENANCE_ANNOUNCE, MONTHLY_PASS_NOTICE, POPUP_CANCEL)
 from module.handler.info_handler import InfoHandler
 from module.logger import logger
 from module.map.assets import (FLEET_PREPARATION, MAP_PREPARATION,
                                MAP_PREPARATION_HARD, MAP_PREPARATION_CANCEL, WITHDRAW)
 from module.meowfficer.assets import MEOWFFICER_BUY
 from module.ocr.ocr import Ocr
-from module.os_handler.assets import (AUTO_SEARCH_REWARD, EXCHANGE_CHECK, RESET_FLEET_PREPARATION, RESET_TICKET_POPUP)
+from module.os_handler.assets import (AUTO_SEARCH_REWARD, EXCHANGE_CHECK, RESET_FLEET_PREPARATION,
+                                      RESET_TICKET_POPUP, STRATEGIC_SEARCH_POPUP_CHECK)
 from module.raid.assets import *
 from module.ui.assets import *
 from module.ui.page import Page, page_academy, page_campaign, page_event, page_main, page_main_white, page_sp, \
@@ -177,6 +178,8 @@ class UI(InfoHandler):
                 self.device.uninstall_minicap()
 
         orientation_timer = Timer(5)
+        strategic_popup_attempts = 0
+        strategic_popup_timer = Timer(2)
 
         timeout = Timer(10, count=20).start()
         while 1:
@@ -202,6 +205,32 @@ class UI(InfoHandler):
 
             # Unknown page but able to handle
             logger.info("Unknown ui page")
+            # A worker can be stopped while the strategic-search settings
+            # popup is open. Only dismiss it when both its native title and
+            # native cancel button (template plus color) are present.
+            if self.appear(STRATEGIC_SEARCH_POPUP_CHECK, offset=(20, 20)) \
+                    and self.match_template_color(POPUP_CANCEL, offset=(20, 20)):
+                if strategic_popup_timer.reached():
+                    if strategic_popup_attempts >= 3:
+                        command = getattr(getattr(self.config, 'task', None), 'command', '')
+                        if command == 'OpsiCrossMonth':
+                            raise RequestHumanTakeover(
+                                'Overdue OpsiCrossMonth cannot confirm the old Operation Siren '
+                                'map because the strategic-search settings popup persisted '
+                                'after three cancel attempts; finish manual work and return '
+                                'to its map before restarting, or use SkipPendingCatchUp only '
+                                'after confirming the old-month work is complete or the old '
+                                'world is unavailable.'
+                            )
+                        raise RequestHumanTakeover(
+                            'Strategic-search settings popup persisted after three cancel '
+                            'attempts; refusing to continue from an unknown page.'
+                        )
+                    self.device.click(POPUP_CANCEL)
+                    strategic_popup_attempts += 1
+                    strategic_popup_timer.reset()
+                # Wait for another page poll to observe the click response.
+                continue
             # The emulator's Android "application not responding" dialog is not a page either, and
             # it swallows every touch of the game while it is up, so every page check fails while
             # it is on the display.  Dismissing it lets the poll see the page the game is really
