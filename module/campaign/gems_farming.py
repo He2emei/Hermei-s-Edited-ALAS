@@ -370,6 +370,7 @@ class GemsFarming(CampaignRun, Dock):
 
     @Config.when(Campaign_Mode='normal')
     def flagship_change_execute(self):
+        self._no_flagship_candidate = False
         self.ui_enter_ship(FLEET_ENTER_FLAGSHIP, long_click=False)
         candidate = self.get_common_rarity_cv(min_emotion=self.min_emotion)
         if candidate:
@@ -382,6 +383,7 @@ class GemsFarming(CampaignRun, Dock):
             return True
 
         logger.info('Change flagship failed, no CV in common rarity.')
+        self._no_flagship_candidate = True
         self._new_fleet_emotion = 0
         self.dock_reset()
         self.ui_leave_ship()
@@ -624,6 +626,7 @@ class GemsFarming(CampaignRun, Dock):
 
     _trigger_lv32: bool = False
     _trigger_emotion: bool = False
+    _no_flagship_candidate: bool = False
 
     def triggered_stop_condition(self, oil_check=True):
         # Lv32 limit
@@ -639,6 +642,20 @@ class GemsFarming(CampaignRun, Dock):
 
         return super().triggered_stop_condition(oil_check=oil_check)
 
+    def _can_continue_event_a3_without_flagship(self, name, folder, mode):
+        return (
+            self.config.campaign_profile.mode == 'event'
+            and mode == 'normal'
+            and folder.lower().startswith('event_')
+            and name.lower() == 'a3'
+            and self.config.GemsFarming_ChangeFlagship == 'ship'
+            and self.config.GemsFarming_ChangeVanguard == 'disabled'
+            and self._trigger_lv32
+            and not self._trigger_emotion
+            and not self.campaign.config.GEMS_EMOTION_TRIGGERED
+            and self._no_flagship_candidate
+        )
+
     def run(self, name, folder='campaign_main', mode='normal', total=0):
         """
         Args:
@@ -647,49 +664,78 @@ class GemsFarming(CampaignRun, Dock):
             mode (str): `normal` or `hard`
             total (int):
         """
+        self._no_flagship_candidate = False
         self.config.override(STOP_IF_REACH_LV32=True)
+        lv32_override_configs = []
 
-        while 1:
-            self._trigger_lv32 = False
-            is_limit = self.config.StopCondition_RunCount
-
-            try:
-                super().run(name=name, folder=folder, total=total)
-            except CampaignEnd as e:
-                if "Emotion" in e.args[0]:
-                    self._trigger_emotion = True
-                else:
-                    raise
-
-            # End
-            if self._trigger_lv32 or self._trigger_emotion:
-                self._new_fleet_emotion = 150
-                success = self.flagship_change()
-                if self.change_vanguard:
-                    success = success and self.vanguard_change()
-
-                self.campaign.config.set_record(Emotion_Fleet1Value=self._new_fleet_emotion)
-
-                if is_limit and self.config.StopCondition_RunCount <= 0:
-                    logger.hr('Triggered stop condition: Run count')
-                    self.config.StopCondition_RunCount = 0
-                    self.config.Scheduler_Enable = False
-                    break
-
+        try:
+            while 1:
                 self._trigger_lv32 = False
-                self._trigger_emotion = False
-                self.campaign.config.LV32_TRIGGERED = False
-                self.campaign.config.GEMS_EMOTION_TRIGGERED = False
+                is_limit = self.config.StopCondition_RunCount
 
-                # Scheduler
-                if self.config.task_switched():
-                    self.campaign.ensure_auto_search_exit()
-                    self.config.task_stop()
-                elif not success:
-                    self.campaign.ensure_auto_search_exit()
-                    self.config.task_delay(minute=30)
-                    self.config.task_stop()
+                try:
+                    super().run(name=name, folder=folder, total=total)
+                except CampaignEnd as e:
+                    if "Emotion" in e.args[0]:
+                        self._trigger_emotion = True
+                    else:
+                        raise
 
-                continue
-            else:
-                break
+                # End
+                if self._trigger_lv32 or self._trigger_emotion:
+                    self._new_fleet_emotion = 150
+                    original_fleet_emotion = self.campaign.config.Emotion_Fleet1Value
+                    self._no_flagship_candidate = False
+                    success = self.flagship_change()
+                    if self.change_vanguard:
+                        success = success and self.vanguard_change()
+
+                    can_continue = (
+                        not (is_limit and self.config.StopCondition_RunCount <= 0)
+                        and not success
+                        and self._can_continue_event_a3_without_flagship(name, folder, mode)
+                    )
+                    if can_continue:
+                        for config in (self.config, self.campaign.config):
+                            if all(config is not current for current in lv32_override_configs):
+                                config.override(STOP_IF_REACH_LV32=False)
+                                lv32_override_configs.append(config)
+                        self._new_fleet_emotion = original_fleet_emotion
+                        self._trigger_lv32 = False
+                        self._trigger_emotion = False
+                        self.campaign.config.LV32_TRIGGERED = False
+                        self.campaign.config.GEMS_EMOTION_TRIGGERED = False
+                        logger.warning(
+                            'No eligible common CV for event A3; keep current fleet and continue. '
+                            'Battle oil cost may increase.'
+                        )
+                        continue
+
+                    self.campaign.config.set_record(Emotion_Fleet1Value=self._new_fleet_emotion)
+
+                    if is_limit and self.config.StopCondition_RunCount <= 0:
+                        logger.hr('Triggered stop condition: Run count')
+                        self.config.StopCondition_RunCount = 0
+                        self.config.Scheduler_Enable = False
+                        break
+
+                    self._trigger_lv32 = False
+                    self._trigger_emotion = False
+                    self.campaign.config.LV32_TRIGGERED = False
+                    self.campaign.config.GEMS_EMOTION_TRIGGERED = False
+
+                    # Scheduler
+                    if self.config.task_switched():
+                        self.campaign.ensure_auto_search_exit()
+                        self.config.task_stop()
+                    elif not success:
+                        self.campaign.ensure_auto_search_exit()
+                        self.config.task_delay(minute=30)
+                        self.config.task_stop()
+
+                    continue
+                else:
+                    break
+        finally:
+            for config in lv32_override_configs:
+                config.override(STOP_IF_REACH_LV32=True)
