@@ -14,6 +14,7 @@ from module.os.deployment_cost import read_deployment_cost
 from module.os.training_ui import (TrainingShipInspector, DOCK_SCROLL,
                                    FILTER_FACTIONS, catalog_name, dock_card_lock, point_button, dock_cards,
                                    same_card_portrait, same_dock_page)
+from module.event.fleet_source import EventFleetNameOcr
 from module.retire.assets import DOCK_CHECK
 from module.retire.dock import OCR_DOCK_SELECTED
 from module.os_handler.assets import ORDER_ENTER
@@ -129,7 +130,18 @@ class TrainingFleetManager(TrainingShipInspector):
         # Keep the raw readings too: the scan compares them between screenshots
         # to tell a page turn from a stuck swipe.
         self._raw_names = Ocr(areas, lang='cnocr', name='TrainingAvailableNames').ocr(self.device.image)
-        return [catalog_name(n) for n in self._raw_names]
+        names = [catalog_name(n) for n in self._raw_names]
+        # The ordinary OCR can absorb bright card ornaments into white ship
+        # labels (for example ``，…_列克星敦`` on the 2026-10-15 locked card).
+        # Re-read only unresolved labels with the existing color-aware event
+        # OCR, then keep the same exact catalog lookup and identity rules.
+        unresolved = [index for index, name in enumerate(names) if name is None]
+        if unresolved:
+            readings = EventFleetNameOcr([areas[index] for index in unresolved], lang='cnocr',
+                                         name='TrainingAvailableNamesColor').ocr(self.device.image)
+            for index, reading in zip(unresolved, readings):
+                names[index] = catalog_name(reading)
+        return names
 
     def _scan_selection(self, target=None):
         names = set()
