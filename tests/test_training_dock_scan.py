@@ -42,17 +42,43 @@ import numpy as np
 from module.base.button import Button
 from module.device.device import Device
 from module.exception import GameTooManyClickError, RequestHumanTakeover
+from module.combat.level import LevelOcr
 from module.os.training import TrainingFleetManager
 from module.os.training_policy import ShipCandidate
 from module.os.training_ui import (TrainingShipInspector, catalog_name,
                                    reading_similarity, same_card_portrait,
-                                   same_dock_page)
+                                   same_dock_page, dock_card_lock)
 from module.retire.card_geometry import dock_cards
 from module.retire.dock import DOCK_SCROLL
 from module.ui.scroll import Scroll
+from module.ocr.ocr import Ocr
 
 ROOT = Path(__file__).resolve().parent.parent
 LOCK_DOCK_FRAME = ROOT / 'tests/fixtures/opsi_lock_dock_alas2_20260925.png'
+LEXINGTON_DOCK_FRAME = ROOT / 'tests/fixtures/opsi_training/training_selector_lexington_locked_20261015.png'
+
+
+class TrainingNameOcrFixtureTest(unittest.TestCase):
+    """Real locked Lexington card whose decorated name defeats normal OCR."""
+
+    def test_color_ocr_recovers_exact_catalog_name_from_real_locked_card(self):
+        image = cv2.cvtColor(cv2.imread(str(LEXINGTON_DOCK_FRAME)), cv2.COLOR_BGR2RGB)
+        cards = dock_cards(image)
+        self.assertEqual(len(cards), 14)
+        areas = [(b.area[0], b.area[1] + 164, b.area[2], b.area[1] + 189) for b in cards]
+
+        normal = Ocr([areas[0]], lang='cnocr', name='TrainingAvailableNamesFixture').ocr(image)
+        self.assertIsNone(catalog_name(normal))
+
+        manager = object.__new__(TrainingFleetManager)
+        manager.device = SimpleNamespace(image=image)
+        names = manager._visible_names()
+        self.assertIsNone(catalog_name(manager._raw_names[0]))
+        self.assertEqual(names[0], '列克星敦')
+        self.assertEqual(LevelOcr([(cards[0].area[0] + 77, cards[0].area[1] + 5,
+                                    cards[0].area[2], cards[0].area[1] + 27)],
+                                  name='TrainingSelectionLevelsFixture').ocr(image), 72)
+        self.assertIs(dock_card_lock(image, cards[0]), True)
 
 # Positions measured on the crash frame: the thumb length, the calibrated
 # track and the highest position the scrollbar can report.
