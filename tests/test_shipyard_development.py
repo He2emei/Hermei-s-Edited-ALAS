@@ -229,6 +229,48 @@ class ShipyardDevelopmentPolicyTest(unittest.TestCase):
                     self.assertEqual(inspector._ocr_task_title(320), expected)
                     self.assertEqual(ocr_class.call_count, calls)
 
+    def test_explicit_experience_i_is_corrected_only_by_two_exact_ii_crops(self):
+        path = Path(__file__).parent / 'fixtures' / 'shipyard_development_stage_ocr_20261015.png'
+        image = cv2.imread(str(path), cv2.IMREAD_COLOR)
+        self.assertIsNotNone(image)
+        image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+        inspector = ShipyardDevelopment.__new__(ShipyardDevelopment)
+        inspector.device = SimpleNamespace(image=image)
+        actual_ocr = Ocr
+
+        # Simulate the observed wide-crop variant (explicit I), while keeping
+        # both independent stage crops on the real screenshot and real OCR.
+        with patch('module.shipyard.development.Ocr') as ocr_class:
+            calls = [0]
+
+            def make_ocr(*args, **kwargs):
+                calls[0] += 1
+                if calls[0] == 1:
+                    return SimpleNamespace(ocr=lambda _image: '铁血先锋技术测试I')
+                return actual_ocr(*args, **kwargs)
+
+            ocr_class.side_effect = make_ocr
+            self.assertEqual(inspector._ocr_task_title(320), '铁血先锋技术测试II')
+            self.assertEqual(calls[0], 3)
+
+    def test_explicit_i_does_not_upgrade_without_exact_suffix_vote(self):
+        inspector = ShipyardDevelopment.__new__(ShipyardDevelopment)
+        inspector.device = SimpleNamespace(image=np.zeros((720, 1280, 3), dtype=np.uint8))
+        for narrow, suffix in (
+                ('铁血先锋技术测试II', '技术测试I'),
+                ('铁血先锋技术测试II', '未知'),
+                ('先锋技术突破II', '技术测试II')):
+            with self.subTest(narrow=narrow, suffix=suffix):
+                responses = ['铁血先锋技术测试I', narrow]
+                if narrow == '铁血先锋技术测试II':
+                    responses.append(suffix)
+                with patch('module.shipyard.development.Ocr') as ocr_class:
+                    ocr_class.side_effect = [
+                        SimpleNamespace(ocr=lambda _image, value=value: value)
+                        for value in responses
+                    ]
+                    self.assertEqual(inspector._ocr_task_title(320), '铁血先锋技术测试I')
+
     def test_one_row_seen_twice_keeps_one_identity(self):
         self.assertEqual(task_identity('菲利克斯·舒尔茨舰体塑造I143:33:43'),
                          task_identity('利克斯·舒尔茨舰体塑造143:33:43'))
@@ -304,7 +346,10 @@ class ShipyardDevelopmentPolicyTest(unittest.TestCase):
         obj.device = SimpleNamespace(image=image)
         titles = [task.title for task in obj._scan_visible_tasks()]
         self.assertIn('大型技术理论I', titles)
-        self.assertIn('铁血先锋技术测试I', titles)
+        # The actual task-4 row in this frame visibly carries stage II; the
+        # narrow OCR must preserve it rather than infer stage I from a suffix
+        # lost to its countdown.
+        self.assertIn('铁血先锋技术测试II', titles)
         # The longest title loses a stroke to the countdown, so only the
         # hull-sculpting anchor is asserted here.
         self.assertTrue(any('舰体塑' in title for title in titles))
