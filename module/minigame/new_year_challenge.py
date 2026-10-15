@@ -85,7 +85,12 @@ class NewYearChallenge(MinigameRun):
                 stalled_drags = 0 if progressed else stalled_drags + 1
                 pending_position = None
                 if stalled_drags >= 3:
-                    raise RequestHumanTakeover('New Year game list made no progress after 3 consecutive content swipes')
+                    if pending_phase == 'to_top':
+                        # A stationary scrollbar while moving toward the top is a directional boundary.
+                        scan_phase = 'scan_down'
+                        stalled_drags = 0
+                    else:
+                        raise RequestHumanTakeover('New Year game list made no progress after 3 consecutive content swipes')
 
             if scan_phase == 'to_top' and position <= MINIGAME_SCROLL.edge_threshold:
                 scan_phase = 'scan_down'
