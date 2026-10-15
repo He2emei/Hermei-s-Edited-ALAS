@@ -18,6 +18,14 @@ class StrategicSearchHandler(MapEventHandler):
 
             if self.handle_map_event():
                 continue
+
+            # A login/restart may land on the OpSi overview globe. It still
+            # satisfies page_os, but local-map controls are unavailable there;
+            # normalize it before probing those controls.
+            if self.is_in_globe():
+                self.os_globe_goto_map()
+                continue
+
             if self.appear(AUTO_SEARCH_REWARD, offset=(50, 50)):
                 continue
             if self.match_template_color(STRATEGIC_SEARCH_MAP_OPTION_OFF, offset=(20, 20), interval=2):
