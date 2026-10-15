@@ -1,7 +1,7 @@
 from module.base.timer import Timer
 from module.logger import logger
 from module.minigame.assets import *
-from module.minigame.minigame import MINIGAME_SCROLL, MinigameRun
+from module.minigame.minigame import MINIGAME_SCROLL, MinigameRun, is_minigame_home, is_minigame_list
 from module.ocr.ocr import Digit
 from module.ui.page import page_game_room
 
@@ -47,19 +47,20 @@ class NewYearChallenge(MinigameRun):
             # entrance
             if self.appear(NEW_YEAR_CHALLENGE_START, offset=(5, 5)):
                 break
-            # GOTO_CHOOSE_GAME -> choose game
-            if self.appear_then_click(GOTO_CHOOSE_GAME, offset=(5, 5), interval=3):
-                continue
-            # choose game
-            if self.appear(NEW_YEAR_CHALLENGE_ENTRANCE, offset=(5, 500), interval=3):
-                self.device.click(NEW_YEAR_CHALLENGE_ENTRANCE)
-                self.interval_reset(page_game_room.check_button, interval=3)
-                continue
-            # swipe down
-            if self.ui_page_appear(page_game_room, interval=3) and MINIGAME_SCROLL.appear(main=self) \
-                    and not MINIGAME_SCROLL.set(main=self, position=0.25, distance_check=False):
-                MINIGAME_SCROLL.set_bottom(main=self)
-                continue
+            # The home and list share GOTO_CHOOSE_GAME; only the home may navigate with it.
+            if is_minigame_home(self):
+                if self.appear_then_click(GOTO_CHOOSE_GAME, offset=(5, 5), interval=3):
+                    continue
+            if is_minigame_list(self):
+                # choose game
+                if self.appear(NEW_YEAR_CHALLENGE_ENTRANCE, offset=(5, 500), interval=3):
+                    self.device.click(NEW_YEAR_CHALLENGE_ENTRANCE)
+                    self.interval_reset(page_game_room.check_button, interval=3)
+                    continue
+                # swipe down
+                if not MINIGAME_SCROLL.set(main=self, position=0.25, distance_check=False):
+                    MINIGAME_SCROLL.set_bottom(main=self)
+                    continue
 
     def use_coin(self, skip_first_screenshot=True):
         return self.use_coin_new_year_challenge(count=5)
@@ -115,9 +116,14 @@ class NewYearChallenge(MinigameRun):
             if self.deal_popup():
                 continue
             if self.appear(BACK, offset=(5, 5)):
-                if self.appear(GOTO_CHOOSE_GAME, offset=(5, 5)):
+                if is_minigame_list(self):
                     break
-                else:
+                if is_minigame_home(self):
+                    if self.appear_then_click(GOTO_CHOOSE_GAME, offset=(5, 5), interval=3):
+                        continue
+                elif self.appear(NEW_YEAR_CHALLENGE_END, offset=(5, 5)) \
+                        or self.appear(NEW_YEAR_CHALLENGE_EXIT, offset=(5, 5)) \
+                        or self.appear(NEW_YEAR_CHALLENGE_START, offset=(5, 5)):
                     self.appear_then_click(BACK, offset=(5, 5), interval=3)
                     continue
             if self.appear_then_click(NEW_YEAR_CHALLENGE_END, offset=(5, 5), interval=3):
