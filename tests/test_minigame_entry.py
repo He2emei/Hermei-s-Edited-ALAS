@@ -250,6 +250,30 @@ class MinigameEntryTest(unittest.TestCase):
         self.assertEqual(runner.device.swipes[0][:2], ((1150, 300), (1150, 450)))
         self.assertEqual(runner.device.clicks, [NEW_YEAR_CHALLENGE_ENTRANCE])
 
+    def test_top_boundary_after_three_stalled_upward_swipes_reverses_and_finds_game(self):
+        top = load_fixture('minigame_config2_top_no_progress_20261016.png')
+        target_visible = load_fixture('minigame_new_year_list_target_visible_20261016.png')
+        selected = load_fixture('minigame_new_year_selected_20261016.png')
+        runner = NewYearChallenge.__new__(NewYearChallenge)
+        runner.config = SimpleNamespace(BUTTON_OFFSET=30)
+        runner.device = ReplayDevice(
+            [top, target_visible, selected],
+            transition_button=NEW_YEAR_CHALLENGE_ENTRANCE,
+            transition_swipe=((1150, 450), (1150, 300)),
+        )
+        runner.interval_timer = {}
+        runner.deal_popup = lambda: False
+
+        runner.choose_game()
+
+        self.assertEqual([swipe[:2] for swipe in runner.device.swipes], [
+            ((1150, 300), (1150, 450)),
+            ((1150, 300), (1150, 450)),
+            ((1150, 300), (1150, 450)),
+            ((1150, 450), (1150, 300)),
+        ])
+        self.assertEqual(runner.device.clicks, [NEW_YEAR_CHALLENGE_ENTRANCE])
+
     def test_three_stationary_content_swipes_request_takeover(self):
         before = load_fixture('minigame_new_year_list_before_sweep_20261016.png')
         runner = NewYearChallenge.__new__(NewYearChallenge)
@@ -259,11 +283,15 @@ class MinigameEntryTest(unittest.TestCase):
         runner.deal_popup = lambda: False
 
         with patch('module.minigame.new_year_challenge.MINIGAME_SCROLL.set',
-                   side_effect=AssertionError('fixed target scroll must not run')):
+                   side_effect=AssertionError('fixed target scroll must not run')), \
+                patch('module.minigame.new_year_challenge.MINIGAME_SCROLL.cal_position',
+                      return_value=0.03):
             with self.assertRaisesRegex(RequestHumanTakeover, '3 consecutive content swipes'):
                 runner.choose_game()
 
         self.assertEqual(len(runner.device.swipes), 3)
+        self.assertTrue(all(swipe[:2] == ((1150, 450), (1150, 300))
+                            for swipe in runner.device.swipes))
 
     def test_unknown_page_during_new_year_scan_waits_without_swiping(self):
         unknown = load_fixture('dorm_albacore_mu_detail_20260929.png')
