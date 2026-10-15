@@ -197,6 +197,38 @@ class ShipyardDevelopmentPolicyTest(unittest.TestCase):
                 self.assertEqual(ShipyardDevelopment._task_key(noise),
                                  task_identity(noise))
 
+    def test_live_task_stage_ocr_uses_narrow_title_and_disambiguates_theory_pair(self):
+        path = Path(__file__).parent / 'fixtures' / 'shipyard_development_stage_ocr_20261015.png'
+        image = cv2.imread(str(path), cv2.IMREAD_COLOR)
+        self.assertIsNotNone(image)
+        inspector = ShipyardDevelopment.__new__(ShipyardDevelopment)
+        inspector.device = SimpleNamespace(image=cv2.cvtColor(image, cv2.COLOR_BGR2RGB))
+
+        tasks = {task.index: task for task in inspector._scan_visible_tasks()}
+        self.assertEqual(tasks[4].title, '铁血先锋技术测试II')
+        self.assertEqual(tasks[6].title, '先锋技术突破II')
+        self.assertEqual(tasks[2].title, '大型技术理论I')
+        self.assertEqual(tasks[5].title, '大型技术理论II')
+
+    def test_narrow_stage_retry_is_bounded_to_ambiguous_catalog_families(self):
+        inspector = ShipyardDevelopment.__new__(ShipyardDevelopment)
+        inspector.device = SimpleNamespace(image=np.zeros((720, 1280, 3), dtype=np.uint8))
+
+        for primary, narrow, expected, calls in (
+                ('铁血先锋技术测试II', None, '铁血先锋技术测试II', 1),
+                ('未登记任务', None, '未登记任务', 1),
+                ('铁血先锋技术测试', '先锋技术突破II', '铁血先锋技术测试', 2),
+                ('铁血先锋技术测试', '噪声', '铁血先锋技术测试', 2)):
+            with self.subTest(primary=primary, narrow=narrow):
+                results = [primary] if narrow is None else [primary, narrow]
+                with patch('module.shipyard.development.Ocr') as ocr_class:
+                    ocr_class.side_effect = [
+                        SimpleNamespace(ocr=lambda _image, value=value: value)
+                        for value in results
+                    ]
+                    self.assertEqual(inspector._ocr_task_title(320), expected)
+                    self.assertEqual(ocr_class.call_count, calls)
+
     def test_one_row_seen_twice_keeps_one_identity(self):
         self.assertEqual(task_identity('菲利克斯·舒尔茨舰体塑造I143:33:43'),
                          task_identity('利克斯·舒尔茨舰体塑造143:33:43'))
