@@ -107,14 +107,35 @@ class ShipyardDevelopment(ShipyardUI):
         # The countdown directly abuts long task names and can consume the
         # stage-II glyph. Retry only a bare family whose explicit I/II forms
         # both exist in our catalogue, using a narrow band that excludes the
-        # countdown. Do not fuzzy-match unknown or already-staged titles.
+        # countdown. A known experience task read as I has a stricter correction
+        # path below; unknown titles are never fuzzy-matched.
+        bare_family = None
+        correcting_explicit_i = False
         if title and title not in TASK_CATALOG \
                 and title + 'I' in TASK_CATALOG and title + 'II' in TASK_CATALOG:
+            bare_family = title
+        elif title.endswith('I') and title[:-1].endswith('技术测试') \
+                and title[:-1] + 'II' in TASK_CATALOG \
+                and self._catalog_kind(title) == 'experience':
+            # A countdown can also turn the same final II stroke into a clean
+            # I. Only technical-test experience tasks have a separate suffix
+            # crop that can corroborate the complete narrow II reading.
+            bare_family = title[:-1]
+            correcting_explicit_i = True
+        if bare_family is not None:
             stage_ocr = Ocr([(990, header_y + 12, 1190, header_y + 43)],
                             lang='cnocr', letter=(214, 225, 235), threshold=128,
                             name='SHIPYARD_DEVELOPMENT_TASK_STAGE')
             stage_title = normalise_cn_task_title(stage_ocr.ocr(self.device.image))
-            if stage_title in (title + 'I', title + 'II'):
+            if correcting_explicit_i:
+                if stage_title == bare_family + 'II':
+                    suffix_ocr = Ocr([(1060, header_y + 12, 1190, header_y + 43)],
+                                     lang='cnocr', letter=(214, 225, 235), threshold=128,
+                                     name='SHIPYARD_DEVELOPMENT_TASK_STAGE_SUFFIX')
+                    suffix = normalise_cn_task_title(suffix_ocr.ocr(self.device.image))
+                    if suffix == '技术测试II':
+                        return stage_title
+            elif stage_title in (bare_family + 'I', bare_family + 'II'):
                 return stage_title
         return title
 
