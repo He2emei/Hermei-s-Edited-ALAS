@@ -1,4 +1,7 @@
+from math import isfinite
+
 from module.base.timer import Timer
+from module.exception import RequestHumanTakeover
 from module.logger import logger
 from module.minigame.assets import *
 from module.minigame.minigame import MINIGAME_SCROLL, MinigameRun, is_minigame_home, is_minigame_list
@@ -37,11 +40,19 @@ class NewYearChallenge(MinigameRun):
 
     def choose_game(self, skip_first_screenshot=True):
         self.interval_clear(page_game_room.check_button)
+        scan_timeout = Timer(60, count=120).start()
+        scan_phase = 'to_top'
+        scroll_drags = 0
+        stalled_drags = 0
+        pending_position = None
+        pending_phase = None
         while 1:
             if skip_first_screenshot:
                 skip_first_screenshot = False
             else:
                 self.device.screenshot()
+            if scan_timeout.reached():
+                raise RequestHumanTakeover('New Year game list scan timed out')
             if self.deal_popup():
                 continue
             # entrance
@@ -51,16 +62,48 @@ class NewYearChallenge(MinigameRun):
             if is_minigame_home(self):
                 if self.appear_then_click(GOTO_CHOOSE_GAME, offset=(5, 5), interval=3):
                     continue
-            if is_minigame_list(self):
-                # choose game
+                continue
+            if not is_minigame_list(self):
+                # A transition animation can briefly hide both known game-room pages.
+                continue
+
+            # Check the target on every settled list frame, even while its click is cooling down.
+            if self.appear(NEW_YEAR_CHALLENGE_ENTRANCE, offset=(5, 500)):
                 if self.appear(NEW_YEAR_CHALLENGE_ENTRANCE, offset=(5, 500), interval=3):
                     self.device.click(NEW_YEAR_CHALLENGE_ENTRANCE)
                     self.interval_reset(page_game_room.check_button, interval=3)
-                    continue
-                # swipe down
-                if not MINIGAME_SCROLL.set(main=self, position=0.25, distance_check=False):
-                    MINIGAME_SCROLL.set_bottom(main=self)
-                    continue
+                continue
+
+            position = MINIGAME_SCROLL.cal_position(main=self)
+            if not isfinite(position):
+                raise RequestHumanTakeover('Cannot measure New Year game list position')
+            if pending_position is not None:
+                if pending_phase == 'to_top':
+                    progressed = position < pending_position - MINIGAME_SCROLL.drag_threshold
+                else:
+                    progressed = position > pending_position + MINIGAME_SCROLL.drag_threshold
+                stalled_drags = 0 if progressed else stalled_drags + 1
+                pending_position = None
+                if stalled_drags >= 3:
+                    raise RequestHumanTakeover('New Year game list made no progress after 3 consecutive content swipes')
+
+            if scan_phase == 'to_top' and position <= MINIGAME_SCROLL.edge_threshold:
+                scan_phase = 'scan_down'
+                stalled_drags = 0
+            if scan_phase == 'scan_down' and position >= 1 - MINIGAME_SCROLL.edge_threshold:
+                raise RequestHumanTakeover('New Year game not found after scanning the full list')
+            if scroll_drags >= 8:
+                raise RequestHumanTakeover('New Year game list scan reached 8 content swipes')
+
+            if scan_phase == 'to_top':
+                p1, p2 = (1150, 300), (1150, 450)
+            else:
+                p1, p2 = (1150, 450), (1150, 300)
+            self.device.swipe(p1, p2, name='MINIGAME_SCROLL', distance_check=False)
+            self.device.sleep(1)
+            scroll_drags += 1
+            pending_position = position
+            pending_phase = scan_phase
 
     def use_coin(self, skip_first_screenshot=True):
         return self.use_coin_new_year_challenge(count=5)
