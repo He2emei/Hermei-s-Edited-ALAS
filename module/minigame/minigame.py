@@ -20,6 +20,19 @@ else:
                     threshold=128)
 MINIGAME_SCROLL = Scroll(MINIGAME_SCROLL_AREA, color=(247, 247, 247), name='MINIGAME_SCROLL')
 
+
+def is_minigame_list(main):
+    """Whether the game-room header and its list scrollbar are both visible."""
+    return main.appear(GAME_ROOM_CHECK, offset=(5, 5)) and MINIGAME_SCROLL.appear(main=main)
+
+
+def is_minigame_home(main):
+    """Whether the game-room home page is visible, rather than its game list."""
+    return main.appear(GAME_ROOM_CHECK, offset=(5, 5)) \
+        and main.appear(GOTO_CHOOSE_GAME, offset=(20, 20)) \
+        and not MINIGAME_SCROLL.appear(main=main)
+
+
 class MinigameRun(UI):
 
     def minigame_run(self, skip_first_screenshot=True):
@@ -39,15 +52,14 @@ class MinigameRun(UI):
                 skip_first_screenshot = False
             else:
                 self.device.screenshot()
-            # End
-            # both minigame main and minigame list has GOTO_CHOOSE_GAME
-            if self.appear(GAME_ROOM_CHECK, offset=(5, 5)) and not self.appear(GOTO_CHOOSE_GAME, offset=(20, 20)):
-                if MINIGAME_SCROLL.appear(main=self):
-                    break
+            # Both pages share the header and GOTO button; only the list has its scrollbar.
+            if is_minigame_list(self):
+                break
             # unable to get more ticket popup
             if self.deal_popup():
                 continue
-            if self.appear_then_click(GOTO_CHOOSE_GAME, offset=(5, 5), interval=3):
+            if is_minigame_home(self) \
+                    and self.appear_then_click(GOTO_CHOOSE_GAME, offset=(5, 5), interval=3):
                 # note: GOTO_CHOOSE_GAME is some where safe to click
                 # that won't enter any minigame on the minigame list page
                 continue
@@ -141,12 +153,11 @@ class Minigame(UI):
                 continue
             if self.appear_then_click(COIN_POPUP, offset=(5, 5), interval=2):
                 continue
-            if self.appear(GAME_ROOM_CHECK, offset=(5, 5)) \
-                    and not self.appear(GOTO_CHOOSE_GAME, offset=(5, 5)):
+            if is_minigame_home(self):
+                break
+            if is_minigame_list(self):
                 self.appear_then_click(BACK, offset=(5, 5), interval=2)
                 continue
-            if self.appear(GOTO_CHOOSE_GAME, offset=(5, 5)):
-                break
 
     def collect_coin(self, skip_first_screenshot=True):
         """
@@ -164,17 +175,16 @@ class Minigame(UI):
                 continue
             if self.appear_then_click(COIN_POPUP, offset=(5, 5), interval=3):
                 continue
-            # game room and choose game have same header, go to game room first
-            if self.appear(GAME_ROOM_CHECK, offset=(5, 5)) \
-                    and not self.appear(GOTO_CHOOSE_GAME, offset=(5, 5)):
+            # Return to the game-room home before collecting a coin from its list page.
+            if is_minigame_list(self):
                 self.appear_then_click(BACK, offset=(5, 5), interval=3)
                 continue
-            # collect coins
-            if not coin_collected and self.appear(COIN, offset=(5, 5)):
-                self.appear_then_click(COIN, offset=(5, 5), interval=3)
-                coin_collected = True
-                continue
-            if self.appear(GOTO_CHOOSE_GAME, offset=(5, 5)):
+            if is_minigame_home(self):
+                # collect coins
+                if not coin_collected and self.appear(COIN, offset=(5, 5)):
+                    self.appear_then_click(COIN, offset=(5, 5), interval=3)
+                    coin_collected = True
+                    continue
                 break
         return coin_collected
 
