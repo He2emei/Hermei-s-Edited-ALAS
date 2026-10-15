@@ -103,7 +103,20 @@ class ShipyardDevelopment(ShipyardUI):
 
     def _ocr_task_title(self, header_y):
         ocr = Ocr([task_title_area(header_y)], lang='cnocr', letter=(214, 225, 235), threshold=128, name='SHIPYARD_DEVELOPMENT_TASK')
-        return normalise_cn_task_title(ocr.ocr(self.device.image))
+        title = normalise_cn_task_title(ocr.ocr(self.device.image))
+        # The countdown directly abuts long task names and can consume the
+        # stage-II glyph. Retry only a bare family whose explicit I/II forms
+        # both exist in our catalogue, using a narrow band that excludes the
+        # countdown. Do not fuzzy-match unknown or already-staged titles.
+        if title and title not in TASK_CATALOG \
+                and title + 'I' in TASK_CATALOG and title + 'II' in TASK_CATALOG:
+            stage_ocr = Ocr([(990, header_y + 12, 1190, header_y + 43)],
+                            lang='cnocr', letter=(214, 225, 235), threshold=128,
+                            name='SHIPYARD_DEVELOPMENT_TASK_STAGE')
+            stage_title = normalise_cn_task_title(stage_ocr.ocr(self.device.image))
+            if stage_title in (title + 'I', title + 'II'):
+                return stage_title
+        return title
 
     def _detect_header_ys(self):
         template = cv2.imread('./assets/cn/shipyard_development/target_label.png')
@@ -167,7 +180,7 @@ class ShipyardDevelopment(ShipyardUI):
         # These known breakthrough families can have nonadjacent stage I/II
         # rows. cnocr can read both suffixes as I, so the upper/lower visible row
         # is authoritative only when a complete same-family pair is on screen.
-        for anchor in ('先锋技术突破', '主力技术突破'):
+        for anchor in ('先锋技术突破', '主力技术突破', '大型技术理论'):
             breakthrough_rows = [
                 i for i, task in enumerate(tasks)
                 if normalise_cn_task_title(task.title) in (anchor, anchor + 'I', anchor + 'II')
