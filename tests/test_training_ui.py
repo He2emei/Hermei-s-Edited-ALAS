@@ -198,6 +198,39 @@ class TrainingUiReviewTest(unittest.TestCase):
         inspector.awaken_once = lambda **kwargs: self.fail('level 120 must not awaken')
         self.assertIs(inspector.awaken_for_training(ship), ship)
 
+    def test_only_authorized_priority_120_uses_array_for_final_awakening(self):
+        inspector = TrainingShipInspector.__new__(TrainingShipInspector)
+        inspector.config = SimpleNamespace(PriorityTraining_Ships='虎',
+                                           PriorityTraining_Allow125Awakening=True)
+        ship = candidate('虎', level=120, cap=120)
+        calls = []
+        inspector.awaken_once = lambda **kwargs: calls.append(kwargs['use_array']) or 'success'
+        inspector.read_ship = lambda: candidate('虎', level=125, cap=125)
+        result = inspector.awaken_for_training(ship, ('虎',))
+        self.assertEqual(calls, [True])
+        self.assertEqual(result.level, 125)
+
+    def test_unrelated_120_target_never_uses_array(self):
+        inspector = TrainingShipInspector.__new__(TrainingShipInspector)
+        inspector.config = SimpleNamespace(PriorityTraining_Ships='虎',
+                                           PriorityTraining_Allow125Awakening=True)
+        ship = candidate('普通', level=120, cap=120)
+        calls = []
+        inspector.awaken_once = lambda **kwargs: calls.append(kwargs['use_array']) or 'success'
+        inspector.read_ship = lambda: candidate('普通', level=125, cap=125)
+        inspector.awaken_for_training(ship, ('虎',))
+        self.assertEqual(calls, [])
+
+    def test_awakening_without_level_or_cap_progress_takes_over(self):
+        inspector = TrainingShipInspector.__new__(TrainingShipInspector)
+        inspector.config = SimpleNamespace(PriorityTraining_Ships='虎',
+                                           PriorityTraining_Allow125Awakening=True)
+        ship = candidate('虎', level=100, cap=100)
+        inspector.awaken_once = lambda **kwargs: 'success'
+        inspector.read_ship = lambda: ship
+        with self.assertRaises(RequestHumanTakeover):
+            inspector.awaken_for_training(ship, ('虎',))
+
     def test_no_candidate_retains_current_without_fleet_edit(self):
         current = {
             1: candidate('英仙座'), 2: candidate('当前主力'),
@@ -288,6 +321,45 @@ class TrainingUiReviewTest(unittest.TestCase):
             manager.maintain(opsi)
         self.assertIn('彩主力', {manager.planned[2].name, manager.planned[3].name})
         self.assertIn('彩先锋', {manager.planned[5].name, manager.planned[6].name})
+
+    def test_maintenance_searches_priority_target_with_full_trainable_fleet(self):
+        current = {1: candidate('英仙座'), 2: candidate('主力甲'), 3: candidate('主力乙'),
+                   4: candidate('伊吹', position='vanguard'),
+                   5: candidate('先锋甲', position='vanguard'),
+                   6: candidate('先锋乙', position='vanguard')}
+        target = candidate('虎', faction='重樱', level=119, cap=120)
+
+        class Manager(TrainingFleetManager):
+            def __init__(self):
+                self.config = SimpleNamespace(SERVER='cn', OpsiFleet_Fleet=4,
+                                              PriorityTraining_Ships='虎',
+                                              PriorityTraining_Allow125Awakening=True,
+                                              cross_set=lambda **kwargs: None)
+                self.device = SimpleNamespace(image=np.zeros((720, 1280, 3), dtype=np.uint8))
+                self.planned = None
+                self.target_search = False
+
+            def _check_cn(self): pass
+            def ui_ensure(self, page): pass
+            def inspect_map_fleet(self, opsi): return current
+            def _available_ships(self, opsi): return {'虎'}
+            def find_candidates(self, side, factions, excluded, **kwargs):
+                if kwargs.get('target_names') == {'虎'}:
+                    self.target_search = True
+                    return [target]
+                return []
+            def _deploy(self, opsi, before, planned): self.planned = planned
+
+        opsi = SimpleNamespace(os_init=lambda **kwargs: None,
+                               globe_goto=lambda *args: None,
+                               name_to_zone=lambda name: name)
+        with patch('module.os.training.CATALOG', {'虎': {'type': 6}}), \
+                patch('module.shipyard.development.ShipyardDevelopment') as shipyard:
+            shipyard.return_value.inspect_current_project.return_value = ('柴郡', None)
+            manager = Manager()
+            manager.maintain(opsi)
+        self.assertTrue(manager.target_search)
+        self.assertIn('虎', {manager.planned[2].name, manager.planned[3].name})
 
     def test_catalog_type_and_faction_match_source_game_data(self):
         source_path = EVIDENCE / 'game-data' / 'ship_data_statistics.json'
