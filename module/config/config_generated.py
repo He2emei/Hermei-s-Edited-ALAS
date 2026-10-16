@@ -485,6 +485,10 @@ class GeneratedConfig:
     OpsiHazard1Leveling_MeowfficerCallThreshold = 3000
     OpsiHazard1Leveling_MeowfficerMonthEndThreshold = 200
 
+    # Group `PriorityTraining`
+    PriorityTraining_Ships = ''
+    PriorityTraining_Allow125Awakening = False
+
     # Group `OpsiTraining`
     OpsiTraining_Enable = False
     OpsiTraining_CheckIntervalMinutes = 60

@@ -2803,6 +2803,20 @@
       "help": "Used on the third-to-last and second-to-last day of each month when Month-End Mode is enabled; the last day uses 0 automatically"
     }
   },
+  "PriorityTraining": {
+    "_info": {
+      "name": "Priority ship training",
+      "help": "Ships in this list are prioritized for Tactical Academy and fourth-fleet leveling toward level 125 with max skills. Switching students happens only after a course naturally finishes or when a slot is idle. Ships outside the list keep normal rules."
+    },
+    "Ships": {
+      "name": "Priority ships (in order)",
+      "help": "Enter exact in-game ship names separated by >, commas, or new lines. An empty list keeps normal training behavior. Priority ships ignore the normal Academy minimum-level and favorite filters."
+    },
+    "Allow125Awakening": {
+      "name": "Allow priority ships to awaken to level 125",
+      "help": "Only locked ships in the priority list may awaken from 120 to 125 with Mental Units II and coins. No limit break or equipment changes are performed."
+    }
+  },
   "OpsiTraining": {
     "_info": {
       "name": "Research fleet training",
