@@ -158,10 +158,14 @@ class TrainingFleetManager(TrainingShipInspector):
         if priority_names:
             unresolved = [index for index, name in enumerate(names) if name is None]
             if unresolved:
-                inner_areas = [(self._visible_cards[index].area[0] + 10,
-                                self._visible_cards[index].area[1] + 167,
-                                self._visible_cards[index].area[2] - 10,
-                                self._visible_cards[index].area[1] + 189)
+                # Short configured names fit inside a tighter crop that
+                # excludes more illustration detail; retain the wider crop
+                # for longer identities so their labels are not truncated.
+                inset = 25 if max(map(len, priority_names)) <= 4 else 10
+                inner_areas = [(self._visible_cards[index].area[0] + inset,
+                                self._visible_cards[index].area[1] + 166,
+                                self._visible_cards[index].area[2] - inset,
+                                self._visible_cards[index].area[1] + 187)
                                for index in unresolved]
                 readings = EventFleetNameOcr(inner_areas, lang='cnocr',
                                              name='TrainingPriorityNamesColor').ocr(self.device.image)
