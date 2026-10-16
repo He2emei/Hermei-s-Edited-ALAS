@@ -151,6 +151,24 @@ class TrainingFleetManager(TrainingShipInspector):
                                          name='TrainingAvailableNamesColor').ocr(self.device.image)
             for index, reading in zip(unresolved, readings):
                 names[index] = catalog_name(reading)
+        # Some decorated ultra-ship labels remain unreadable even to the
+        # normal color OCR. For configured targets only, retry the compact
+        # inner label and accept it solely on an exact configured-name match.
+        priority_names = priority_ship_names(getattr(self, 'config', None))
+        if priority_names:
+            unresolved = [index for index, name in enumerate(names) if name is None]
+            if unresolved:
+                inner_areas = [(self._visible_cards[index].area[0] + 10,
+                                self._visible_cards[index].area[1] + 167,
+                                self._visible_cards[index].area[2] - 10,
+                                self._visible_cards[index].area[1] + 189)
+                               for index in unresolved]
+                readings = EventFleetNameOcr(inner_areas, lang='cnocr',
+                                             name='TrainingPriorityNamesColor').ocr(self.device.image)
+                for index, reading in zip(unresolved, readings):
+                    exact_name = catalog_name(reading)
+                    if exact_name in priority_names:
+                        names[index] = exact_name
         return names
 
     def _scan_selection(self, target=None, fail_if_missing=True):
@@ -160,6 +178,7 @@ class TrainingFleetManager(TrainingShipInspector):
         previous_reading = None
         position = None
         stalled = 0
+        short_list_missing_reads = 0
         for _ in range(40):
             self.device.screenshot()
             visible = self._visible_names()
@@ -202,8 +221,11 @@ class TrainingFleetManager(TrainingShipInspector):
             current = DOCK_SCROLL.cal_position(main=self)
             if target is not None and getattr(DOCK_SCROLL, "length", None) == 0:
                 # A settled, filtered dock without a thumb fits on one page.
-                # Complete its uniqueness check instead of reading dummy slots
-                # forty times; no identities or lock checks are relaxed.
+                # Reread a missing target a few times to ride out transient OCR
+                # errors, without swiping or relaxing identity/lock checks.
+                if not matches and short_list_missing_reads < 3:
+                    short_list_missing_reads += 1
+                    continue
                 break
             if current > 1 - DOCK_SCROLL.edge_threshold:
                 # Same judgement as DOCK_SCROLL.at_bottom(), on the position
