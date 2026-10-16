@@ -98,14 +98,15 @@ def _valid_candidate(candidate):
     return None
 
 
-def decide_trainability(candidate):
+def decide_trainability(candidate, priority_names=()):
     """Return whether a ship is safe to send to tactical training."""
     invalid = _valid_candidate(candidate)
     if invalid:
         return PolicyDecision(False, invalid)
     if not candidate.is_locked:
         return PolicyDecision(False, 'unlocked ship may be limit-break material')
-    if candidate.is_rainbow and candidate.level >= 120:
+    priority = candidate.name in priority_names
+    if candidate.is_rainbow and candidate.level >= 120 and not priority:
         return PolicyDecision(False, 'rainbow ship reached level 120')
     if candidate.level == MAX_LEVEL:
         return PolicyDecision(False, 'level 125 is complete')
@@ -120,17 +121,20 @@ def decide_trainability(candidate):
     elif at_current_cap and level_cap >= 100:
         if candidate.stored_exp is None:
             return PolicyDecision(False, 'stored XP is required at level cap 100 or higher')
-        if not candidate.is_rainbow and candidate.level >= 110 \
+        if not priority and not candidate.is_rainbow and candidate.level >= 110 \
                 and candidate.stored_exp >= MAX_STORED_EXP:
             return PolicyDecision(False, 'stored XP and level threshold are complete')
+    if priority:
+        # Targets skip only the ordinary completed-XP stopping threshold.
+        return PolicyDecision(True, 'priority target is below level 125')
     return PolicyDecision(True, 'trainable')
 
 
-def is_trainable(candidate):
-    return decide_trainability(candidate).allowed
+def is_trainable(candidate, priority_names=()):
+    return decide_trainability(candidate, priority_names).allowed
 
 
-def decide_awaken(candidate):
+def decide_awaken(candidate, priority_names=(), allow_125=False):
     """Return whether the current level cap requires an awakening step."""
     invalid = _valid_candidate(candidate)
     if invalid:
@@ -141,7 +145,12 @@ def decide_awaken(candidate):
         return PolicyDecision(False, 'ordinary ship is not fully limit broken')
     if candidate.level_cap is None:
         return PolicyDecision(False, 'level cap is unknown')
+    priority = candidate.name in priority_names
     allowed_caps = {100, 105, 110, 115} if candidate.is_rainbow else {100, 105}
+    if priority:
+        allowed_caps = allowed_caps | {110, 115}
+        if allow_125:
+            allowed_caps = allowed_caps | {120}
     if candidate.level_cap not in allowed_caps:
         return PolicyDecision(False, 'this level cap does not require awakening')
     if candidate.level != candidate.level_cap:
@@ -149,8 +158,8 @@ def decide_awaken(candidate):
     return PolicyDecision(True, 'awakening required')
 
 
-def should_awaken(candidate):
-    return decide_awaken(candidate).allowed
+def should_awaken(candidate, priority_names=(), allow_125=False):
+    return decide_awaken(candidate, priority_names, allow_125).allowed
 
 
 def _normalise_title(title):
@@ -186,12 +195,12 @@ def parse_training_requirement(title):
 parse_research_requirement = parse_training_requirement
 
 
-def _slot_eligible(candidate, slot):
+def _slot_eligible(candidate, slot, priority_names=()):
     side = 'main' if slot in MAIN_SLOTS else 'vanguard' if slot in VANGUARD_SLOTS else None
-    return side is not None and is_trainable(candidate) and candidate.position == side
+    return side is not None and is_trainable(candidate, priority_names) and candidate.position == side
 
 
-def plan_rotation(requirements, current_slots, screen_candidates, excluded_identities=()):
+def plan_rotation(requirements, current_slots, screen_candidates, excluded_identities=(), priority_names=()):
     """Fill four slots; retain an existing finished ship only when no trainable replacement exists."""
     requirements = dict(requirements or {})
     current_slots = dict(current_slots or {})
@@ -238,7 +247,7 @@ def plan_rotation(requirements, current_slots, screen_candidates, excluded_ident
                 continue
             if candidate.identity in excluded or candidate.identity in other_current or candidate.identity in used:
                 continue
-            if _slot_eligible(candidate, slot):
+            if _slot_eligible(candidate, slot, priority_names):
                 result.append(candidate)
         return result
 
@@ -246,18 +255,20 @@ def plan_rotation(requirements, current_slots, screen_candidates, excluded_ident
     best_score = None
 
     def score():
-        trainable_count = sum(is_trainable(assignments[s]) for s in ROTATION_SLOTS)
-        rainbow_sides = sum(any(assignments[s].is_rainbow and is_trainable(assignments[s]) for s in side)
+        priority_count = sum(assignments[s].name in priority_names and assignments[s].level < MAX_LEVEL
+                             and decide_trainability(assignments[s], priority_names).allowed for s in ROTATION_SLOTS)
+        trainable_count = sum(is_trainable(assignments[s], priority_names) for s in ROTATION_SLOTS)
+        rainbow_sides = sum(any(assignments[s].is_rainbow and is_trainable(assignments[s], priority_names) for s in side)
                             for side in (MAIN_SLOTS, VANGUARD_SLOTS))
         faction_matches = sum(
             requirement is not None
-            and is_trainable(assignments[slot])
+            and is_trainable(assignments[slot], priority_names)
             and requirement.position == assignments[slot].position
             and assignments[slot].faction in requirement.factions
             for slot, requirement in requirements.items()
         )
         unchanged = sum(current_slots.get(slot) == assignments[slot] for slot in ROTATION_SLOTS)
-        return trainable_count, rainbow_sides, faction_matches, unchanged
+        return priority_count, trainable_count, rainbow_sides, faction_matches, unchanged
 
     def search(index, used):
         nonlocal best, best_score

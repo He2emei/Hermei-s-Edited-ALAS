@@ -305,6 +305,17 @@
     }
   },
   "General": {
+    "PriorityTraining": {
+      "Ships": {
+        "type": "textarea",
+        "value": "",
+        "valuetype": "str"
+      },
+      "Allow125Awakening": {
+        "type": "checkbox",
+        "value": false
+      }
+    },
     "CampaignProfile": {
       "Mode": {
         "type": "select",
