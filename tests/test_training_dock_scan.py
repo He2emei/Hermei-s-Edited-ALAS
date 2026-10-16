@@ -58,6 +58,7 @@ ROOT = Path(__file__).resolve().parent.parent
 LOCK_DOCK_FRAME = ROOT / 'tests/fixtures/opsi_lock_dock_alas2_20260925.png'
 LEXINGTON_DOCK_FRAME = ROOT / 'tests/fixtures/opsi_training/training_selector_lexington_locked_20261015.png'
 AZUCHI_DOCK_FRAME = ROOT / 'tests/fixtures/opsi_training/azuchi_locked_selection_20261017.png'
+AZUCHI_RETRY_DOCK_FRAME = ROOT / 'tests/fixtures/opsi_training/azuchi_locked_selection_retry_20261017.png'
 
 
 class TrainingNameOcrFixtureTest(unittest.TestCase):
@@ -83,33 +84,41 @@ class TrainingNameOcrFixtureTest(unittest.TestCase):
         self.assertIs(dock_card_lock(image, cards[0]), True)
 
     def test_priority_inner_color_ocr_recovers_exact_azuchi_name(self):
-        image = cv2.cvtColor(cv2.imread(str(AZUCHI_DOCK_FRAME)), cv2.COLOR_BGR2RGB)
-        manager = object.__new__(TrainingFleetManager)
-        manager.config = SimpleNamespace(PriorityTraining_Ships='虎 > 安土')
-        manager.device = SimpleNamespace(image=image)
+        for frame_path in (AZUCHI_DOCK_FRAME, AZUCHI_RETRY_DOCK_FRAME):
+            with self.subTest(frame=frame_path.name):
+                image = cv2.cvtColor(cv2.imread(str(frame_path)), cv2.COLOR_BGR2RGB)
+                manager = object.__new__(TrainingFleetManager)
+                manager.config = SimpleNamespace(PriorityTraining_Ships='虎 > 安土')
+                manager.device = SimpleNamespace(image=image)
 
-        color_reads = []
+                color_reads = []
 
-        def event_ocr(areas, **kwargs):
-            color_reads.append((areas, kwargs.get('name')))
-            if kwargs.get('name') == 'TrainingAvailableNamesColor':
-                return SimpleNamespace(ocr=lambda frame: [''] * len(areas))
-            return RealEventFleetNameOcr(areas, **kwargs)
+                def event_ocr(areas, **kwargs):
+                    color_reads.append((areas, kwargs.get('name')))
+                    if kwargs.get('name') == 'TrainingAvailableNamesColor':
+                        return SimpleNamespace(ocr=lambda frame: [''] * len(areas))
+                    return RealEventFleetNameOcr(areas, **kwargs)
 
-        with patch('module.os.training.Ocr', side_effect=lambda areas, **kwargs:
-                   SimpleNamespace(ocr=lambda frame: [''] * len(areas))), \
-                patch('module.os.training.EventFleetNameOcr', side_effect=event_ocr):
-            names = manager._visible_names()
-        cards = manager._visible_cards
+                with patch('module.os.training.Ocr', side_effect=lambda areas, **kwargs:
+                           SimpleNamespace(ocr=lambda frame: [''] * len(areas))), \
+                        patch('module.os.training.EventFleetNameOcr', side_effect=event_ocr):
+                    names = manager._visible_names()
+                cards = manager._visible_cards
 
-        self.assertGreater(len(cards), 5)
-        self.assertEqual(names[5], '安土')
-        self.assertEqual(LevelOcr([(cards[5].area[0] + 77, cards[5].area[1] + 5,
-                                    cards[5].area[2], cards[5].area[1] + 27)],
-                                  name='PrioritySelectionLevelsFixture').ocr(image), 37)
-        self.assertIs(dock_card_lock(image, cards[5]), True)
-        self.assertEqual([name for _, name in color_reads],
-                         ['TrainingAvailableNamesColor', 'TrainingPriorityNamesColor'])
+                self.assertGreater(len(cards), 5)
+                self.assertEqual(names[5], '安土')
+                self.assertEqual(LevelOcr([(cards[5].area[0] + 77, cards[5].area[1] + 5,
+                                            cards[5].area[2], cards[5].area[1] + 27)],
+                                          name='PrioritySelectionLevelsFixture').ocr(image), 37)
+                self.assertIs(dock_card_lock(image, cards[5]), True)
+                self.assertEqual([name for _, name in color_reads],
+                                 ['TrainingAvailableNamesColor', 'TrainingPriorityNamesColor'])
+                inner_boxes = color_reads[-1][0]
+                self.assertTrue(any(box[0] == cards[5].area[0] + 25
+                                    and box[2] == cards[5].area[2] - 25
+                                    and box[1] == cards[5].area[1] + 166
+                                    and box[3] == cards[5].area[1] + 187
+                                    for box in inner_boxes))
 
 # Positions measured on the crash frame: the thumb length, the calibrated
 # track and the highest position the scrollbar can report.
