@@ -15,6 +15,7 @@ Alas:
       - Optimization
       - DropRecord
     General:
+      - PriorityTraining
       - CampaignProfile
       - Retirement
       - OneClickRetire

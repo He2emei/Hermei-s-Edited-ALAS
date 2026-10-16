@@ -819,6 +819,13 @@ OpsiHazard1Leveling:
   MeowfficerCallThreshold: 3000
   MeowfficerMonthEndThreshold: 200
 
+PriorityTraining:
+  Ships:
+    type: textarea
+    value: ""
+    valuetype: str
+  Allow125Awakening: false
+
 OpsiTraining:
   Enable: false
   CheckIntervalMinutes: 60

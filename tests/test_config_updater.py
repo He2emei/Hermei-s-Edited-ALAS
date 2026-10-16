@@ -1,11 +1,34 @@
 import json
 import unittest
 
+from module.config.config import AzurLaneConfig
 from module.config.config_updater import ConfigUpdater
 from module.config.deep import deep_get
 
 
 class ConfigUpdaterTest(unittest.TestCase):
+    def test_priority_training_empty_default_survives_reload_and_binding(self):
+        with open('config/template.json', encoding='utf-8') as stream:
+            template = json.load(stream)
+        self.assertEqual(deep_get(template, 'General.PriorityTraining.Ships'), '')
+        self.assertIs(deep_get(template, 'General.PriorityTraining.Allow125Awakening'), False)
+
+        updater = ConfigUpdater()
+        reloaded = updater.config_update({})
+        self.assertEqual(deep_get(reloaded, 'General.PriorityTraining.Ships'), '')
+        self.assertEqual(
+            deep_get(updater.config_update(reloaded), 'General.PriorityTraining.Ships'),
+            '',
+        )
+
+        config = AzurLaneConfig.__new__(AzurLaneConfig)
+        config.data = reloaded
+        config.bound = {}
+        config.overridden = {}
+        config.bind('Alas')
+        self.assertEqual(config.PriorityTraining_Ships, '')
+        self.assertEqual(config.bound['PriorityTraining_Ships'], 'General.PriorityTraining.Ships')
+
     def test_cross_month_recovery_flag_survives_reload_and_defaults_off(self):
         old = {'OpsiCrossMonth': {'OpsiCrossMonth': {'SkipPendingCatchUp': True}}}
         self.assertTrue(deep_get(ConfigUpdater().config_update(old),

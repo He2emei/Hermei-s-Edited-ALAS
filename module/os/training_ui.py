@@ -17,6 +17,7 @@ from module.exception import RequestHumanTakeover
 from module.logger import logger
 from module.ocr.ocr import Digit, Ocr
 from module.os.training_policy import ShipCandidate, decide_trainability, should_awaken
+from module.base.priority_training import allow_priority_125
 from module.retire.card_geometry import dock_cards
 from module.retire.dock import DOCK_SCROLL
 from module.retire.assets import DOCK_CHECK, DOCK_EMPTY
@@ -338,15 +339,25 @@ class TrainingShipInspector(Awaken):
             previous = ship
         raise RequestHumanTakeover('Cannot reliably read ship identity, level, stars or stored XP')
 
-    def awaken_for_training(self, ship):
-        for _ in range(4):
-            if not should_awaken(ship):
+    def awaken_for_training(self, ship, priority_names=()):
+        use_array = False
+        allow_125 = allow_priority_125(getattr(self, 'config', None), ship.name)
+        for _ in range(5):
+            if not should_awaken(ship, priority_names, allow_125):
                 return ship
-            result = self.awaken_once(use_array=False)
+            use_array = bool(allow_125 and ship.level_cap == 120 and ship.level == 120)
+            result = self.awaken_once(use_array=use_array)
             if result != 'success':
                 raise RequestHumanTakeover(f'Training awakening stopped: {ship.name}: {result}')
+            previous = ship
             ship = self.read_ship()
-        if should_awaken(ship):
+            if ship.name != previous.name or ship.is_locked != previous.is_locked \
+                    or ship.position != previous.position or ship.faction != previous.faction:
+                raise RequestHumanTakeover('Ship identity or lock changed during awakening')
+            if ship.level <= previous.level and (ship.level_cap is None or previous.level_cap is None
+                                                  or ship.level_cap <= previous.level_cap):
+                raise RequestHumanTakeover('Ship level and cap did not progress during awakening')
+        if should_awaken(ship, priority_names, allow_125):
             raise RequestHumanTakeover('Training awakening did not reach a stable cap')
         return ship
 
@@ -371,7 +382,7 @@ class TrainingShipInspector(Awaken):
         return ships
 
     def find_candidates(self, side, factions, excluded, needed=2, available=None,
-                        rarity='all', scroll=DOCK_SCROLL):
+                        rarity='all', scroll=DOCK_SCROLL, target_names=None):
         """Inspect in dock order. Never select/remove a deployed ship here."""
         self.ui_ensure(page_dock)
         self.dock_favourite_set(False)
@@ -400,6 +411,8 @@ class TrainingShipInspector(Awaken):
                 name = catalog_name(raw_name)
                 if not name or name in seen or not 1 <= level < 125 or (available is not None and name not in available):
                     continue
+                if target_names is not None and name not in target_names:
+                    continue
                 if dock_card_lock(self.device.image, button) is not True:
                     logger.info(f'Training skip {name}: dock card is unlocked or lock state unclear')
                     continue
@@ -413,7 +426,8 @@ class TrainingShipInspector(Awaken):
                     continue
                 if ship.name != name or ship.level != level:
                     raise RequestHumanTakeover('Dock card and ship details disagree')
-                decision = decide_trainability(ship)
+                priority_names = tuple(target_names or ())
+                decision = decide_trainability(ship, priority_names)
                 if decision.allowed and ship.position == side and (not factions or ship.faction in factions) \
                         and (rarity != 'ultra' or ship.is_rainbow):
                     found.append(ship)

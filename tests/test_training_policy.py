@@ -17,6 +17,44 @@ def ship(name='A', faction='皇家', position='main', level=100,
 
 
 class TrainingPolicyTest(unittest.TestCase):
+    def test_priority_target_continues_to_125_without_weakening_safety(self):
+        target = ship('虎', rainbow=True, level=120, cap=120, stored=3_000_000)
+        self.assertFalse(decide_trainability(target).allowed)
+        self.assertTrue(decide_trainability(target, ('虎',)).allowed)
+        self.assertFalse(decide_trainability(ship('虎', rainbow=True, level=125, cap=125), ('虎',)).allowed)
+        self.assertFalse(decide_trainability(replace(target, is_locked=False), ('虎',)).allowed)
+        ordinary_target = replace(target, is_rainbow=False, fully_limit_broken=False)
+        self.assertFalse(decide_trainability(ordinary_target, ('虎',)).allowed)
+        self.assertFalse(decide_trainability(replace(target, level_cap=None), ('虎',)).allowed)
+        self.assertFalse(decide_trainability(replace(target, stored_exp=None), ('虎',)).allowed)
+
+    def test_priority_rotation_beats_faction_and_keeps_immutable_slots(self):
+        current = {1: ship('anchor', position='main'), 2: ship('普通', faction='皇家'),
+                   3: ship('空位替代'), 4: ship('anchor-v', position='vanguard'),
+                   5: ship('前排甲', position='vanguard'), 6: ship('前排乙', position='vanguard')}
+        target = ship('安土', faction='重樱')
+        plan = plan_rotation({2: TrainingRequirement(frozenset({'皇家'}), 'main', 1, '皇家主力技术测试I')},
+                             current, [target], priority_names=('安土',))
+        self.assertTrue(plan.success)
+        self.assertIn('安土', {plan.slots[2].name, plan.slots[3].name})
+        self.assertEqual(plan.slots[1], current[1])
+        self.assertEqual(plan.slots[4], current[4])
+
+    def test_only_enabled_priority_target_awakens_from_120(self):
+        target = ship('虎', rainbow=True, level=120, cap=120)
+        self.assertFalse(decide_awaken(target, ('虎',), False).allowed)
+        self.assertTrue(decide_awaken(target, ('虎',), True).allowed)
+        self.assertFalse(decide_awaken(ship('普通', rainbow=True, level=120, cap=120), ('虎',), True).allowed)
+
+    def test_ordinary_priority_targets_can_awaken_through_120_but_125_is_gated(self):
+        for level in (110, 115):
+            with self.subTest(level=level):
+                self.assertTrue(decide_awaken(ship('虎', level=level, cap=level), ('虎',), False).allowed)
+        target_120 = ship('虎', level=120, cap=120)
+        self.assertFalse(decide_awaken(target_120, ('虎',), False).allowed)
+        self.assertTrue(decide_awaken(target_120, ('虎',), True).allowed)
+        self.assertFalse(decide_awaken(ship('普通', level=110, cap=110), ('虎',), True).allowed)
+
     def test_unlocked_material_is_not_trainable_or_awakened(self):
         unlocked = replace(ship('material', level=100), is_locked=False)
         self.assertFalse(decide_trainability(unlocked).allowed)

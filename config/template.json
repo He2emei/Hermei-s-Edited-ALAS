@@ -42,6 +42,10 @@
     }
   },
   "General": {
+    "PriorityTraining": {
+      "Ships": "",
+      "Allow125Awakening": false
+    },
     "CampaignProfile": {
       "Mode": "daily"
     },
