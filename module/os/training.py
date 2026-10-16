@@ -10,9 +10,10 @@ from module.logger import logger
 from module.ocr.ocr import Ocr
 from module.combat.level import LevelOcr
 from module.os.training_policy import ShipCandidate, ROTATION_SLOTS, decide_trainability, plan_rotation, should_awaken
+from module.base.priority_training import priority_ship_names, allow_priority_125
 from module.os.deployment_cost import read_deployment_cost
 from module.os.training_ui import (TrainingShipInspector, DOCK_SCROLL,
-                                   FILTER_FACTIONS, catalog_name, dock_card_lock, point_button, dock_cards,
+                                   FILTER_FACTIONS, CATALOG, catalog_name, dock_card_lock, point_button, dock_cards,
                                    same_card_portrait, same_dock_page)
 from module.event.fleet_source import EventFleetNameOcr
 from module.retire.assets import DOCK_CHECK
@@ -270,7 +271,7 @@ class TrainingFleetManager(TrainingShipInspector):
         self._close_selector(opsi)
         return available
 
-    def _awaken_planned_ship(self, target):
+    def _awaken_planned_ship(self, target, priority_names=()):
         # Search the regular dock; deployment selection does not open details.
         from module.ui.page import page_dock
         self.ui_ensure(page_dock)
@@ -283,7 +284,7 @@ class TrainingFleetManager(TrainingShipInspector):
         actual = self.read_ship()
         if actual != target:
             raise RequestHumanTakeover('Ship changed since planning; awakening deferred')
-        return self.awaken_for_training(actual)
+        return self.awaken_for_training(actual, priority_names)
 
     def _return_to_ny_map_after_deploy(self, opsi):
         def wait_for_port_or_map(description):
@@ -377,7 +378,8 @@ class TrainingFleetManager(TrainingShipInspector):
         if any(instance(actual[s]) != instance(planned[s]) for s in ROTATION_SLOTS) \
                 or any(actual[s].name != planned[s].name for s in (1, 4)):
             raise RequestHumanTakeover('Deployed ship identities differ from the full plan')
-        if any(not decide_trainability(actual[s]).allowed for s in changed):
+        priority_names = priority_ship_names(self.config)
+        if any(not decide_trainability(actual[s], priority_names).allowed for s in changed):
             raise RequestHumanTakeover('A newly deployed ship no longer meets training requirements')
         logger.info('Fourth fleet deployment verified, both anchors preserved')
         return True
@@ -397,16 +399,19 @@ class TrainingFleetManager(TrainingShipInspector):
             self.config.cross_set(keys='OpsiHazard1Leveling.OpsiTraining.LastCheck', value=int(time.time()))
             return False
         logger.info(f'Training development project: {ship_name}: {requirement}')
+        priority_names = priority_ship_names(self.config)
         opsi.os_init(skip_first_auto_search=True)
         opsi.globe_goto(opsi.name_to_zone('NY'))
         current = self.inspect_map_fleet(opsi)
         requirements = {slot: requirement if requirement and requirement.position == ('main' if slot < 4 else 'vanguard')
                         else None for slot in ROTATION_SLOTS}
-        initial = plan_rotation(requirements, current, [])
+        initial = plan_rotation(requirements, current, [], priority_names=priority_names)
+        priority_pending = tuple(name for name in priority_names
+                                 if not any(ship.name == name and ship.level == 125 for ship in current.values()))
         candidates = []
         search = {}
         for side, slots in (('main', (2, 3)), ('vanguard', (5, 6))):
-            existing = [current[slot] for slot in slots if decide_trainability(current[slot]).allowed]
+            existing = [current[slot] for slot in slots if decide_trainability(current[slot], priority_names).allowed]
             active = requirement if requirement and requirement.position == side else None
             rainbow = any(ship.is_rainbow for ship in existing)
             matching_rainbow = any(ship.is_rainbow and ship.faction in active.factions
@@ -414,15 +419,29 @@ class TrainingFleetManager(TrainingShipInspector):
             faction_count = sum(ship.faction in active.factions for ship in existing) if active else 0
             search[side] = (len(existing) < 2 or not rainbow
                             or active is not None and (not matching_rainbow or faction_count < 2))
-        if not initial.success or any(search.values()):
+        if not initial.success or any(search.values()) or priority_pending:
             available = self._available_ships(opsi)
             # An unlocked deployed copy must not hide a distinct, locked dock
             # copy of the same ship from the candidate search.
             excluded = {ship.name for ship in current.values() if ship.is_locked}
+            # Search exact configured targets even when all ordinary slots are
+            # already trainable. Their CATALOG type is the only source of side.
+            for target in priority_pending:
+                data = CATALOG.get(target)
+                if not data:
+                    continue
+                ship_type = data['type']
+                side = ('main' if ship_type in (4, 5, 6, 7, 10, 12, 13, 21, 24)
+                        else 'vanguard' if ship_type in (1, 2, 3, 18, 19, 22, 23) else None)
+                if side and not any(s.name == target and decide_trainability(s, priority_names).allowed
+                                    for s in current.values()):
+                    candidates.extend(self.find_candidates(
+                        side, frozenset(), excluded, needed=1, available=available,
+                        target_names={target}))
             for side, slots in (('main', (2, 3)), ('vanguard', (5, 6))):
                 if not search[side] and initial.success:
                     continue
-                existing = [current[slot] for slot in slots if decide_trainability(current[slot]).allowed]
+                existing = [current[slot] for slot in slots if decide_trainability(current[slot], priority_names).allowed]
                 active = requirement if requirement and requirement.position == side else None
                 factions = active.factions if active else frozenset()
                 has_matching_rainbow = any(ship.is_rainbow and (not active or ship.faction in factions)
@@ -439,15 +458,16 @@ class TrainingFleetManager(TrainingShipInspector):
                 if len(existing) < 2 or active and faction_count < 2:
                     candidates.extend(self.find_candidates(
                         side, factions, excluded, needed=2, available=available))
-        plan = plan_rotation(requirements, current, candidates)
+        plan = plan_rotation(requirements, current, candidates, priority_names=priority_names)
         if not plan.success:
             raise RequestHumanTakeover('No complete eligible fleet plan: ' + plan.reason)
         logger.info('Training plan: ' + ', '.join(f'{s}={plan.slots[s].name}' for s in range(1, 7)))
         completed_during_awaken = False
         for slot in ROTATION_SLOTS:
-            if should_awaken(plan.slots[slot]):
-                plan.slots[slot] = self._awaken_planned_ship(plan.slots[slot])
-                if not decide_trainability(plan.slots[slot]).allowed:
+            if should_awaken(plan.slots[slot], priority_names,
+                             allow_priority_125(self.config, plan.slots[slot].name)):
+                plan.slots[slot] = self._awaken_planned_ship(plan.slots[slot], priority_names)
+                if not decide_trainability(plan.slots[slot], priority_names).allowed:
                     logger.info(f'Training ship reached its target during awakening: {plan.slots[slot].name}')
                     completed_during_awaken = True
                     break

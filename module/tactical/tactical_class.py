@@ -23,6 +23,8 @@ from module.tactical.book_planner import (
     plan_books,
     remaining_from_projected_counter,
 )
+from module.base.priority_training import priority_ship_names
+from module.os.training_ui import CATALOG, FACTIONS, FILTER_FACTIONS, catalog_name, dock_card_lock
 
 SKILL_GRIDS = ButtonGrid(origin=(315, 140), delta=(621, 132), button_shape=(621, 119), grid_shape=(1, 3), name='SKILL')
 if server.server != 'jp':
@@ -570,6 +572,17 @@ class RewardTacticalClass(Dock):
         self.tactical_dock_page_fingerprints = set()
         self.tactical_dock_expect_new_page = False
         self.tactical_dock_filters_initialized = False
+        self.tactical_priority_names = priority_ship_names(self.config)
+        self.tactical_priority_exhausted = set()
+        self.tactical_priority_started = set()
+        self.tactical_priority_current = None
+        self.tactical_priority_boundary_redirected = False
+        self.tactical_new_student_selected = False
+        # Setting.settings contains every (group, option) button; defaults are
+        # the only reliable baseline here, not a snapshot of active UI choices.
+        self.tactical_normal_filter_settings = self.dock_filter.settings_default.copy()
+        self.tactical_normal_factions = [option for group, option in self.dock_filter.settings
+                                         if group == 'faction' and option not in ['all', 'meta']]
         received = False
         student_enabled = self.config.AddNewStudent_Enable
         study_finished = not student_enabled
@@ -653,7 +666,18 @@ class RewardTacticalClass(Dock):
                 self.device.click(MISSION_POPUP_ACK)
                 continue
             if self.appear(TACTICAL_CLASS_START, offset=(30, 30), interval=2):
+                if self._tactical_redirect_completed_course():
+                    # This is the completed student's book-selection page.
+                    # Cancel only here, after natural completion, to expose the
+                    # existing ADD_NEW_STUDENT empty-slot path.
+                    logger.info('Redirect completed tactical course to priority enrollment')
+                    self.device.click(TACTICAL_CLASS_CANCEL)
+                    self.tactical_priority_boundary_redirected = True
+                    self.interval_reset([TACTICAL_CLASS_START, BOOK_EMPTY_POPUP])
+                    continue
                 if self._tactical_books_choose():
+                    self.tactical_new_student_selected = False
+                    self.tactical_priority_boundary_redirected = False
                     self.dock_select_index = 0
                     self.interval_reset([TACTICAL_CLASS_START, BOOK_EMPTY_POPUP])
                     self.interval_clear([POPUP_CONFIRM, POPUP_CANCEL, GET_MISSION])
@@ -675,7 +699,7 @@ class RewardTacticalClass(Dock):
                 # If not enable or can not fina a suitable ship
                 if self.config.AddNewStudent_Enable:
                     if self.select_suitable_ship():
-                        pass
+                        self.tactical_new_student_selected = True
                     else:
                         study_finished = True
                         self.device.click(BACK_ARROW)
@@ -691,6 +715,9 @@ class RewardTacticalClass(Dock):
                 # If not enable or can not find a skill
                 if self.config.AddNewStudent_Enable:
                     if self._tactical_skill_choose():
+                        if self.tactical_priority_current:
+                            self.tactical_priority_started.add(self.tactical_priority_current)
+                            self.tactical_priority_current = None
                         pass
                     else:
                         if self._tactical_advance_ship_candidate():
@@ -710,7 +737,10 @@ class RewardTacticalClass(Dock):
                 logger.info('META skill found, exit')
                 self.device.click(BACK_ARROW)
                 # Select the next ship in `select_suitable_ship()`
-                self.dock_select_index += 1
+                if self.tactical_priority_current:
+                    self._tactical_advance_ship_candidate()
+                else:
+                    self.dock_select_index += 1
                 # Avoid exit tactical between exiting meta skill to select new ship
                 self.interval_reset([TACTICAL_CHECK, TACTICAL_CHECK_2, BOOK_EMPTY_POPUP])
                 self.interval_clear(ADD_NEW_STUDENT)
@@ -786,6 +816,14 @@ class RewardTacticalClass(Dock):
 
     def _tactical_advance_ship_candidate(self):
         """Advance once after an all-MAX skill page, with a hard bound."""
+        current_priority = getattr(self, 'tactical_priority_current', None)
+        if current_priority:
+            self.tactical_priority_exhausted.add(current_priority)
+            self.tactical_priority_started.discard(current_priority)
+            self.tactical_priority_current = None
+            self.dock_select_index = 0
+            logger.info(f'Priority ship skills are all MAX; skip {current_priority} this run')
+            return True
         next_index = self.dock_select_index + 1
         if next_index >= len(getattr(self, 'tactical_dock_buttons', ())):
             if server.server != 'cn':
@@ -797,6 +835,16 @@ class RewardTacticalClass(Dock):
             logger.info('Visible tactical dock page exhausted; next selection will scroll')
         self.dock_select_index = next_index
         logger.info(f'Advance to tactical ship candidate {next_index}')
+        return True
+
+    def _tactical_redirect_completed_course(self):
+        """Return true once at a completed student's book page per course boundary."""
+        if not getattr(self, 'tactical_priority_names', ()) \
+                or not getattr(self.config, 'AddNewStudent_Enable', False) \
+                or getattr(self, 'tactical_new_student_selected', False) \
+                or getattr(self, 'tactical_priority_boundary_redirected', False):
+            return False
+        self.tactical_priority_boundary_redirected = True
         return True
 
     @staticmethod
@@ -826,19 +874,151 @@ class RewardTacticalClass(Dock):
             return
 
         self.dock_favourite_set(enable=self.config.AddNewStudent_Favorite, wait_loading=False)
+        factions = getattr(self, 'tactical_normal_factions', None)
+        if factions is None:
+            factions = [option for group, option in self.dock_filter.settings
+                        if group == 'faction' and option not in ['all', 'meta']]
+            self.tactical_normal_factions = list(factions)
+        self.dock_filter_set(faction=factions)
+        self.tactical_dock_filters_initialized = True
+
+    @staticmethod
+    def _tactical_priority_side(ship_type):
+        if ship_type in (4, 5, 6, 7, 10, 12, 13, 21, 24):
+            return 'main'
+        if ship_type in (1, 2, 3, 18, 19, 22, 23):
+            return 'vanguard'
+        return None
+
+    def _tactical_select_priority_ship(self):
+        """Try exact, catalogued and locked priority ships before normal filters."""
+        if server.server != 'cn':
+            return False
+        names = getattr(self, 'tactical_priority_names', ())
+        if not names:
+            return False
+        if not hasattr(self, 'tactical_normal_factions'):
+            self.tactical_normal_factions = [option for group, option in self.dock_filter.settings
+                                             if group == 'faction' and option not in ['all', 'meta']]
+        for name in names:
+            if name in getattr(self, 'tactical_priority_exhausted', set()) \
+                    or name in getattr(self, 'tactical_priority_started', set()):
+                continue
+            data = CATALOG.get(name)
+            if not data or data.get('rarity') != 6:
+                continue
+            side = self._tactical_priority_side(data.get('type'))
+            faction = FILTER_FACTIONS.get(FACTIONS.get(data.get('faction')))
+            if side is None or faction is None:
+                continue
+
+            self.dock_favourite_set(enable=False, wait_loading=False)
+            normal_settings = getattr(self, 'tactical_normal_filter_settings', {})
+            self.dock_filter_set(sort=normal_settings.get('sort', 'level'),
+                                 index=side, faction=faction, rarity='ultra',
+                                 extra=normal_settings.get('extra', 'no_limit'))
+            self.tactical_priority_filter_changed = True
+            if self.appear(DOCK_EMPTY, offset=(30, 30)):
+                continue
+            DOCK_SCROLL.set_top(main=self)
+            position = None
+            for _ in range(40):
+                self.device.screenshot()
+                first_cards = dock_cards(self.device.image)
+                if not first_cards:
+                    if self.appear(DOCK_EMPTY, offset=(30, 30)):
+                        break
+                    raise ScriptError('Priority tactical dock geometry is unknown')
+                first_levels = LevelOcr(
+                    [button.crop((77, 5, 138, 27), name='TACTICAL_PRIORITY_LEVEL') for button in first_cards],
+                    name='TACTICAL_PRIORITY_LEVEL', threshold=64).ocr(self.device.image)
+                first_names = Ocr(
+                    [tuple((button.area[0], button.area[1] + 164,
+                            button.area[2], button.area[1] + 189)) for button in first_cards],
+                    lang='cnocr', name='TACTICAL_PRIORITY_NAME').ocr(self.device.image)
+                if not isinstance(first_levels, list):
+                    first_levels = [first_levels]
+                if not isinstance(first_names, list):
+                    first_names = [first_names]
+                for index, (button, level, raw_name) in enumerate(zip(first_cards, first_levels, first_names)):
+                    if catalog_name(raw_name) != name or not isinstance(level, int) or level <= 0 \
+                            or dock_card_lock(self.device.image, button) is not True:
+                        continue
+                    first_area = button.area
+                    self.device.screenshot()
+                    second_cards = dock_cards(self.device.image)
+                    if index >= len(second_cards) or second_cards[index].area != first_area:
+                        continue
+                    second_levels = LevelOcr(
+                        [second_cards[index].crop((77, 5, 138, 27), name='TACTICAL_PRIORITY_LEVEL')],
+                        name='TACTICAL_PRIORITY_LEVEL', threshold=64).ocr(self.device.image)
+                    second_name = Ocr(
+                        [(second_cards[index].area[0], second_cards[index].area[1] + 164,
+                          second_cards[index].area[2], second_cards[index].area[1] + 189)],
+                        lang='cnocr', name='TACTICAL_PRIORITY_NAME').ocr(self.device.image)
+                    second_name = second_name[0] if isinstance(second_name, list) else second_name
+                    second_level = second_levels[0] if isinstance(second_levels, list) else second_levels
+                    if catalog_name(second_name) != name or second_level != level \
+                            or dock_card_lock(self.device.image, second_cards[index]) is not True:
+                        continue
+                    for _attempt in range(3):
+                        self.device.click(second_cards[index])
+                        self.device.sleep(0.3)
+                        self.device.screenshot()
+                        if self.dock_selected():
+                            break
+                    else:
+                        logger.info(f'Priority ship is unavailable for tactical study: {name}')
+                        continue
+                    self.dock_select_confirm(check_button=lambda: self.appear(SKILL_CONFIRM, offset=(30, 30))
+                                             or self.appear(TACTICAL_META, offset=(200, 30)))
+                    self.tactical_priority_current = name
+                    self.dock_select_index = 0
+                    self.interval_clear(SHIP_CONFIRM)
+                    return True
+
+                current = DOCK_SCROLL.cal_position(main=self)
+                if current > 1 - DOCK_SCROLL.edge_threshold:
+                    break
+                if position is not None and not current - position >= DOCK_SCROLL.drag_threshold:
+                    break
+                position = current
+                if not DOCK_SCROLL.next_page(main=self, page=0.45, skip_first_screenshot=False):
+                    break
+                self.device.sleep(0.6)
+            # Each unavailable target is tried once before moving to the next
+            # configured name; the next maintenance run may try it again.
+        return False
+
+    def _tactical_restore_priority_filters(self):
+        if not getattr(self, 'tactical_priority_filter_changed', False):
+            return
+        settings = getattr(self, 'tactical_normal_filter_settings', {})
+        self.dock_favourite_set(enable=self.config.AddNewStudent_Favorite, wait_loading=False)
         self.dock_filter_set(
-            faction=[v for k, v in self.dock_filter.settings if k == 'faction' and v not in ['all', 'meta']]
+            sort=settings.get('sort', 'level'),
+            index=settings.get('index', 'all'),
+            faction=getattr(self, 'tactical_normal_factions', settings.get('faction', 'all')),
+            rarity=settings.get('rarity', 'all'),
+            extra=settings.get('extra', 'no_limit'),
         )
+        self.tactical_priority_filter_changed = False
         self.tactical_dock_filters_initialized = True
 
     def select_suitable_ship(self):
         logger.hr(f'Select suitable ship')
 
+        if self._tactical_select_priority_ship():
+            return True
+
+        # Restore the user's regular Favorite/faction/MinLevel selection after
+        # target scans before ordinary candidates are considered.
+        self._tactical_restore_priority_filters()
+        self._tactical_initialize_dock_filters()
+
         # Set favorite and reset filter only on the first dock entry of this run.
         # Reapplying it after an all-MAX candidate can reset scrolling to the
         # top while dock_select_index still belongs to the previous viewport.
-        self._tactical_initialize_dock_filters()
-
         # No ship in dock
         if self.appear(DOCK_EMPTY, offset=(30, 30)):
             logger.info('Dock is empty or favorite ships is empty')
