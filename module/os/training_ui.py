@@ -387,7 +387,24 @@ class TrainingShipInspector(Awaken):
         self.ui_ensure(page_dock)
         self.dock_favourite_set(False)
         self.dock_sort_method_dsc_set(True)
-        selected_factions = [FILTER_FACTIONS[f] for f in sorted(factions)] if factions else 'all'
+        if target_names is not None:
+            target_factions = set()
+            for name in target_names:
+                data = CATALOG.get(name)
+                if not data or data.get('rarity') != 6:
+                    continue
+                ship_type = data.get('type')
+                target_side = ('main' if ship_type in (4, 5, 6, 7, 10, 12, 13, 21, 24)
+                               else 'vanguard' if ship_type in (1, 2, 3, 18, 19, 22, 23) else None)
+                faction = FACTIONS.get(data.get('faction'))
+                if target_side == side and faction in FILTER_FACTIONS:
+                    target_factions.add(faction)
+            if not target_factions:
+                return []
+            selected_factions = [FILTER_FACTIONS[f] for f in sorted(target_factions)]
+            rarity = 'ultra'
+        else:
+            selected_factions = [FILTER_FACTIONS[f] for f in sorted(factions)] if factions else 'all'
         dock_side = 'ss' if side == 'submarine' else side
         self.dock_filter_set(index=dock_side, faction=selected_factions, rarity=rarity)
         self.device.screenshot()
@@ -397,6 +414,8 @@ class TrainingShipInspector(Awaken):
         scroll.set_top(main=self)
         found, seen = [], set(excluded)
         position = None
+        previous_reading = None
+        stalled = 0
         for _ in range(40):
             self.device.screenshot()
             cards = dock_cards(self.device.image)
@@ -442,12 +461,24 @@ class TrainingShipInspector(Awaken):
             if current > 1 - scroll.edge_threshold:
                 # Same judgement as scroll.at_bottom(), on this measurement.
                 break
-            if position is not None and not (current - position >= scroll.drag_threshold):
-                # The dock's thumb saturates below the calibrated track end, so
-                # a scrollbar that stops responding is the real end of the list.
-                logger.info('Dock cannot scroll further, the list ends here')
+            changed_content = previous_reading is not None \
+                and not same_dock_page(previous_reading, names)
+            moved = position is not None and current > position + 0.01
+            repeated_page = previous_reading is not None \
+                and same_dock_page(previous_reading, names)
+            if repeated_page:
+                logger.info('Dock page repeated after scrolling, stop candidate scan')
                 break
-            position = current
+            if position is not None and not moved and not changed_content:
+                stalled += 1
+                if stalled >= 3:
+                    logger.info('Dock cannot scroll further, the list ends here')
+                    break
+            else:
+                stalled = 0
+                if moved or changed_content:
+                    self.device.click_record_clear()
+            previous_reading, position = names, current
             scroll.next_page(main=self, page=0.45)
             self.device.sleep(0.6)
         return found
