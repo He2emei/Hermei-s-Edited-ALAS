@@ -58,6 +58,19 @@ class ShipyardAutoGuardTest(unittest.TestCase):
         obj.auto_observe = Mock(side_effect=[(9, 6000, 6283), (0, 0, 283)])
         self.assertEqual(obj._confirm_purchase('DR', '吾妻', (0,), 9), (9,))
 
+    def test_final_preview_narrows_ambiguous_price_offsets(self):
+        obj = self.harness()
+        obj.auto_observe = Mock(side_effect=[(2, 0, 859), (0, 0, 859)])
+        self.assertEqual(obj._confirm_purchase('DR', '吾妻', (0, 1), 2), (2,))
+        obj._shipyard_buy_confirm.assert_called_once()
+
+    def test_incompatible_final_price_never_confirms(self):
+        obj = self.harness()
+        obj.auto_observe = Mock(return_value=(2, 300, 859))
+        with self.assertRaises(RequestHumanTakeover):
+            obj._confirm_purchase('DR', '吾妻', (0, 1), 2)
+        obj._shipyard_buy_confirm.assert_not_called()
+
     def test_finishing_development_reenters_fate_before_reading_coin_stock(self):
         obj = self.harness()
         readings = [(2, 1200, 9000), (0, 0, 7800)]
