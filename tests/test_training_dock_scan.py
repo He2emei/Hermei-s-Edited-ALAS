@@ -44,6 +44,7 @@ from module.device.device import Device
 from module.exception import GameTooManyClickError, RequestHumanTakeover
 from module.combat.level import LevelOcr
 from module.os.training import TrainingFleetManager
+from module.event.fleet_source import EventFleetNameOcr as RealEventFleetNameOcr
 from module.os.training_policy import ShipCandidate
 from module.os.training_ui import (TrainingShipInspector, catalog_name,
                                    reading_similarity, same_card_portrait,
@@ -56,6 +57,7 @@ from module.ocr.ocr import Ocr
 ROOT = Path(__file__).resolve().parent.parent
 LOCK_DOCK_FRAME = ROOT / 'tests/fixtures/opsi_lock_dock_alas2_20260925.png'
 LEXINGTON_DOCK_FRAME = ROOT / 'tests/fixtures/opsi_training/training_selector_lexington_locked_20261015.png'
+AZUCHI_DOCK_FRAME = ROOT / 'tests/fixtures/opsi_training/azuchi_locked_selection_20261017.png'
 
 
 class TrainingNameOcrFixtureTest(unittest.TestCase):
@@ -79,6 +81,35 @@ class TrainingNameOcrFixtureTest(unittest.TestCase):
                                     cards[0].area[2], cards[0].area[1] + 27)],
                                   name='TrainingSelectionLevelsFixture').ocr(image), 72)
         self.assertIs(dock_card_lock(image, cards[0]), True)
+
+    def test_priority_inner_color_ocr_recovers_exact_azuchi_name(self):
+        image = cv2.cvtColor(cv2.imread(str(AZUCHI_DOCK_FRAME)), cv2.COLOR_BGR2RGB)
+        manager = object.__new__(TrainingFleetManager)
+        manager.config = SimpleNamespace(PriorityTraining_Ships='虎 > 安土')
+        manager.device = SimpleNamespace(image=image)
+
+        color_reads = []
+
+        def event_ocr(areas, **kwargs):
+            color_reads.append((areas, kwargs.get('name')))
+            if kwargs.get('name') == 'TrainingAvailableNamesColor':
+                return SimpleNamespace(ocr=lambda frame: [''] * len(areas))
+            return RealEventFleetNameOcr(areas, **kwargs)
+
+        with patch('module.os.training.Ocr', side_effect=lambda areas, **kwargs:
+                   SimpleNamespace(ocr=lambda frame: [''] * len(areas))), \
+                patch('module.os.training.EventFleetNameOcr', side_effect=event_ocr):
+            names = manager._visible_names()
+        cards = manager._visible_cards
+
+        self.assertGreater(len(cards), 5)
+        self.assertEqual(names[5], '安土')
+        self.assertEqual(LevelOcr([(cards[5].area[0] + 77, cards[5].area[1] + 5,
+                                    cards[5].area[2], cards[5].area[1] + 27)],
+                                  name='PrioritySelectionLevelsFixture').ocr(image), 37)
+        self.assertIs(dock_card_lock(image, cards[5]), True)
+        self.assertEqual([name for _, name in color_reads],
+                         ['TrainingAvailableNamesColor', 'TrainingPriorityNamesColor'])
 
 # Positions measured on the crash frame: the thumb length, the calibrated
 # track and the highest position the scrollbar can report.
@@ -679,6 +710,30 @@ class DuplicatePageScanTest(unittest.TestCase):
             selected = manager._scan_selection(target)
         self.assertEqual(selected, cards[4])
         self.assertEqual(len(device.swipes), 0)
+
+    def test_missing_target_on_no_scrollbar_page_gets_four_static_reads(self):
+        image, _, cards = self.frames()
+        target = ShipCandidate('安土', '重樱', 'main', 70, True, True, None, 100, True)
+        device = FrameDevice([image])
+        scroll = PageScroll(device)
+        scroll.length = 0
+        manager = FrameScanManager(device, scroll, cards, [[''] * len(cards)], [70] * len(cards))
+        reads = []
+        original_visible_names = manager._visible_names
+
+        def visible_names():
+            reads.append(1)
+            return original_visible_names()
+
+        manager._visible_names = visible_names
+        levels = SimpleNamespace(ocr=lambda frame: [70] * len(cards))
+        with patch('module.os.training.DOCK_SCROLL', scroll), \
+                patch('module.os.training.LevelOcr', return_value=levels), \
+                patch('module.os.training.dock_card_lock', return_value=True):
+            with self.assertRaises(RequestHumanTakeover):
+                manager._scan_selection(target)
+        self.assertEqual(len(reads), 4)
+        self.assertEqual(device.swipes, [])
 
     def test_one_card_on_two_page_reads_is_not_ambiguous(self):
         image, shifted, cards = self.frames()
