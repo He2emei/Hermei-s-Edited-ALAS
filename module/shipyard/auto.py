@@ -55,7 +55,9 @@ class AutoShipyard(AutoShipyardUI):
             raise RequestHumanTakeover('Shipyard purchase capacity changed')
         selected, cost, coins = self.auto_observe()
         actual = infer_purchase_offsets(rarity, [(selected, cost)])
-        if not set(offsets).issubset(actual) or safe_purchase_amount(rarity, offsets, selected, coins) != selected:
+        consistent_offsets = tuple(offset for offset in offsets if offset in actual)
+        if not consistent_offsets \
+                or safe_purchase_amount(rarity, consistent_offsets, selected, coins) != selected:
             raise RequestHumanTakeover('Shipyard price or daily limit changed before confirmation')
         logger.info(f'Shipyard purchase: {rarity} {name}, count={selected}, coins={cost}, previous={offsets}')
         self._shipyard_buy_confirm('BP_BUY')
@@ -69,7 +71,7 @@ class AutoShipyard(AutoShipyardUI):
         if current != 0 or remaining != coins - cost:
             raise RequestHumanTakeover('Shipyard confirmation is not verified; re-inspect live prices next run')
         self.device.click_record_clear()
-        return tuple(i + selected for i in offsets)
+        return tuple(i + selected for i in consistent_offsets)
 
     def _quantity_controls_visible(self):
         """The minus/plus row exists only while the project can be adjusted.
