@@ -110,6 +110,88 @@ class TrainingUiReviewTest(unittest.TestCase):
                     inspector._open_slot(slot)
         self.assertEqual(set_top.call_count, 4)
 
+    def test_priority_availability_uses_locked_faction_lane_filter_without_editing_slot(self):
+        manager = TrainingFleetManager.__new__(TrainingFleetManager)
+        manager._open_selector = Mock()
+        manager._open_slot = Mock()
+        manager._scan_selection = Mock(side_effect=[{'普通主力'}, {'普通先锋'}, object()])
+        manager._cancel_slot = Mock()
+        manager._close_selector = Mock()
+
+        available = manager._available_ships(SimpleNamespace(), ('虎',))
+
+        self.assertEqual(available, {'普通主力', '普通先锋', '虎'})
+        self.assertEqual([call[0][0] for call in manager._open_slot.call_args_list], [2, 5, 5])
+        target_call = manager._open_slot.call_args_list[-1]
+        self.assertEqual(target_call[0][1].name, '虎')
+        self.assertEqual(target_call[0][1].position, 'vanguard')
+        self.assertTrue(target_call[1]['priority'])
+        self.assertEqual(manager._cancel_slot.call_count, 3)
+        manager._close_selector.assert_called_once()
+
+    def test_priority_deployment_slot_uses_exact_position_faction_and_ur_filters(self):
+        inspector = TrainingFleetManager.__new__(TrainingFleetManager)
+        inspector._is_selector = lambda: True
+        inspector._fourth_row_y = lambda: 300
+        inspector._wait = lambda *args, **kwargs: None
+        inspector.dock_favourite_set = Mock()
+        inspector.dock_sort_method_dsc_set = Mock()
+        inspector.dock_filter_set = Mock()
+        inspector.device = SimpleNamespace(click=Mock())
+        target = ShipCandidate('虎', '皇家', 'vanguard', 71, True, False, None, 120, True)
+        with patch('module.os.training.DOCK_SCROLL.set_top'):
+            inspector._open_slot(5, target, priority=True)
+        inspector.dock_filter_set.assert_called_once_with(
+            index='vanguard', faction='royal', rarity='ultra')
+
+    def test_available_scan_continues_on_small_measured_scroll_progress(self):
+        manager = TrainingFleetManager.__new__(TrainingFleetManager)
+        manager.device = SimpleNamespace(screenshot=Mock(), sleep=Mock(), click_record_clear=Mock(),
+                                         image=np.zeros((720, 1280, 3), dtype=np.uint8))
+        card = SimpleNamespace(area=(100, 100, 238, 304))
+
+        readings = iter(('企业', '柴郡', '独角兽', '独角兽'))
+
+        def visible_names():
+            name = next(readings)
+            manager._visible_cards = [card]
+            manager._raw_names = [name]
+            return [name]
+
+        manager._visible_names = visible_names
+        scroll_positions = iter((0.20, 0.24, 0.28, 1.0))
+        with patch('module.os.training.DOCK_SCROLL.cal_position',
+                   side_effect=lambda **kwargs: next(scroll_positions)), \
+                patch('module.os.training.DOCK_SCROLL.next_page') as next_page:
+            names = manager._scan_selection()
+
+        self.assertEqual(names, {'企业', '柴郡', '独角兽'})
+        self.assertEqual(next_page.call_count, 3)
+        # Each 0.04 thumb advance is below the old drag_threshold exit, but is
+        # measured progress and therefore safely resets the click history.
+        self.assertEqual(manager.device.click_record_clear.call_count, 3)
+
+    def test_priority_availability_rejects_unlocked_copy_and_double_checks_locked_card(self):
+        manager = TrainingFleetManager.__new__(TrainingFleetManager)
+        button = SimpleNamespace(area=(100, 100, 238, 304))
+        manager.device = SimpleNamespace(image=np.zeros((720, 1280, 3), dtype=np.uint8),
+                                         screenshot=Mock(), sleep=Mock())
+        manager._visible_names = lambda: (
+            setattr(manager, '_visible_cards', [button]) or
+            setattr(manager, '_raw_names', ['虎']) or ['虎'])
+
+        with patch('module.os.training.DOCK_SCROLL.cal_position', return_value=1.0), \
+                patch('module.os.training.dock_cards', return_value=[button]), \
+                patch('module.os.training.dock_card_lock', return_value=False):
+            self.assertIsNone(manager._scan_selection('虎', fail_if_missing=False))
+
+        manager.device.screenshot.reset_mock()
+        with patch('module.os.training.DOCK_SCROLL.cal_position', return_value=1.0), \
+                patch('module.os.training.dock_cards', return_value=[button]), \
+                patch('module.os.training.dock_card_lock', side_effect=[True, True]):
+            self.assertIs(manager._scan_selection('虎', fail_if_missing=False), button)
+        self.assertEqual(manager.device.screenshot.call_count, 2)
+
     def test_deployment_return_exits_ny_port_before_map_verification(self):
         state = ['port']
         exits = []
@@ -257,7 +339,7 @@ class TrainingUiReviewTest(unittest.TestCase):
             def inspect_map_fleet(self, opsi):
                 return current
 
-            def _available_ships(self, opsi, requirement=None):
+            def _available_ships(self, opsi, priority_names=()):
                 return set()
 
             def find_candidates(self, *args, **kwargs):
@@ -303,7 +385,7 @@ class TrainingUiReviewTest(unittest.TestCase):
             def inspect_map_fleet(self, opsi):
                 return current
 
-            def _available_ships(self, opsi):
+            def _available_ships(self, opsi, priority_names=()):
                 return {ship.name for ship in rainbow.values()}
 
             def find_candidates(self, side, factions, excluded, **kwargs):
@@ -327,7 +409,7 @@ class TrainingUiReviewTest(unittest.TestCase):
                    4: candidate('伊吹', position='vanguard'),
                    5: candidate('先锋甲', position='vanguard'),
                    6: candidate('先锋乙', position='vanguard')}
-        target = candidate('虎', faction='重樱', level=119, cap=120)
+        target = ShipCandidate('虎', '皇家', 'vanguard', 119, True, False, 0, 120, True)
 
         class Manager(TrainingFleetManager):
             def __init__(self):
@@ -342,10 +424,13 @@ class TrainingUiReviewTest(unittest.TestCase):
             def _check_cn(self): pass
             def ui_ensure(self, page): pass
             def inspect_map_fleet(self, opsi): return current
-            def _available_ships(self, opsi): return {'虎'}
+            def _available_ships(self, opsi, priority_names=()):
+                self.available_targets = tuple(priority_names)
+                return {'虎'}
             def find_candidates(self, side, factions, excluded, **kwargs):
                 if kwargs.get('target_names') == {'虎'}:
                     self.target_search = True
+                    self.search_args = (side, factions, kwargs.get('rarity'), kwargs.get('available'))
                     return [target]
                 return []
             def _deploy(self, opsi, before, planned): self.planned = planned
@@ -353,13 +438,53 @@ class TrainingUiReviewTest(unittest.TestCase):
         opsi = SimpleNamespace(os_init=lambda **kwargs: None,
                                globe_goto=lambda *args: None,
                                name_to_zone=lambda name: name)
-        with patch('module.os.training.CATALOG', {'虎': {'type': 6}}), \
+        with patch('module.os.training.CATALOG', {'虎': {'type': 2, 'faction': 2, 'rarity': 6}}), \
                 patch('module.shipyard.development.ShipyardDevelopment') as shipyard:
             shipyard.return_value.inspect_current_project.return_value = ('柴郡', None)
             manager = Manager()
             manager.maintain(opsi)
         self.assertTrue(manager.target_search)
-        self.assertIn('虎', {manager.planned[2].name, manager.planned[3].name})
+        self.assertEqual(manager.available_targets, ('虎',))
+        self.assertEqual(manager.search_args, ('vanguard', frozenset(), None, {'虎'}))
+        self.assertIn('虎', {manager.planned[5].name, manager.planned[6].name})
+
+    def test_deployed_locked_priority_target_does_not_force_dock_search(self):
+        current = {
+            1: candidate('英仙座'),
+            2: ShipCandidate('彩主力', '皇家', 'main', 90, True, False, None, 100, True),
+            3: candidate('普通主力', position='main'),
+            4: candidate('伊吹', position='vanguard'),
+            5: ShipCandidate('虎', '皇家', 'vanguard', 90, True, False, None, 120, True),
+            6: candidate('普通先锋', position='vanguard'),
+        }
+
+        class Manager(TrainingFleetManager):
+            def __init__(self):
+                self.config = SimpleNamespace(SERVER='cn', OpsiFleet_Fleet=4,
+                                              PriorityTraining_Ships='虎',
+                                              PriorityTraining_Allow125Awakening=True,
+                                              cross_set=lambda **kwargs: None)
+                self.device = SimpleNamespace(image=np.zeros((720, 1280, 3), dtype=np.uint8))
+                self.deploy_calls = 0
+
+            def _check_cn(self): pass
+            def ui_ensure(self, page): pass
+            def inspect_map_fleet(self, opsi): return current
+            def _available_ships(self, opsi, priority_names=()):
+                self.fail('deployed locked target must not force a dock scan')
+            def find_candidates(self, *args, **kwargs):
+                self.fail('ordinary conditions are already satisfied')
+            def _deploy(self, opsi, before, planned): self.deploy_calls += 1
+            def fail(self, message): raise AssertionError(message)
+
+        opsi = SimpleNamespace(os_init=lambda **kwargs: None,
+                               globe_goto=lambda *args: None,
+                               name_to_zone=lambda name: name)
+        with patch('module.shipyard.development.ShipyardDevelopment') as shipyard:
+            shipyard.return_value.inspect_current_project.return_value = ('柴郡', None)
+            manager = Manager()
+            manager.maintain(opsi)
+        self.assertEqual(manager.deploy_calls, 1)
 
     def test_catalog_type_and_faction_match_source_game_data(self):
         source_path = EVIDENCE / 'game-data' / 'ship_data_statistics.json'
@@ -591,6 +716,72 @@ class TrainingUiReviewTest(unittest.TestCase):
             self.assertEqual(inspector.find_candidates('vanguard', frozenset({'铁血'}),
                                                        set(), rarity='ultra'), [])
         set_top.assert_not_called()
+
+    def test_priority_candidate_scan_uses_exact_catalog_filter_and_selects_target(self):
+        inspector = TrainingShipInspector.__new__(TrainingShipInspector)
+        inspector.ui_ensure = Mock()
+        inspector.dock_favourite_set = Mock()
+        inspector.dock_sort_method_dsc_set = Mock()
+        inspector.dock_filter_set = Mock()
+        inspector.device = SimpleNamespace(
+            image=np.zeros((720, 1280, 3), dtype=np.uint8),
+            screenshot=Mock(), sleep=Mock(), click=Mock(), click_record_clear=Mock())
+        inspector.appear = lambda *args, **kwargs: False
+        inspector.ship_info_enter = Mock()
+        inspector.read_ship = lambda: ShipCandidate('虎', '皇家', 'vanguard', 71, True,
+                                                    False, 0, 120, True)
+        inspector.wait_until_appear = Mock()
+        button = SimpleNamespace(area=(100, 100, 238, 304))
+        scroll = SimpleNamespace(set_top=Mock(), cal_position=Mock(return_value=1.0),
+                                 edge_threshold=0.01, drag_threshold=0.1, next_page=Mock())
+        with patch('module.os.training_ui.CATALOG',
+                   {'虎': {'type': 2, 'faction': 2, 'rarity': 6}}), \
+                patch('module.os.training_ui.dock_cards', return_value=[button]), \
+                patch('module.os.training_ui.LevelOcr') as level_ocr, \
+                patch('module.os.training_ui.Ocr') as name_ocr, \
+                patch('module.os.training_ui.dock_card_lock', return_value=True):
+            level_ocr.return_value.ocr.return_value = [71]
+            name_ocr.return_value.ocr.return_value = ['虎']
+            with patch.object(inspector, 'click_record_clear', create=True):
+                result = inspector.find_candidates(
+                    'vanguard', frozenset(), set(), needed=1, available={'虎'},
+                    target_names={'虎'}, scroll=scroll)
+
+        self.assertEqual([ship.name for ship in result], ['虎'])
+        inspector.dock_filter_set.assert_called_once_with(
+            index='vanguard', faction=['royal'], rarity='ultra')
+        inspector.ship_info_enter.assert_called_once_with(button, long_click=False)
+
+    def test_paid_deployment_cancellation_never_reports_success_or_inspects_fleet(self):
+        manager = TrainingFleetManager.__new__(TrainingFleetManager)
+        manager.config = SimpleNamespace(PriorityTraining_Ships='')
+        manager.device = SimpleNamespace(image=np.zeros((720, 1280, 3), dtype=np.uint8),
+                                         click=Mock(), sleep=Mock(), screenshot=Mock())
+        manager._open_selector = Mock()
+        manager._fourth_row_y = Mock(return_value=300)
+        manager._open_slot = Mock()
+        manager._scan_selection = Mock(return_value=object())
+        manager._one_ship_selected = Mock(return_value=True)
+        manager._cancel_slot = Mock()
+        manager._wait = Mock()
+        manager._is_selector = Mock(return_value=True)
+        manager._label = Mock(return_value='立刻前往')
+        manager.handle_popup_cancel = Mock(return_value=True)
+        manager._close_selector = Mock()
+        manager.inspect_map_fleet = Mock(side_effect=AssertionError('paid deploy must not be verified as success'))
+        current = {slot: candidate('old' + str(slot), position='main' if slot < 4 else 'vanguard')
+                   for slot in range(1, 7)}
+        planned = dict(current)
+        planned[2] = candidate('new', position='main')
+        opsi = SimpleNamespace()
+
+        with patch('module.os.training.crop', return_value=np.zeros((48, 50, 3), dtype=np.uint8)), \
+                patch('module.os.training.read_deployment_cost', return_value=3):
+            result = manager._deploy(opsi, current, planned)
+
+        self.assertFalse(result)
+        manager.handle_popup_cancel.assert_called_once_with('OPSI_TRAINING_DEPLOY_PAID')
+        manager.inspect_map_fleet.assert_not_called()
 
 
 class TrainingUnavailableProjectRecoveryTest(unittest.TestCase):
