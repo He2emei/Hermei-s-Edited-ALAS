@@ -663,6 +663,23 @@ class DuplicatePageScanTest(unittest.TestCase):
         cards = dock_cards(image)
         return image, np.roll(image, -227, axis=0), cards
 
+    def test_single_page_priority_uniqueness_does_not_scroll_dummy_slots(self):
+        image, _, cards = self.frames()
+        target = ShipCandidate('\u5b89\u571f', '\u91cd\u6a31', 'main', 70, True, True, None, 100, True)
+        reading = [''] * len(cards)
+        reading[4] = target.name
+        device = FrameDevice([image])
+        scroll = PageScroll(device)
+        scroll.length = 0
+        manager = FrameScanManager(device, scroll, cards, [reading], [70] * len(cards))
+        levels = SimpleNamespace(ocr=lambda frame: [70] * len(cards))
+        with patch('module.os.training.DOCK_SCROLL', scroll), \
+                patch('module.os.training.LevelOcr', return_value=levels), \
+                patch('module.os.training.dock_card_lock', return_value=True):
+            selected = manager._scan_selection(target)
+        self.assertEqual(selected, cards[4])
+        self.assertEqual(len(device.swipes), 0)
+
     def test_one_card_on_two_page_reads_is_not_ambiguous(self):
         image, shifted, cards = self.frames()
         target = ShipCandidate('喀琅施塔得', '北联', 'vanguard', 1, True, False, None, 100, True)
