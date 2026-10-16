@@ -200,6 +200,11 @@ class TrainingFleetManager(TrainingShipInspector):
                             and dock_card_lock(self.device.image, verified_cards[index]) is True:
                         return verified_cards[index]
             current = DOCK_SCROLL.cal_position(main=self)
+            if target is not None and getattr(DOCK_SCROLL, "length", None) == 0:
+                # A settled, filtered dock without a thumb fits on one page.
+                # Complete its uniqueness check instead of reading dummy slots
+                # forty times; no identities or lock checks are relaxed.
+                break
             if current > 1 - DOCK_SCROLL.edge_threshold:
                 # Same judgement as DOCK_SCROLL.at_bottom(), on the position
                 # this round has already measured.
