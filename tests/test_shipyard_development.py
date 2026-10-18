@@ -1015,7 +1015,7 @@ class ShipyardDevelopmentRealFrameLocateTest(unittest.TestCase):
                              cv2.COLOR_BGR2RGB)
         probe = self.inspector(self.ScrollingPanel(image))
         self.assertEqual(probe._ocr_task_title(257), '先锋技术突破I')
-        self.assertEqual(probe._ocr_task_title(447), '先锋技术突破I')
+        self.assertEqual(probe._ocr_task_title(447), '先锋技术突破II')
 
         visible = probe._scan_visible_tasks()
         breakthrough = [task for task in visible if task.title.startswith('先锋技术突破')]
@@ -1027,6 +1027,41 @@ class ShipyardDevelopmentRealFrameLocateTest(unittest.TestCase):
         self.assertEqual(probe._task_key(task.title),
                          probe._task_key('先锋技术突破II'))
 
+    def test_live_breakthrough_explicit_i_requires_narrow_and_suffix_confirmation(self):
+        path = Path(__file__).parent / 'fixtures' / 'shipyard_breakthrough_ii_20261018.png'
+        image = cv2.cvtColor(cv2.imread(str(path), cv2.IMREAD_COLOR), cv2.COLOR_BGR2RGB)
+        inspector = ShipyardDevelopment.__new__(ShipyardDevelopment)
+        inspector.device = SimpleNamespace(image=image)
+        actual_ocr = Ocr
+        with patch('module.shipyard.development.Ocr') as ocr_class:
+            calls = [0]
+            def make_ocr(*args, **kwargs):
+                calls[0] += 1
+                if calls[0] == 1:
+                    return SimpleNamespace(ocr=lambda _image: '先锋技术突破I11:51:03')
+                return actual_ocr(*args, **kwargs)
+            ocr_class.side_effect = make_ocr
+            self.assertEqual(inspector._ocr_task_title(447), '先锋技术突破II')
+            self.assertEqual(calls[0], 3)
+
+    def test_breakthrough_i_correction_fails_closed(self):
+        inspector = ShipyardDevelopment.__new__(ShipyardDevelopment)
+        inspector.device = SimpleNamespace(image=np.zeros((720, 1280, 3), dtype=np.uint8))
+        for family, narrow, suffix, expected in (
+                ('先锋技术突破I', '先锋技术突破I', None, '先锋技术突破I'),
+                ('先锋技术突破I', '先锋技术突破II', '突破I', '先锋技术突破I'),
+                ('先锋技术突破I', '先锋技术突破II', '技术测试II', '先锋技术突破I'),
+                ('先锋技术突破I', '主力技术突破II', '突破II', '先锋技术突破I'),
+                ('主力技术突破I', '主力技术突破II', '突破II', '主力技术突破II'),
+                ('未知任务I', '未知任务II', '突破II', '未知任务I')):
+            with self.subTest(family=family, narrow=narrow, suffix=suffix):
+                values = [family, narrow] + ([] if suffix is None else [suffix])
+                with patch('module.shipyard.development.Ocr') as ocr_class:
+                    ocr_class.side_effect = [
+                        SimpleNamespace(ocr=lambda _image, value=value: value)
+                        for value in values
+                    ]
+                    self.assertEqual(inspector._ocr_task_title(320), expected)
     def test_breakthrough_pair_is_enumerated_as_distinct_tasks(self):
         root = Path(__file__).parents[1] / 'tests/fixtures'
         image = cv2.cvtColor(cv2.imread(str(root / 'shipyard_breakthrough_stages_20260929.png')),
@@ -1044,6 +1079,32 @@ class ShipyardDevelopmentRealFrameLocateTest(unittest.TestCase):
         self.assertEqual(len(tasks), 8)
         self.assertEqual({task.title for task in breakthrough},
                          {'先锋技术突破I', '先锋技术突破II'})
+
+    def test_live_enumeration_does_not_add_phantom_breakthrough_stage(self):
+        path = Path(__file__).parent / 'fixtures' / 'shipyard_breakthrough_ii_20261018.png'
+        live = cv2.cvtColor(cv2.imread(str(path), cv2.IMREAD_COLOR), cv2.COLOR_BGR2RGB)
+        bottom_path = Path(__file__).parent / 'fixtures' / 'shipyard_breakthrough_bottom_20261018.png'
+        bottom = cv2.cvtColor(cv2.imread(str(bottom_path), cv2.IMREAD_COLOR), cv2.COLOR_BGR2RGB)
+        inspector = self.inspector(self.ScrollingPanel(live, alternate_image=bottom))
+        actual_ocr = Ocr
+        wide_read = [0]
+
+        def make_ocr(*args, **kwargs):
+            area = args[0] if args else kwargs.get('areas')
+            if area == [task_title_area(447)]:
+                wide_read[0] += 1
+                # Only the wide title crop is noisy; narrow title and suffix
+                # OCR continue to run on the captured frame.
+                value = ('先锋技术突破I11:51:03' if wide_read[0] % 2
+                         else '先锋技术突破')
+                return SimpleNamespace(ocr=lambda _image, value=value: value)
+            return actual_ocr(*args, **kwargs)
+
+        with patch('module.shipyard.development.Ocr', side_effect=make_ocr):
+            rows = inspector._read_all_tasks()
+        breakthrough = [row.title for row in rows if row.title.startswith('先锋技术突破')]
+        self.assertEqual(breakthrough, ['先锋技术突破II'])
+        self.assertEqual(len(rows), 8)
 
     def test_live_first_row_is_located_from_the_bottom_state(self):
         # The live 2026-09-26 21:41:15 failure: the sweep had to find the first
