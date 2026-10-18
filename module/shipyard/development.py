@@ -107,18 +107,20 @@ class ShipyardDevelopment(ShipyardUI):
         # The countdown directly abuts long task names and can consume the
         # stage-II glyph. Retry only a bare family whose explicit I/II forms
         # both exist in our catalogue, using a narrow band that excludes the
-        # countdown. A known experience task read as I has a stricter correction
-        # path below; unknown titles are never fuzzy-matched.
+        # countdown. Known experience and breakthrough families read as I have
+        # a stricter two-crop correction path below; unknowns are never fuzzy-matched.
         bare_family = None
         correcting_explicit_i = False
         if title and title not in TASK_CATALOG \
                 and title + 'I' in TASK_CATALOG and title + 'II' in TASK_CATALOG:
             bare_family = title
-        elif title.endswith('I') and title[:-1].endswith('技术测试') \
-                and title[:-1] + 'II' in TASK_CATALOG \
-                and self._catalog_kind(title) == 'experience':
+        elif title.endswith('I') and (
+                (title[:-1].endswith('技术测试') and title[:-1] + 'II' in TASK_CATALOG
+                 and self._catalog_kind(title) == 'experience') or
+                (title[:-1] in ('先锋技术突破', '主力技术突破')
+                 and title[:-1] + 'II' in TASK_CATALOG)):
             # A countdown can also turn the same final II stroke into a clean
-            # I. Only technical-test experience tasks have a separate suffix
+            # I. The title family determines the exact independent suffix
             # crop that can corroborate the complete narrow II reading.
             bare_family = title[:-1]
             correcting_explicit_i = True
@@ -133,7 +135,9 @@ class ShipyardDevelopment(ShipyardUI):
                                      lang='cnocr', letter=(214, 225, 235), threshold=128,
                                      name='SHIPYARD_DEVELOPMENT_TASK_STAGE_SUFFIX')
                     suffix = normalise_cn_task_title(suffix_ocr.ocr(self.device.image))
-                    if suffix == '技术测试II':
+                    expected_suffix = ('突破II' if bare_family in
+                                       ('先锋技术突破', '主力技术突破') else '技术测试II')
+                    if suffix == expected_suffix:
                         return stage_title
             elif stage_title in (bare_family + 'I', bare_family + 'II'):
                 return stage_title
