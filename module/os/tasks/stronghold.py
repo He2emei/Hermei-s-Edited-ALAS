@@ -1,6 +1,7 @@
 from module.logger import logger
 from module.os.fleet import BossFleet
 from module.os.map import OSMap
+from module.os import stronghold_status
 
 
 class OpsiStronghold(OSMap):
@@ -21,14 +22,28 @@ class OpsiStronghold(OSMap):
         self.os_map_goto_globe()
         self.globe_update()
         zone = self.find_siren_stronghold()
+        profile = getattr(self.config, 'config_name', None)
         if zone is None:
+            stronghold_status.check(profile, found=False)
             self.os_globe_goto_map()
             return False
 
-        self.globe_enter(zone)
-        self.zone_init()
-        self.os_order_execute(recon_scan=True, submarine_call=False)
-        self.run_stronghold()
+        attempt = stronghold_status.begin(profile, zone)
+        self._stronghold_status_attempt = attempt
+        try:
+            self.globe_enter(zone)
+            self.zone_init()
+            self.os_order_execute(recon_scan=True, submarine_call=False)
+            result = self.run_stronghold()
+        except Exception:
+            stronghold_status.finish(profile, attempt, 'interrupted')
+            self._stronghold_status_attempt = None
+            raise
+        stronghold_status.finish(
+            profile, attempt,
+            'cleared' if result is True else 'failed' if result is False else 'unknown'
+        )
+        self._stronghold_status_attempt = None
 
         self.fleet_repair(revert=False)
         self.handle_fleet_resolve(revert=False)
@@ -67,7 +82,11 @@ class OpsiStronghold(OSMap):
             self.hp_get()
 
             # End
-            if self.get_stronghold_percentage() == '0':
+            percentage = self.get_stronghold_percentage()
+            attempt = getattr(self, '_stronghold_status_attempt', None)
+            if attempt is not None:
+                stronghold_status.fleet_progress(getattr(self.config, 'config_name', None), attempt, fleet, percentage)
+            if percentage == '0':
                 logger.info('BOSS clear')
                 return True
             elif any(self.need_repair):
