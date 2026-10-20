@@ -9,8 +9,9 @@ from module.notify.napcat import send_notification
 from module.reward.assets import *
 from module.reward.coin_resource import CoinResourceStatus, read_coin_storage
 from module.reward.exp_books import check_exp_book_warning
+from module.statistics.gem_ledger import record_home_frames
 from module.ui.navbar import Navbar
-from module.ui.page import page_main, page_mission, page_reward
+from module.ui.page import page_main, page_main_white, page_mission, page_reward
 from module.ui.ui import UI
 from module.ui_white.assets import MISSION_NOTICE_WHITE
 
@@ -46,10 +47,23 @@ class Reward(UI):
     def _coin_resource_status(self):
         self.ui_ensure(page_main)
         readings = []
+        images = []
         for index in range(3):
-            readings.append(read_coin_storage(self.device.image))
+            image = self.device.image
+            readings.append(read_coin_storage(image))
+            images.append(image)
             if index < 2:
                 self.device.screenshot()
+
+        try:
+            import module.config.server as server
+            config = getattr(self, 'config', None)
+            if (server.server == 'cn' and config is not None and
+                    getattr(config, 'config_name', None) and
+                    self.ui_page_appear(page_main_white)):
+                record_home_frames(config.config_name, images)
+        except Exception as exc:
+            logger.warning(f'Unable to record gem balance: {exc}')
 
         status = CoinResourceStatus.from_readings(readings)
         if status.storage_limit <= 0:
