@@ -749,7 +749,7 @@ class TrainingUiReviewTest(unittest.TestCase):
 
         self.assertEqual([ship.name for ship in result], ['虎'])
         inspector.dock_filter_set.assert_called_once_with(
-            index='vanguard', faction=['royal'], rarity='ultra')
+            sort='level', index='vanguard', faction=['royal'], rarity='ultra')
         inspector.ship_info_enter.assert_called_once_with(button, long_click=False)
 
     def test_paid_deployment_cancellation_never_reports_success_or_inspects_fleet(self):
