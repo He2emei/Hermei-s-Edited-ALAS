@@ -297,12 +297,14 @@ class TacticalBookPlannerTest(unittest.TestCase):
                                                         ('faction', 'meta')])
         runner.dock_favourite_set = Mock()
         runner.dock_filter_set = Mock()
+        runner.dock_sort_method_dsc_set = Mock()
 
         runner._tactical_initialize_dock_filters()
         runner._tactical_initialize_dock_filters()
 
         runner.dock_favourite_set.assert_called_once_with(enable=False, wait_loading=False)
-        runner.dock_filter_set.assert_called_once_with(faction=['royal'])
+        runner.dock_filter_set.assert_called_once_with(sort='level', faction=['royal'])
+        runner.dock_sort_method_dsc_set.assert_called_once_with(True, wait_loading=False)
         self.assertTrue(runner.tactical_dock_filters_initialized)
 
     def test_optimized_book_loading_waits_for_full_stock_signature(self):
