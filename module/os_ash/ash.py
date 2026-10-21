@@ -3,8 +3,10 @@ from datetime import datetime, timedelta
 from module.base.utils import image_left_strip
 from module.combat.combat import BATTLE_PREPARATION, Combat
 from module.config.utils import DEFAULT_TIME
+from module.exception import RequestHumanTakeover
+from module.handler.assets import POPUP_CANCEL, POPUP_CONFIRM
 from module.logger import logger
-from module.ocr.ocr import DigitCounter
+from module.ocr.ocr import DigitCounter, Ocr
 from module.os_ash.assets import *
 from module.os_handler.map_event import MapEventHandler
 from module.ui.assets import BACK_ARROW
@@ -20,6 +22,12 @@ class DailyDigitCounter(DigitCounter):
 
 class AshBeaconFinished(Exception):
     pass
+
+
+META_PREPARATION_CONFIRM_TEXT_AREA = (506, 330, 754, 368)
+META_PREPARATION_CONFIRM_TEXT = '保存当前编队并出击?'
+META_PREPARATION_CONFIRM_INTERVAL = 2
+META_PREPARATION_CONFIRM_MAX_ATTEMPTS = 3
 
 
 class AshCombat(Combat):
@@ -58,6 +66,32 @@ class AshCombat(Combat):
     def handle_battle_preparation(self):
         if super().handle_battle_preparation():
             return True
+
+        # The META fleet screen can ask to save its current formation before sortie. This
+        # confirmation is safe only when the CN prompt and both standard popup buttons agree.
+        if self.config.SERVER == 'cn':
+            if self.appear(POPUP_CANCEL, offset=(20, 20)) and self.appear(POPUP_CONFIRM, offset=(20, 20)):
+                prompt = Ocr(META_PREPARATION_CONFIRM_TEXT_AREA, lang='cnocr',
+                             letter=(255, 255, 255), threshold=128,
+                             name='META_PREPARATION_CONFIRM').ocr(self.device.image)
+                prompt = ''.join((prompt or '').split()).replace('？', '?')
+                if prompt == META_PREPARATION_CONFIRM_TEXT:
+                    attempts = getattr(self, '_meta_preparation_confirm_attempts', 0)
+                    timer = self.get_interval_timer(POPUP_CONFIRM, interval=META_PREPARATION_CONFIRM_INTERVAL)
+                    if attempts >= META_PREPARATION_CONFIRM_MAX_ATTEMPTS:
+                        if timer.reached():
+                            raise RequestHumanTakeover(
+                                'META fleet confirmation remained after three sortie attempts')
+                        return True
+                    if timer.reached():
+                        logger.info('Confirming the CN META fleet formation before sortie')
+                        self.device.click(POPUP_CONFIRM)
+                        timer.reset()
+                        self._meta_preparation_confirm_attempts = attempts + 1
+                    return True
+                self._meta_preparation_confirm_attempts = 0
+            else:
+                self._meta_preparation_confirm_attempts = 0
 
         if self.appear_then_click(ASH_START, offset=(30, 30), interval=2):
             return True
