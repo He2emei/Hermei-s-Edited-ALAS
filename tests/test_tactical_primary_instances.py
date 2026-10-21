@@ -1,6 +1,8 @@
 import unittest
 from types import SimpleNamespace
-from unittest.mock import patch
+from unittest.mock import Mock, patch
+
+import numpy as np
 
 from module.tactical import tactical_class as tactical
 
@@ -15,7 +17,14 @@ class TacticalPrimaryInstanceTest(unittest.TestCase):
 
     @staticmethod
     def buttons(count):
-        return [SimpleNamespace(area=(index, 0, index + 1, 1)) for index in range(count)]
+        class Card:
+            def __init__(self, index):
+                self.area = (index, 0, index + 1, 1)
+
+            def crop(self, *args, **kwargs):
+                return object()
+
+        return [Card(index) for index in range(count)]
 
     def choose(self, names, levels, locks, start=0, min_level=1, runner=None):
         runner = runner or self.runner()
@@ -61,6 +70,52 @@ class TacticalPrimaryInstanceTest(unittest.TestCase):
             )
         self.assertIsNone(result)
         lock.assert_not_called()
+
+    def test_normal_selection_cursor_advances_from_the_actual_locked_primary(self):
+        runner = self.runner()
+        runner.config = SimpleNamespace(AddNewStudent_Favorite=False, AddNewStudent_MinLevel=1)
+        runner.tactical_priority_names = ()
+        runner.tactical_priority_filter_changed = False
+        runner.tactical_dock_filters_initialized = True
+        runner.tactical_dock_page_count = 1
+        runner.tactical_dock_page_fingerprints = set()
+        runner.tactical_dock_expect_new_page = False
+        runner.dock_select_index = 0
+        runner._tactical_select_priority_ship = Mock(return_value=False)
+        runner._tactical_restore_priority_filters = Mock()
+        runner._tactical_initialize_dock_filters = Mock()
+        runner.appear = Mock(return_value=False)
+        runner.loop = lambda timeout=1: iter([None])
+        runner.device = SimpleNamespace(image=np.zeros((720, 1280, 3), dtype=np.uint8),
+                                        screenshot=Mock(), sleep=Mock(), click=Mock())
+        runner._tactical_dock_page_fingerprint = Mock(return_value=123)
+        runner.dock_select_one = Mock()
+        runner.dock_select_confirm = Mock()
+        runner.interval_clear = Mock()
+        cards = self.buttons(4)
+        runner.dock_select_index = 0
+
+        with patch.object(tactical.server, 'server', 'cn'), \
+                patch.object(tactical, 'dock_cards', return_value=cards), \
+                patch.object(tactical, 'LevelOcr') as level_ocr, \
+                patch.object(tactical, 'Ocr') as name_ocr, \
+                patch.object(tactical, 'dock_card_lock',
+                             side_effect=lambda image, button: button is not cards[0]), \
+                patch.object(tactical.DOCK_SCROLL, 'appear', return_value=False):
+            level_ocr.return_value.ocr.return_value = [125, 125, 1, 80]
+            name_ocr.return_value.ocr.return_value = ['德意志', '德意志', '德意志', '亚利桑那']
+
+            self.assertTrue(runner.select_suitable_ship())
+            self.assertIs(runner.dock_select_one.call_args[0][0], cards[1])
+            self.assertEqual(runner.dock_select_index, 1)
+
+            self.assertTrue(runner._tactical_advance_ship_candidate())
+            self.assertEqual(runner.dock_select_index, 2)
+
+            self.assertTrue(runner.select_suitable_ship())
+
+        self.assertEqual(runner.dock_select_index, 3)
+        self.assertIs(runner.dock_select_one.call_args[0][0], cards[3])
 
 
 if __name__ == '__main__':
