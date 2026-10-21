@@ -89,9 +89,6 @@ class AshCombat(Combat):
                         timer.reset()
                         self._meta_preparation_confirm_attempts = attempts + 1
                     return True
-                self._meta_preparation_confirm_attempts = 0
-            else:
-                self._meta_preparation_confirm_attempts = 0
 
         if self.appear_then_click(ASH_START, offset=(30, 30), interval=2):
             return True
@@ -110,6 +107,7 @@ class AshCombat(Combat):
         return False
 
     def combat(self, *args, expected_end=None, **kwargs):
+        self._meta_preparation_confirm_attempts = 0
         try:
             super().combat(*args, expected_end=expected_end, **kwargs)
         except AshBeaconFinished:

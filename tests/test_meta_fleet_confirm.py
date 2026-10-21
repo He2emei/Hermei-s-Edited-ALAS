@@ -8,7 +8,7 @@ import numpy as np
 from PIL import Image
 
 from module.base.base import ModuleBase
-from module.combat.combat import BATTLE_PREPARATION
+from module.combat.combat import BATTLE_PREPARATION, Combat
 from module.exception import RequestHumanTakeover
 from module.handler.assets import POPUP_CANCEL, POPUP_CONFIRM
 from module.os_ash import ash as ash_module
@@ -111,6 +111,51 @@ class MetaFleetConfirmationTest(unittest.TestCase):
                     break
             self.assertTrue(takeover)
         self.assertEqual(combat.device.clicked, [POPUP_CONFIRM] * 3)
+
+    def test_attempts_survive_page_changes_and_ocr_misses_within_one_combat(self):
+        combat = make_combat()
+        clock = FakeClock()
+        blank_frame = np.zeros_like(CONFIRM_FRAME)
+        exact_text = '保存当前编队并出击?'
+        with patch.object(ash_module.Ocr, 'ocr', side_effect=[exact_text, 'iw', exact_text, exact_text, exact_text]), \
+                patch('module.base.timer.time', clock):
+            self.assertTrue(combat.handle_battle_preparation())  # confirmation 1
+            self.assertEqual(len(combat.device.clicked), 1)
+
+            combat.device.image = blank_frame  # confirmation dialog temporarily dismissed
+            self.assertFalse(combat.handle_battle_preparation())
+
+            combat.device.image = CONFIRM_FRAME  # animation frame is unreadable
+            self.assertFalse(combat.handle_battle_preparation())
+            self.assertEqual(len(combat.device.clicked), 1)
+
+            clock.now += 3
+            self.assertTrue(combat.handle_battle_preparation())  # confirmation 2
+            self.assertEqual(len(combat.device.clicked), 2)
+            combat.device.image = blank_frame
+            self.assertFalse(combat.handle_battle_preparation())
+
+            combat.device.image = CONFIRM_FRAME
+            clock.now += 3
+            self.assertTrue(combat.handle_battle_preparation())  # confirmation 3
+            self.assertEqual(len(combat.device.clicked), 3)
+            combat.device.image = blank_frame
+            self.assertFalse(combat.handle_battle_preparation())
+            combat.device.image = CONFIRM_FRAME
+            clock.now += 3
+            with self.assertRaisesRegex(RequestHumanTakeover, 'three sortie attempts'):
+                combat.handle_battle_preparation()
+        self.assertEqual(combat.device.clicked, [POPUP_CONFIRM] * 3)
+
+    def test_new_combat_entry_resets_counter(self):
+        combat = make_combat()
+        combat._meta_preparation_confirm_attempts = 3
+        with patch.object(Combat, 'combat', return_value=None):
+            combat.combat()
+            self.assertEqual(combat._meta_preparation_confirm_attempts, 0)
+            combat._meta_preparation_confirm_attempts = 2
+            combat.combat()
+            self.assertEqual(combat._meta_preparation_confirm_attempts, 0)
 
     def test_generic_preparation_and_beacon_completion_paths_are_preserved(self):
         combat = make_combat(image=np.zeros_like(CONFIRM_FRAME))
