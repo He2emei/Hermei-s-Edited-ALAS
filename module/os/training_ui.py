@@ -382,7 +382,8 @@ class TrainingShipInspector(Awaken):
         return ships
 
     def find_candidates(self, side, factions, excluded, needed=2, available=None,
-                        rarity='all', scroll=DOCK_SCROLL, target_names=None):
+                        rarity='all', scroll=DOCK_SCROLL, target_names=None,
+                        decide_candidate=None):
         """Inspect in dock order. Never select/remove a deployed ship here."""
         self.ui_ensure(page_dock)
         self.dock_favourite_set(False)
@@ -406,7 +407,7 @@ class TrainingShipInspector(Awaken):
         else:
             selected_factions = [FILTER_FACTIONS[f] for f in sorted(factions)] if factions else 'all'
         dock_side = 'ss' if side == 'submarine' else side
-        self.dock_filter_set(index=dock_side, faction=selected_factions, rarity=rarity)
+        self.dock_filter_set(sort='level', index=dock_side, faction=selected_factions, rarity=rarity)
         self.device.screenshot()
         if self.appear(DOCK_EMPTY, offset=(30, 30)):
             logger.info(f'Training dock has no {side} candidates for rarity={rarity}, faction={factions}')
@@ -428,12 +429,24 @@ class TrainingShipInspector(Awaken):
                          for b in cards], lang='cnocr', name='TrainingDockNames').ocr(self.device.image)
             for button, level, raw_name in zip(cards, levels, names):
                 name = catalog_name(raw_name)
-                if not name or name in seen or not 1 <= level < 125 or (available is not None and name not in available):
+                if not name or not isinstance(level, int) or isinstance(level, bool) \
+                        or not 1 <= level <= 125:
                     continue
                 if target_names is not None and name not in target_names:
                     continue
                 if dock_card_lock(self.device.image, button) is not True:
                     logger.info(f'Training skip {name}: dock card is unlocked or lock state unclear')
+                    continue
+                if name in seen:
+                    continue
+                # The dock is explicitly sorted by descending level. The first
+                # locked, readable card is therefore the only instance we may
+                # consider, even when it later proves complete or unreadable.
+                seen.add(name)
+                if available is not None and name not in available:
+                    continue
+                if level == 125:
+                    logger.info(f'Training skip {name}: level 125 is complete')
                     continue
                 self.ship_info_enter(button, long_click=False)
                 try:
@@ -446,11 +459,11 @@ class TrainingShipInspector(Awaken):
                 if ship.name != name or ship.level != level:
                     raise RequestHumanTakeover('Dock card and ship details disagree')
                 priority_names = tuple(target_names or ())
-                decision = decide_trainability(ship, priority_names)
+                decision = (decide_candidate(ship) if decide_candidate is not None
+                            else decide_trainability(ship, priority_names))
                 if decision.allowed and ship.position == side and (not factions or ship.faction in factions) \
                         and (rarity != 'ultra' or ship.is_rainbow):
                     found.append(ship)
-                    seen.add(name)
                 else:
                     logger.info(f'Training skip {name}: {decision.reason}')
                 self.device.click(BACK_ARROW)

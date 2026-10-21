@@ -6,13 +6,12 @@ import cv2
 
 from module.base.timer import Timer
 from module.combat.level import LevelOcr
-from module.dorm.training_policy import plan_dorm_rotation, should_awaken_in_dorm
+from module.dorm.training_policy import decide_dorm_trainability, plan_dorm_rotation, should_awaken_in_dorm
 from module.equipment.assets import EQUIPMENT_OPEN
 from module.exception import RequestHumanTakeover
 from module.logger import logger
 from module.ocr.ocr import Ocr, Digit, DigitCounter
-from module.os.training_policy import decide_trainability
-from module.os.training_ui import TrainingShipInspector, point_button, catalog_name
+from module.os.training_ui import TrainingShipInspector, point_button, catalog_name, dock_card_lock
 from module.retire.card_geometry import dock_cards
 from module.retire.dock import DOCK_SCROLL, OCR_DOCK_SELECTED
 from module.retire.assets import DOCK_CHECK
@@ -324,6 +323,15 @@ class DormTraining(TrainingShipInspector):
     def _toggle(self, ship, delta, capacity):
         DORM_SCROLL.set_top(main=self)
         card = self._scan_selection(ship)
+        if delta > 0:
+            if not ship.is_locked or dock_card_lock(self.device.image, card) is not True:
+                raise RequestHumanTakeover('Dorm replacement is not the inspected locked ship: ' + ship.name)
+            # A second fresh dock frame must still identify the same card before selection.
+            self.device.screenshot()
+            verified = self._scan_selection(ship)
+            if verified.area != card.area or dock_card_lock(self.device.image, verified) is not True:
+                raise RequestHumanTakeover('Dorm replacement card changed before selection: ' + ship.name)
+            card = verified
         before, _, total = OCR_DOCK_SELECTED.ocr(self.device.image)
         if total != capacity or not 0 <= before + delta <= capacity:
             raise RequestHumanTakeover('Unexpected dorm selection count before toggle')
@@ -382,7 +390,7 @@ class DormTraining(TrainingShipInspector):
         plan = plan_dorm_rotation(current, [], capacity)
         if not plan.success:
             replace_slot = next(s for s, ship in current.items() if ship is None or
-                                (ship.position == 'submarine' and not decide_trainability(ship).allowed))
+                                (ship.position == 'submarine' and not decide_dorm_trainability(ship).allowed))
             self._open_selection(replace_slot)
             try:
                 available = self._scan_selection()
@@ -390,12 +398,13 @@ class DormTraining(TrainingShipInspector):
                 if self.appear(DOCK_CHECK, offset=(20, 20)):
                     self._cancel_selection()
             self._close_training()
-            needed = sum(ship is None or (ship.position == 'submarine' and not decide_trainability(ship).allowed)
+            needed = sum(ship is None or (ship.position == 'submarine' and not decide_dorm_trainability(ship).allowed)
                          for ship in current.values())
             candidates = self.find_candidates('submarine', frozenset(),
                                               {s.name for s in current.values() if s},
-                                              needed=needed, available=available, scroll=DORM_SCROLL)
-            plan = plan_dorm_rotation(current, candidates, capacity)
+                                              needed=needed, available=available, scroll=DORM_SCROLL,
+                                              decide_candidate=decide_dorm_trainability)
+            plan = plan_dorm_rotation(current, candidates, capacity, allow_partial=True)
         if not plan.success:
             raise RequestHumanTakeover('No complete dorm submarine plan: ' + plan.reason)
         logger.info('Dorm training plan: ' + ', '.join(f'{s}={ship.name}' for s, ship in sorted(plan.slots.items())))
@@ -413,7 +422,7 @@ class DormTraining(TrainingShipInspector):
             card = self._scan_selection(ship)
             self.ship_info_enter(card, long_click=False)
             actual = self.read_ship()
-            if actual.name != ship.name or not decide_trainability(actual).allowed:
+            if actual.name != ship.name or actual.level != ship.level or not decide_dorm_trainability(actual).allowed:
                 raise RequestHumanTakeover('Dorm awakening identity or eligibility changed')
             for _ in range(4):
                 if not should_awaken_in_dorm(actual):
@@ -443,6 +452,12 @@ class DormTraining(TrainingShipInspector):
             actual, actual_capacity = self.inspect_roster()
             if actual_capacity != capacity or {s.name for s in actual.values() if s} != {s.name for s in plan.slots.values()}:
                 raise RequestHumanTakeover('Confirmed dorm roster differs from plan')
+            expected_by_name = {s.name: s for s in plan.slots.values() if s}
+            for ship in actual.values():
+                expected = expected_by_name[ship.name]
+                if any(getattr(ship, key) != getattr(expected, key) for key in
+                       ('faction', 'position', 'is_locked', 'fully_limit_broken')):
+                    raise RequestHumanTakeover('Confirmed dorm instance differs from inspected ship: ' + ship.name)
         self._close_training()
         self.config.DormTraining_LastCheck = now
         logger.info('Dorm submarine maintenance verified')

@@ -570,6 +570,7 @@ class RewardTacticalClass(Dock):
         self.dock_select_index = 0
         self.tactical_dock_page_count = 1
         self.tactical_dock_page_fingerprints = set()
+        self.tactical_locked_primary_levels = {}
         self.tactical_dock_expect_new_page = False
         self.tactical_dock_filters_initialized = False
         self.tactical_priority_names = priority_ship_names(self.config)
@@ -879,8 +880,48 @@ class RewardTacticalClass(Dock):
             factions = [option for group, option in self.dock_filter.settings
                         if group == 'faction' and option not in ['all', 'meta']]
             self.tactical_normal_factions = list(factions)
-        self.dock_filter_set(faction=factions)
+        if server.server == 'cn':
+            self.dock_filter_set(sort='level', faction=factions)
+            self.dock_sort_method_dsc_set(True, wait_loading=False)
+        else:
+            self.dock_filter_set(faction=factions)
         self.tactical_dock_filters_initialized = True
+
+    def _tactical_normal_candidate_index(self, buttons, levels, raw_names, start, min_level):
+        """Choose a locked, catalogued normal candidate without falling back to a copy."""
+        if len(buttons) != len(levels) or len(buttons) != len(raw_names):
+            logger.warning('Tactical dock identity, level and card counts disagree')
+            return None
+
+        observed = []
+        page_counts = {}
+        highest = getattr(self, 'tactical_locked_primary_levels', None)
+        if highest is None:
+            highest = self.tactical_locked_primary_levels = {}
+        for index, (button, level, raw_name) in enumerate(zip(buttons, levels, raw_names)):
+            if not isinstance(raw_name, str):
+                continue
+            name = catalog_name(raw_name)
+            if not name or not isinstance(level, int) or isinstance(level, bool) \
+                    or not 1 <= level <= 125:
+                continue
+            if dock_card_lock(self.device.image, button) is not True:
+                continue
+            page_counts[(name, level)] = page_counts.get((name, level), 0) + 1
+            highest[name] = max(level, highest.get(name, 0))
+            observed.append((index, name, level))
+
+        ambiguous = {key for key, count in page_counts.items() if count > 1}
+        for index, name, level in observed:
+            if (name, level) in ambiguous:
+                logger.warning(f'Tactical skip ambiguous same-level copies: {name} level {level}')
+                continue
+            if level < highest[name]:
+                logger.info(f'Tactical skip lower locked copy: {name} level {level}, highest {highest[name]}')
+                continue
+            if index >= start and level >= min_level:
+                return index
+        return None
 
     @staticmethod
     def _tactical_priority_side(ship_type):
@@ -996,12 +1037,14 @@ class RewardTacticalClass(Dock):
         settings = getattr(self, 'tactical_normal_filter_settings', {})
         self.dock_favourite_set(enable=self.config.AddNewStudent_Favorite, wait_loading=False)
         self.dock_filter_set(
-            sort=settings.get('sort', 'level'),
+            sort='level' if server.server == 'cn' else settings.get('sort', 'level'),
             index=settings.get('index', 'all'),
             faction=getattr(self, 'tactical_normal_factions', settings.get('faction', 'all')),
             rarity=settings.get('rarity', 'all'),
             extra=settings.get('extra', 'no_limit'),
         )
+        if server.server == 'cn':
+            self.dock_sort_method_dsc_set(True, wait_loading=False)
         self.tactical_priority_filter_changed = False
         self.tactical_dock_filters_initialized = True
 
@@ -1090,15 +1133,16 @@ class RewardTacticalClass(Dock):
             self.tactical_dock_page_fingerprints.add(fingerprint)
             self.tactical_dock_expect_new_page = False
 
-            candidate_indices = self._tactical_available_ship_indices(
-                list_level, self.dock_select_index
+            raw_names = Ocr(
+                [tuple((button.area[0], button.area[1] + 164,
+                        button.area[2], button.area[1] + 189)) for button in actual_buttons],
+                lang='cnocr', name='TACTICAL_NORMAL_NAME').ocr(self.device.image)
+            if not isinstance(raw_names, list):
+                raw_names = [raw_names]
+            selected_index = self._tactical_normal_candidate_index(
+                actual_buttons, list_level, raw_names, self.dock_select_index, min_level
             )
-            should_select_button = next(
-                (actual_buttons[index]
-                 for index in candidate_indices
-                 if list_level[index] >= min_level),
-                None,
-            )
+            should_select_button = actual_buttons[selected_index] if selected_index is not None else None
             if should_select_button is not None:
                 break
 
