@@ -1142,6 +1142,8 @@ class RewardTacticalClass(Dock):
             selected_index = self._tactical_normal_candidate_index(
                 actual_buttons, list_level, raw_names, self.dock_select_index, min_level
             )
+            if selected_index is not None:
+                self.dock_select_index = selected_index
             should_select_button = actual_buttons[selected_index] if selected_index is not None else None
             if should_select_button is not None:
                 break
