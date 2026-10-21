@@ -16,7 +16,7 @@ from module.storage.training_inventory import (
 )
 
 
-def submarine(name='U-test', level=90, cap=None):
+def submarine(name='U-test', level=90, cap=100):
     return ShipCandidate(name, '皇家', 'submarine', level, False, True, None, cap)
 
 
@@ -82,7 +82,8 @@ class DormTrainingMockTest(unittest.TestCase):
         ship = ShipCandidate(name, '白鹰', 'submarine', 90, False, True, None, None)
         card = SimpleNamespace(area=(100, 100, 200, 200))
         runner = DormTraining.__new__(DormTraining)
-        runner.device = SimpleNamespace(image=np.zeros((720, 1280, 3), dtype=np.uint8), click=Mock())
+        runner.device = SimpleNamespace(image=np.zeros((720, 1280, 3), dtype=np.uint8),
+                                        click=Mock(), screenshot=Mock())
         runner._scan_selection = Mock(return_value=card)
         runner._wait = Mock()
         incomplete = np.array([
@@ -91,12 +92,29 @@ class DormTrainingMockTest(unittest.TestCase):
             [20, 1, 10, 10, 70],
         ])
         with patch('module.dorm.training.DORM_SCROLL.set_top'), \
+                patch('module.dorm.training.dock_card_lock', return_value=True), \
                 patch('module.dorm.training.OCR_DOCK_SELECTED.ocr', return_value=(1, 0, 2)), \
                 patch('module.dorm.training.cv2.connectedComponentsWithStats',
                       return_value=(None, None, incomplete, None)):
             with self.assertRaises(RequestHumanTakeover):
                 runner._toggle(ship, 1, 2)
         runner.device.click.assert_not_called()
+
+    def test_replacement_requires_lock_in_two_fresh_selection_frames(self):
+        import numpy as np
+        card = SimpleNamespace(area=(100, 100, 200, 200))
+        ship = ShipCandidate('U-test', '皇家', 'submarine', 90, True, True, None, 100)
+        for locks in ((False,), (True, False)):
+            with self.subTest(locks=locks):
+                runner = DormTraining.__new__(DormTraining)
+                runner.device = SimpleNamespace(image=np.zeros((720, 1280, 3), dtype=np.uint8),
+                                                click=Mock(), screenshot=Mock())
+                runner._scan_selection = Mock(return_value=card)
+                with patch('module.dorm.training.DORM_SCROLL.set_top'), \
+                        patch('module.dorm.training.dock_card_lock', side_effect=locks):
+                    with self.assertRaisesRegex(RequestHumanTakeover, 'locked ship|card changed'):
+                        runner._toggle(ship, 1, 2)
+                runner.device.click.assert_not_called()
 
 
 class TrainingInventoryMockTest(unittest.TestCase):
