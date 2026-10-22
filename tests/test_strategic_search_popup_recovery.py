@@ -144,14 +144,16 @@ class StrategicSearchPopupRecoveryTest(unittest.TestCase):
             click_adb(x, y)
 
         app.device.click_adb = record_click
-        with patch('module.base.timer.time', clock):
+        with patch('module.base.timer.time', clock), patch(
+                'module.device.control.random_rectangle_point',
+                side_effect=lambda area: (area[2] - 1, area[3] - 1)):
             with self.assertRaisesRegex(RequestHumanTakeover, 'Strategic-search settings popup'):
                 app.ui_get_current_page()
         self.assertEqual(len(app.device.clicked), 3)
         self.assertEqual(list(app.device.click_record), [str(POPUP_CANCEL)] * 3)
         self.assertTrue(all(later - earlier >= 2
                             for earlier, later in zip(click_times, click_times[1:])))
-        left, top, right, bottom = POPUP_CANCEL.area
+        left, top, right, bottom = POPUP_CANCEL.button
         self.assertTrue(all(left <= x <= right and top <= y <= bottom
                             for x, y in app.device.clicked))
 
