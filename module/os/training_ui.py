@@ -457,7 +457,19 @@ class TrainingShipInspector(Awaken):
                     self.wait_until_appear(DOCK_CHECK, offset=(20, 20))
                     continue
                 if ship.name != name or ship.level != level:
-                    raise RequestHumanTakeover('Dock card and ship details disagree')
+                    # OCR on a dock card is only a locator. If details identify a
+                    # different ship (or level), quarantine both identities for
+                    # this scan so neither the mislabeled card nor a lower copy
+                    # of either name can be selected from the sorted list.
+                    logger.warning(
+                        f'Training candidate skipped: dock card {name} level {level} '
+                        f'disagrees with ship details {ship.name} level {ship.level}')
+                    seen.add(ship.name)
+                    self.device.click(BACK_ARROW)
+                    if not self.wait_until_appear(DOCK_CHECK, offset=(20, 20)):
+                        raise RequestHumanTakeover(
+                            'Could not return from mismatched ship details to dock')
+                    continue
                 priority_names = tuple(target_names or ())
                 decision = (decide_candidate(ship) if decide_candidate is not None
                             else decide_trainability(ship, priority_names))
