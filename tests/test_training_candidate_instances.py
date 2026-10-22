@@ -21,7 +21,7 @@ class EndOfDock:
 
 
 class TrainingCandidateInstanceTest(unittest.TestCase):
-    def scan(self, rows, details=(), decision=None):
+    def scan(self, rows, details=(), decision=None, wait_results=()):
         inspector = TrainingShipInspector.__new__(TrainingShipInspector)
         inspector.ui_ensure = lambda *args, **kwargs: None
         inspector.dock_favourite_set = lambda *args, **kwargs: None
@@ -29,7 +29,8 @@ class TrainingCandidateInstanceTest(unittest.TestCase):
         filter_calls = []
         inspector.dock_filter_set = lambda **kwargs: filter_calls.append(kwargs)
         inspector.ship_info_enter = lambda *args, **kwargs: None
-        inspector.wait_until_appear = lambda *args, **kwargs: True
+        wait_iter = iter(wait_results)
+        inspector.wait_until_appear = lambda *args, **kwargs: next(wait_iter, True)
         inspector.device = SimpleNamespace(image=np.zeros((720, 1280, 3), dtype=np.uint8),
                                            screenshot=lambda: None, click=lambda *args, **kwargs: None,
                                            sleep=lambda *args, **kwargs: None,
@@ -106,6 +107,31 @@ class TrainingCandidateInstanceTest(unittest.TestCase):
             [('德意志', 110, True)], details=[candidate],
             decision=lambda ship: PolicyDecision(True, 'dorm-specific'))
         self.assertEqual(found, [candidate])
+
+    def test_mismatched_card_and_details_are_quarantined_then_scan_continues(self):
+        valid = self.candidate('Z23', 75)
+        found, _ = self.scan(
+            [('Z9', 88, True), ('Z19', 80, True), ('Z23', 75, True)],
+            details=[self.candidate('Z19', 88), valid],
+            decision=lambda ship: PolicyDecision(True, 'fixture'))
+        self.assertEqual(found, [valid])
+
+    def test_same_name_level_mismatch_blocks_lower_copy(self):
+        found, _ = self.scan(
+            [('Z9', 88, True), ('Z9', 70, True)],
+            details=[self.candidate('Z9', 87), self.candidate('Z9', 70)],
+            decision=lambda ship: PolicyDecision(True, 'fixture'))
+        self.assertEqual(found, [])
+
+    def test_mismatch_without_confirmed_return_to_dock_takes_over(self):
+        # Exercise the real mismatch/return branch through the shared scan harness,
+        # whose first wait is the mismatch return confirmation.
+        with self.assertRaisesRegex(RequestHumanTakeover, 'return from mismatched'):
+            self.scan(
+                [('Z9', 88, True), ('Z23', 75, True)],
+                details=[self.candidate('Z19', 88), self.candidate('Z23', 75)],
+                decision=lambda ship: PolicyDecision(True, 'fixture'),
+                wait_results=[False])
 
 
 if __name__ == '__main__':
