@@ -258,6 +258,10 @@ def validate_protected_fleet(ships, config):
             f'Fourth fleet anchors differ from {main_name} / {vanguard_name}; no changes allowed')
 
 
+class TrainingAwakeningDeferred(Exception):
+    """Expected resource shortage; retry training after the normal interval."""
+
+
 class TrainingShipInspector(Awaken):
     def _check_cn(self):
         if self.config.SERVER != 'cn' or self.device.image.shape[:2] != (720, 1280):
@@ -347,6 +351,8 @@ class TrainingShipInspector(Awaken):
                 return ship
             use_array = bool(allow_125 and ship.level_cap == 120 and ship.level == 120)
             result = self.awaken_once(use_array=use_array)
+            if result == 'insufficient':
+                raise TrainingAwakeningDeferred(f'Training awakening lacks resources: {ship.name}')
             if result != 'success':
                 raise RequestHumanTakeover(f'Training awakening stopped: {ship.name}: {result}')
             previous = ship
