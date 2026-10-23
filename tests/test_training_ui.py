@@ -15,6 +15,7 @@ from module.os.training_ui import (
     FACTIONS,
     FILTER_FACTIONS,
     TrainingShipInspector,
+    TrainingAwakeningDeferred,
     catalog_name,
     detail_ship_lock,
     dock_card_lock,
@@ -302,6 +303,24 @@ class TrainingUiReviewTest(unittest.TestCase):
         inspector.read_ship = lambda: candidate('普通', level=125, cap=125)
         inspector.awaken_for_training(ship, ('虎',))
         self.assertEqual(calls, [])
+
+    def test_insufficient_awakening_resources_are_a_typed_deferral(self):
+        inspector = TrainingShipInspector.__new__(TrainingShipInspector)
+        inspector.config = SimpleNamespace(PriorityTraining_Ships='虎',
+                                           PriorityTraining_Allow125Awakening=True)
+        ship = candidate('虎', level=100, cap=100)
+        inspector.awaken_once = lambda **kwargs: 'insufficient'
+        with self.assertRaises(TrainingAwakeningDeferred):
+            inspector.awaken_for_training(ship, ('虎',))
+
+    def test_non_resource_awakening_results_still_take_over(self):
+        for result in ('no_exp', 'unexpected_array', 'timeout', 'unknown'):
+            inspector = TrainingShipInspector.__new__(TrainingShipInspector)
+            inspector.config = SimpleNamespace(PriorityTraining_Ships='虎',
+                                               PriorityTraining_Allow125Awakening=True)
+            inspector.awaken_once = lambda **kwargs: result
+            with self.subTest(result=result), self.assertRaises(RequestHumanTakeover):
+                inspector.awaken_for_training(candidate('虎', level=100, cap=100), ('虎',))
 
     def test_awakening_without_level_or_cap_progress_takes_over(self):
         inspector = TrainingShipInspector.__new__(TrainingShipInspector)
@@ -782,6 +801,110 @@ class TrainingUiReviewTest(unittest.TestCase):
         self.assertFalse(result)
         manager.handle_popup_cancel.assert_called_once_with('OPSI_TRAINING_DEPLOY_PAID')
         manager.inspect_map_fleet.assert_not_called()
+
+
+class TrainingAwakeningDeferredRecoveryTest(unittest.TestCase):
+    def make_manager(self, os_init_side_effect=None, globe_goto_side_effect=None):
+        writes = []
+        manager = TrainingFleetManager.__new__(TrainingFleetManager)
+        manager.config = SimpleNamespace(
+            SERVER='cn', OpsiFleet_Fleet=4,
+            cross_set=lambda **kwargs: writes.append(kwargs))
+        manager.device = SimpleNamespace(image=np.zeros((720, 1280, 3), dtype=np.uint8))
+        manager._check_cn = Mock()
+        manager.ui_ensure = Mock()
+        manager.inspect_map_fleet = Mock()
+        manager.find_candidates = Mock(side_effect=AssertionError('unexpected candidate search'))
+        manager._awaken_planned_ship = Mock(side_effect=[
+            candidate('主力1', level=100, cap=105),
+            TrainingAwakeningDeferred('no resources'),
+        ])
+        manager._deploy = Mock(side_effect=AssertionError('must discard the pending deployment plan'))
+        current = {
+            1: ShipCandidate('英仙座', '白鹰', 'main', 125, True, True, None, 125, True),
+            2: ShipCandidate('目标舰', '白鹰', 'main', 100, True, True, 0, 100, True),
+            3: ShipCandidate('主力2', '白鹰', 'main', 100, True, True, 0, 100, True),
+            4: ShipCandidate('伊吹', '重樱', 'vanguard', 125, True, True, None, 125, True),
+            5: ShipCandidate('先锋1', '重樱', 'vanguard', 90, True, True, None, 120, True),
+            6: ShipCandidate('先锋2', '重樱', 'vanguard', 90, True, True, None, 120, True),
+        }
+        manager.inspect_map_fleet.return_value = current
+        plan = SimpleNamespace(success=True, slots=dict(current), reason='')
+        opsi = SimpleNamespace(
+            os_init=Mock(side_effect=os_init_side_effect),
+            globe_goto=Mock(side_effect=globe_goto_side_effect),
+            name_to_zone=Mock(return_value='NY'))
+        shipyard_patch = patch('module.shipyard.development.ShipyardDevelopment')
+        priority_patch = patch('module.os.training.priority_ship_names', return_value=())
+        planning_patch = patch('module.os.training.plan_rotation', side_effect=[plan, plan])
+        time_patch = patch('module.os.training.time.time', return_value=4567)
+        shipyard = shipyard_patch.start()
+        priority_patch.start()
+        planning_patch.start()
+        time_patch.start()
+        self.addCleanup(time_patch.stop)
+        self.addCleanup(planning_patch.stop)
+        self.addCleanup(priority_patch.stop)
+        self.addCleanup(shipyard_patch.stop)
+        shipyard.return_value.inspect_current_project.return_value = ('test ship', None)
+        return manager, opsi, writes
+
+    def test_maintain_discards_plan_after_prior_awakening_succeeds(self):
+        manager, opsi, writes = self.make_manager()
+        self.assertFalse(manager.maintain(opsi))
+        self.assertEqual(manager._awaken_planned_ship.call_count, 2)
+        manager._deploy.assert_not_called()
+        self.assertEqual(opsi.globe_goto.call_count, 2)
+        opsi.globe_goto.assert_called_with('NY')
+        self.assertEqual(writes, [{
+            'keys': 'OpsiHazard1Leveling.OpsiTraining.LastCheck', 'value': 4567,
+        }])
+
+    def test_maintain_recovery_os_init_failure_leaves_last_check_unchanged(self):
+        manager, opsi, writes = self.make_manager(
+            os_init_side_effect=[None, ScriptError('map recovery failed')])
+        with self.assertRaisesRegex(ScriptError, 'map recovery failed'):
+            manager.maintain(opsi)
+        self.assertEqual(manager._awaken_planned_ship.call_count, 2)
+        manager._deploy.assert_not_called()
+        opsi.globe_goto.assert_called_once_with('NY')
+        self.assertEqual(writes, [])
+
+    def test_maintain_recovery_globe_failure_leaves_last_check_unchanged(self):
+        manager, opsi, writes = self.make_manager(
+            globe_goto_side_effect=[None, ScriptError('NY recovery failed')])
+        with self.assertRaisesRegex(ScriptError, 'NY recovery failed'):
+            manager.maintain(opsi)
+        self.assertEqual(manager._awaken_planned_ship.call_count, 2)
+        manager._deploy.assert_not_called()
+        self.assertEqual(opsi.globe_goto.call_count, 2)
+        self.assertEqual(writes, [])
+
+    def test_resource_shortage_recovers_to_ny_then_records_retry(self):
+        manager = TrainingFleetManager.__new__(TrainingFleetManager)
+        writes = []
+        manager.config = SimpleNamespace(cross_set=lambda **kwargs: writes.append(kwargs))
+        opsi = SimpleNamespace(os_init=Mock(), globe_goto=Mock(), name_to_zone=Mock(return_value='NY'))
+        with patch('module.os.training.time.time', return_value=4567):
+            self.assertFalse(manager._defer_after_awakening_resource_shortage(opsi))
+        opsi.os_init.assert_called_once_with(skip_first_auto_search=True)
+        opsi.name_to_zone.assert_called_once_with('NY')
+        opsi.globe_goto.assert_called_once_with('NY')
+        self.assertEqual(writes, [{
+            'keys': 'OpsiHazard1Leveling.OpsiTraining.LastCheck', 'value': 4567,
+        }])
+
+    def test_failed_map_recovery_does_not_record_retry(self):
+        manager = TrainingFleetManager.__new__(TrainingFleetManager)
+        writes = []
+        manager.config = SimpleNamespace(cross_set=lambda **kwargs: writes.append(kwargs))
+        opsi = SimpleNamespace(os_init=Mock(side_effect=ScriptError('map recovery failed')),
+                               globe_goto=Mock(), name_to_zone=Mock(return_value='NY'))
+        with patch('module.os.training.time.time', return_value=4567):
+            with self.assertRaisesRegex(ScriptError, 'map recovery failed'):
+                manager._defer_after_awakening_resource_shortage(opsi)
+        opsi.globe_goto.assert_not_called()
+        self.assertEqual(writes, [])
 
 
 class TrainingUnavailableProjectRecoveryTest(unittest.TestCase):
