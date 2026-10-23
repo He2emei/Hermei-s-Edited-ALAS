@@ -14,7 +14,7 @@ from module.base.priority_training import priority_ship_names, allow_priority_12
 from module.os.deployment_cost import read_deployment_cost
 from module.os.training_ui import (TrainingShipInspector, DOCK_SCROLL,
                                    FILTER_FACTIONS, FACTIONS, CATALOG, catalog_name, dock_card_lock, point_button, dock_cards,
-                                   same_card_portrait, same_dock_page)
+                                   same_card_portrait, same_dock_page, TrainingAwakeningDeferred)
 from module.event.fleet_source import EventFleetNameOcr
 from module.retire.assets import DOCK_CHECK
 from module.retire.dock import OCR_DOCK_SELECTED
@@ -458,6 +458,13 @@ class TrainingFleetManager(TrainingShipInspector):
         logger.info('Fourth fleet deployment verified, both anchors preserved')
         return True
 
+    def _defer_after_awakening_resource_shortage(self, opsi):
+        """Return to the known OpSi map before scheduling a resource retry."""
+        opsi.os_init(skip_first_auto_search=True)
+        opsi.globe_goto(opsi.name_to_zone('NY'))
+        self.config.cross_set(keys='OpsiHazard1Leveling.OpsiTraining.LastCheck', value=int(time.time()))
+        return False
+
     def maintain(self, opsi):
         from module.shipyard.development import ShipyardDevelopment, WorkingProjectUnavailable
         self._check_cn()
@@ -537,14 +544,18 @@ class TrainingFleetManager(TrainingShipInspector):
             raise RequestHumanTakeover('No complete eligible fleet plan: ' + plan.reason)
         logger.info('Training plan: ' + ', '.join(f'{s}={plan.slots[s].name}' for s in range(1, 7)))
         completed_during_awaken = False
-        for slot in ROTATION_SLOTS:
-            if should_awaken(plan.slots[slot], priority_names,
-                             allow_priority_125(self.config, plan.slots[slot].name)):
-                plan.slots[slot] = self._awaken_planned_ship(plan.slots[slot], priority_names)
-                if not decide_trainability(plan.slots[slot], priority_names).allowed:
-                    logger.info(f'Training ship reached its target during awakening: {plan.slots[slot].name}')
-                    completed_during_awaken = True
-                    break
+        try:
+            for slot in ROTATION_SLOTS:
+                if should_awaken(plan.slots[slot], priority_names,
+                                 allow_priority_125(self.config, plan.slots[slot].name)):
+                    plan.slots[slot] = self._awaken_planned_ship(plan.slots[slot], priority_names)
+                    if not decide_trainability(plan.slots[slot], priority_names).allowed:
+                        logger.info(f'Training ship reached its target during awakening: {plan.slots[slot].name}')
+                        completed_during_awaken = True
+                        break
+        except TrainingAwakeningDeferred as error:
+            logger.warning(f'Training maintenance deferred until awakening resources recover: {error}')
+            return self._defer_after_awakening_resource_shortage(opsi)
         opsi.os_init(skip_first_auto_search=True)
         opsi.globe_goto(opsi.name_to_zone('NY'))
         if not completed_during_awaken:
