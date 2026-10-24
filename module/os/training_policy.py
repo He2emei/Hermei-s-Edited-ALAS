@@ -106,7 +106,8 @@ def decide_trainability(candidate, priority_names=()):
     if not candidate.is_locked:
         return PolicyDecision(False, 'unlocked ship may be limit-break material')
     priority = candidate.name in priority_names
-    if candidate.is_rainbow and candidate.level >= 120 and not priority:
+    if candidate.is_rainbow and candidate.level >= 120 and not priority \
+            and candidate.level_cap != 125:
         return PolicyDecision(False, 'rainbow ship reached level 120')
     if candidate.level == MAX_LEVEL:
         return PolicyDecision(False, 'level 125 is complete')
@@ -258,8 +259,8 @@ def plan_rotation(requirements, current_slots, screen_candidates, excluded_ident
         priority_count = sum(assignments[s].name in priority_names and assignments[s].level < MAX_LEVEL
                              and decide_trainability(assignments[s], priority_names).allowed for s in ROTATION_SLOTS)
         trainable_count = sum(is_trainable(assignments[s], priority_names) for s in ROTATION_SLOTS)
-        rainbow_sides = sum(any(assignments[s].is_rainbow and is_trainable(assignments[s], priority_names) for s in side)
-                            for side in (MAIN_SLOTS, VANGUARD_SLOTS))
+        rainbow_count = sum(assignments[s].is_rainbow and is_trainable(assignments[s], priority_names)
+                            for s in ROTATION_SLOTS)
         faction_matches = sum(
             requirement is not None
             and is_trainable(assignments[slot], priority_names)
@@ -268,7 +269,7 @@ def plan_rotation(requirements, current_slots, screen_candidates, excluded_ident
             for slot, requirement in requirements.items()
         )
         unchanged = sum(current_slots.get(slot) == assignments[slot] for slot in ROTATION_SLOTS)
-        return priority_count, trainable_count, rainbow_sides, faction_matches, unchanged
+        return priority_count, trainable_count, rainbow_count, faction_matches, unchanged
 
     def search(index, used):
         nonlocal best, best_score
