@@ -494,12 +494,11 @@ class TrainingFleetManager(TrainingShipInspector):
         for side, slots in (('main', (2, 3)), ('vanguard', (5, 6))):
             existing = [current[slot] for slot in slots if decide_trainability(current[slot], priority_names).allowed]
             active = requirement if requirement and requirement.position == side else None
-            rainbow = any(ship.is_rainbow for ship in existing)
-            matching_rainbow = any(ship.is_rainbow and ship.faction in active.factions
-                                   for ship in existing) if active else rainbow
             faction_count = sum(ship.faction in active.factions for ship in existing) if active else 0
-            search[side] = (len(existing) < 2 or not rainbow
-                            or active is not None and (not matching_rainbow or faction_count < 2))
+            # A rainbow on a side is not enough: search for additional URs
+            # until both trainable slots are filled with rainbow ships.
+            search[side] = (len(existing) < 2 or sum(ship.is_rainbow for ship in existing) < 2
+                            or active is not None and faction_count < 2)
         if not initial.success or any(search.values()) or priority_pending:
             available = self._available_ships(opsi, priority_names)
             # An unlocked deployed copy must not hide a distinct, locked dock
@@ -525,20 +524,27 @@ class TrainingFleetManager(TrainingShipInspector):
                 existing = [current[slot] for slot in slots if decide_trainability(current[slot], priority_names).allowed]
                 active = requirement if requirement and requirement.position == side else None
                 factions = active.factions if active else frozenset()
-                has_matching_rainbow = any(ship.is_rainbow and (not active or ship.faction in factions)
-                                           for ship in existing)
+                rainbow_count = sum(ship.is_rainbow for ship in existing)
+                matching_rainbow_count = sum(ship.is_rainbow and (not active or ship.faction in factions)
+                                             for ship in existing)
                 rainbow_candidates = []
-                if not has_matching_rainbow:
+                if rainbow_count < 2:
                     rainbow_candidates = self.find_candidates(
-                        side, factions, excluded, needed=1, available=available, rarity='ultra')
+                        side, factions, excluded, needed=2 - matching_rainbow_count,
+                        available=available, rarity='ultra')
                     candidates.extend(rainbow_candidates)
-                if not rainbow_candidates and not any(ship.is_rainbow for ship in existing):
+                if (rainbow_count + len(rainbow_candidates) < 2
+                        and (not active or not factions or len(rainbow_candidates) < 2 - matching_rainbow_count)):
+                    rainbow_excluded = excluded | {ship.name for ship in rainbow_candidates}
                     candidates.extend(self.find_candidates(
-                        side, frozenset(), excluded, needed=1, available=available, rarity='ultra'))
+                        side, frozenset(), rainbow_excluded,
+                        needed=2 - rainbow_count - len(rainbow_candidates),
+                        available=available, rarity='ultra'))
                 faction_count = sum(ship.faction in factions for ship in existing) if active else 0
-                if len(existing) < 2 or active and faction_count < 2:
+                ordinary_needed = max(2 - len(existing), 2 - faction_count if active else 0)
+                if ordinary_needed > 0:
                     candidates.extend(self.find_candidates(
-                        side, factions, excluded, needed=2, available=available))
+                        side, factions, excluded, needed=ordinary_needed, available=available))
         plan = plan_rotation(requirements, current, candidates, priority_names=priority_names)
         if not plan.success:
             raise RequestHumanTakeover('No complete eligible fleet plan: ' + plan.reason)

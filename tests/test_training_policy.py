@@ -216,7 +216,7 @@ class TrainingPolicyTest(unittest.TestCase):
         ]
         plan = plan_rotation({5: requirement, 6: requirement}, current, candidates)
         self.assertTrue(plan.success)
-        self.assertEqual({plan.slots[5].name, plan.slots[6].name}, {'royal-vanguard', 'royal-rainbow'})
+        self.assertEqual({plan.slots[5].name, plan.slots[6].name}, {'rainbow-vanguard', 'royal-rainbow'})
         self.assertIn('rainbow-main', {plan.slots[2].name, plan.slots[3].name})
 
     def test_unmatched_rainbow_and_one_faction_take_priority(self):
@@ -231,6 +231,41 @@ class TrainingPolicyTest(unittest.TestCase):
         self.assertEqual(plan.slots[5].name, 'current-rainbow')
         self.assertEqual(plan.slots[6].name, 'current-royal')
 
+    def test_second_rainbow_beats_ordinary_storage_and_cross_faction_beats_matching_ordinary(self):
+        current = {1: ship('anchor'), 4: ship('anchor-v', position='vanguard'),
+                   2: ship('ordinary-main'), 3: ship('stored', level=110, cap=110, stored=3_000_000),
+                   5: ship('front1', position='vanguard'), 6: ship('front2', position='vanguard')}
+        first = ship('current-rainbow', rainbow=True, level=115, cap=115)
+        second = ship('cross-faction-ur', faction='重樱', rainbow=True, level=115, cap=115)
+        ordinary = ship('royal-ordinary', faction='皇家', level=100)
+        plan = plan_rotation({}, current, [first, second, ordinary])
+        self.assertTrue(plan.success)
+        self.assertEqual({first.name, second.name}, {plan.slots[2].name, plan.slots[3].name})
+
+    def test_cross_faction_rainbow_beats_matching_ordinary_while_retaining_priority(self):
+        priority = ship('虎', faction='皇家', level=119, cap=120, rainbow=True)
+        ordinary = ship('royal-ordinary', faction='皇家')
+        cross_faction = ship('cross-faction-ur', faction='重樱', rainbow=True, level=115, cap=115)
+        current = {1: ship('anchor'), 2: priority, 3: ordinary,
+                   4: ship('anchor-v', position='vanguard'),
+                   5: ship('front1', position='vanguard'), 6: ship('front2', position='vanguard')}
+        requirement = TrainingRequirement(frozenset({'皇家'}), 'main', 1, '皇家主力技术测试I')
+        plan = plan_rotation({2: requirement, 3: requirement}, current, [cross_faction], priority_names=('虎',))
+        self.assertTrue(plan.success)
+        self.assertIn('虎', {plan.slots[2].name, plan.slots[3].name})
+        self.assertIn(cross_faction.name, {plan.slots[2].name, plan.slots[3].name})
+        self.assertNotIn(ordinary.name, {plan.slots[2].name, plan.slots[3].name})
+
+    def test_nonpriority_rainbow_120_cap125_is_trainable_without_awakening(self):
+        at120 = ship('rainbow120', rainbow=True, level=120, cap=120)
+        at125cap = ship('rainbow125cap', rainbow=True, level=120, cap=125)
+        unknown_cap = ship('rainbow-unknown', rainbow=True, level=120, cap=None)
+        other_cap = ship('rainbow-124-cap', rainbow=True, level=120, cap=124)
+        self.assertFalse(decide_trainability(at120).allowed)
+        self.assertTrue(decide_trainability(at125cap).allowed)
+        self.assertFalse(decide_awaken(at125cap).allowed)
+        self.assertFalse(decide_trainability(unknown_cap).allowed)
+        self.assertFalse(decide_trainability(other_cap).allowed)
 
 if __name__ == '__main__':
     unittest.main()

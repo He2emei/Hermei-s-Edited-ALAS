@@ -467,14 +467,14 @@ class TrainingUiReviewTest(unittest.TestCase):
         self.assertEqual(manager.search_args, ('vanguard', frozenset(), None, {'虎'}))
         self.assertIn('虎', {manager.planned[5].name, manager.planned[6].name})
 
-    def test_deployed_locked_priority_target_does_not_force_dock_search(self):
+    def test_deployed_locked_priority_target_in_full_rainbow_fleet_does_not_force_dock_search(self):
         current = {
             1: candidate('英仙座'),
             2: ShipCandidate('彩主力', '皇家', 'main', 90, True, False, None, 100, True),
-            3: candidate('普通主力', position='main'),
+            3: ShipCandidate('另一彩主力', '皇家', 'main', 90, True, False, None, 100, True),
             4: candidate('伊吹', position='vanguard'),
             5: ShipCandidate('虎', '皇家', 'vanguard', 90, True, False, None, 120, True),
-            6: candidate('普通先锋', position='vanguard'),
+            6: ShipCandidate('另一彩先锋', '皇家', 'vanguard', 90, True, False, None, 120, True),
         }
 
         class Manager(TrainingFleetManager):
@@ -492,7 +492,7 @@ class TrainingUiReviewTest(unittest.TestCase):
             def _available_ships(self, opsi, priority_names=()):
                 self.fail('deployed locked target must not force a dock scan')
             def find_candidates(self, *args, **kwargs):
-                self.fail('ordinary conditions are already satisfied')
+                self.fail('all four rainbow slots and explicit targets are already satisfied')
             def _deploy(self, opsi, before, planned): self.deploy_calls += 1
             def fail(self, message): raise AssertionError(message)
 
