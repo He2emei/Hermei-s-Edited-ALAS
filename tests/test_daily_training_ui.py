@@ -118,6 +118,110 @@ class DormTrainingMockTest(unittest.TestCase):
 
 
 class TrainingInventoryMockTest(unittest.TestCase):
+    def test_content_drag_recovers_when_scroll_thumb_stalls_mid_list(self):
+        """A content swipe can advance this page when Scroll.set() cannot."""
+        import numpy as np
+
+        class FakeDevice:
+            def __init__(self):
+                self.image = np.zeros((720, 1280, 3), dtype=np.uint8)
+                self.content_drags = 0
+                self.clear_count = 0
+
+            def screenshot(self):
+                return None
+
+            def sleep(self, _seconds):
+                return None
+
+            def swipe(self, p1, p2, name='SWIPE', **_kwargs):
+                if p1 == (1110, 550) and p2 == (1110, 250):
+                    self.content_drags += 1
+                    scroll.position += 0.12
+                    scroll.stalled = False
+
+            def click_record_clear(self):
+                self.clear_count += 1
+
+        class StalledThumbScroll:
+            position = 0.154
+            stalled = False
+
+            def set_top(self, main):
+                self.position = 0.0
+                self.stalled = False
+
+            def at_bottom(self, main):
+                return False
+
+            def cal_position(self, main):
+                return self.position
+
+            def match_color(self, main):
+                return [True]
+
+            def next_page(self, main, page=0.45):
+                self.position = 0.154
+                self.stalled = True
+
+        inventory = TrainingInventory.__new__(TrainingInventory)
+        inventory.config = SimpleNamespace(SERVER='cn')
+        device = FakeDevice()
+        inventory.device = device
+        inventory.ui_goto_storage = Mock()
+        inventory._storage_enter_material = Mock()
+        inventory._wait_until_storage_stable = Mock()
+        inventory._storage_in_material = Mock(return_value=True)
+        scroll = StalledThumbScroll()
+
+        def match_book(_image, key):
+            return ((400, 300), 0.99) if scroll.position >= 0.25 else (None, 0.0)
+
+        with patch('module.storage.training_inventory.INVENTORY_SCROLL', scroll), \
+                patch('module.storage.training_inventory.item_match', side_effect=match_book), \
+                patch.object(inventory, '_read_item', return_value=1957):
+            self.assertEqual(inventory.read_counts(['exp_book_t1']), {'exp_book_t1': 1957})
+
+        self.assertEqual(device.content_drags, 1)
+        self.assertEqual(device.clear_count, 1)
+
+    def test_content_drag_fails_closed_on_unknown_page_or_unreadable_thumb(self):
+        import numpy as np
+        from module.ui.scroll import Scroll
+
+        class FakeDevice:
+            def __init__(self):
+                self.swipe = Mock()
+                self.screenshot = Mock()
+                self.sleep = Mock()
+
+        class FakeMain:
+            def __init__(self, device):
+                self.device = device
+
+            def image_crop(self, area, copy=False):
+                return np.zeros((area[3] - area[1], area[2] - area[0], 3), dtype=np.uint8)
+
+        inventory = TrainingInventory.__new__(TrainingInventory)
+        inventory.device = FakeDevice()
+        inventory._storage_in_material = Mock(return_value=False)
+        scroll = Scroll((1257, 94, 1264, 635), color=(247, 211, 66),
+                        name='TrainingInventoryScroll')
+        main = FakeMain(inventory.device)
+        self.assertEqual(scroll.cal_position(main=main), 0.0)
+        inventory._storage_in_material = Mock(return_value=False)
+        with patch('module.storage.training_inventory.INVENTORY_SCROLL', scroll):
+            with self.assertRaisesRegex(RequestHumanTakeover, 'Lost inventory material page'):
+                inventory._content_drag_forward(0.154)
+            inventory.device.swipe.assert_not_called()
+
+            inventory._storage_in_material.return_value = True
+            # Scroll.cal_position clamps its empty-mask NaN to 0.0, but the
+            # inventory wrapper rejects the missing color mask before trusting it.
+            inventory.image_crop = main.image_crop
+            with self.assertRaisesRegex(RequestHumanTakeover, 'thumb is not readable'):
+                inventory._stable_inventory_position()
+
     def test_long_inventory_scan_clears_verified_scroll_progress(self):
         import numpy as np
 
@@ -157,6 +261,9 @@ class TrainingInventoryMockTest(unittest.TestCase):
 
             def cal_position(self, main):
                 return self.page / 20
+
+            def match_color(self, main):
+                return [True]
 
             def next_page(self, main, page=0.45):
                 self.device.swipe(None, None, name='TrainingInventoryScroll')
@@ -209,6 +316,9 @@ class TrainingInventoryMockTest(unittest.TestCase):
 
             def cal_position(self, main):
                 return 0.2
+
+            def match_color(self, main):
+                return [True]
 
             def next_page(self, main, page=0.45):
                 main.device.swipe(None, None, name='TrainingInventoryScroll')
@@ -288,6 +398,9 @@ class TrainingInventoryMockTest(unittest.TestCase):
             def cal_position(self, main):
                 return self.position
 
+            def match_color(self, main):
+                return [True]
+
             def next_page(self, main, page=0.45):
                 # 541 px of calibrated track, 414.5 px of thumb travel: the last
                 # reachable position is 0.893 and set() gives up there.
@@ -343,6 +456,9 @@ class TrainingInventoryMockTest(unittest.TestCase):
 
             def cal_position(self, main):
                 return self.position
+
+            def match_color(self, main):
+                return [True]
 
         class FakeDevice:
             def __init__(self):
@@ -404,6 +520,9 @@ class TrainingInventoryMockTest(unittest.TestCase):
             def sleep(self, _seconds):
                 return None
 
+            def swipe(self, *_args, **_kwargs):
+                return None
+
             def click_record_clear(self):
                 return None
 
@@ -419,6 +538,9 @@ class TrainingInventoryMockTest(unittest.TestCase):
 
             def cal_position(self, main):
                 return 0.2
+
+            def match_color(self, main):
+                return [True]
 
             def next_page(self, main, page=0.45):
                 self.stalled = True
@@ -514,6 +636,9 @@ class TrainingInventoryMockTest(unittest.TestCase):
 
             def cal_position(self, main):
                 return self.position
+
+            def match_color(self, main):
+                return [True]
 
             def next_page(self, main, page=0.45):
                 self.position = min(self.position + page * self.MULTIPLY, self.END)
