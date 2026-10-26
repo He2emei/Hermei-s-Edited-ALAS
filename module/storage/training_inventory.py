@@ -3,6 +3,7 @@ from pathlib import Path
 import re
 
 import cv2
+import numpy as np
 
 from module.exception import RequestHumanTakeover
 from module.logger import logger
@@ -103,6 +104,9 @@ class TrainingInventory(StorageUI):
     # change while scanning.
     SCAN_PAGE = 0.45
     SCAN_BOUND = 40
+    CONTENT_DRAG_ATTEMPTS = 3
+    CONTENT_DRAG_START = (1110, 550)
+    CONTENT_DRAG_END = (1110, 250)
 
     def _wait(self, predicate, description):
         for _ in range(30):
@@ -140,12 +144,53 @@ class TrainingInventory(StorageUI):
         """
         if not getattr(INVENTORY_SCROLL, 'stalled', False):
             return False
-        position = INVENTORY_SCROLL.cal_position(main=self)
+        position = self._inventory_scroll_position()
         if position < self.END_POSITION_FLOOR:
             raise RequestHumanTakeover(
                 f'Inventory scroll stalled at {position:.3f}, before the end of the list')
         logger.info(f'Inventory reached the end of the list at {position:.3f}')
         return True
+
+    def _inventory_scroll_position(self):
+        """Require actual thumb pixels before trusting Scroll's numeric position."""
+        mask = INVENTORY_SCROLL.match_color(main=self)
+        if mask is None or not np.any(mask):
+            raise RequestHumanTakeover('Inventory scrollbar thumb is not readable')
+        position = INVENTORY_SCROLL.cal_position(main=self)
+        if not np.isfinite(position):
+            raise RequestHumanTakeover('Inventory scrollbar thumb is not readable')
+        return position
+
+    def _stable_inventory_position(self):
+        """Read a stable scrollbar position, failing closed on unknown UI."""
+        readings = []
+        for _ in range(3):
+            self.device.screenshot()
+            if not self._storage_in_material():
+                raise RequestHumanTakeover('Lost inventory material page during content drag')
+            position = self._inventory_scroll_position()
+            readings.append(position)
+            if len(readings) >= 2 and abs(readings[-1] - readings[-2]) <= 0.005:
+                return readings[-1]
+            self.device.sleep(0.2)
+        raise RequestHumanTakeover('Inventory scrollbar did not settle after content drag')
+
+    def _content_drag_forward(self, before):
+        """Use a bounded content-area drag when the generic thumb drag stalls."""
+        current = before
+        for _ in range(self.CONTENT_DRAG_ATTEMPTS):
+            if not self._storage_in_material():
+                raise RequestHumanTakeover('Lost inventory material page during content drag')
+            self.device.swipe(self.CONTENT_DRAG_START, self.CONTENT_DRAG_END,
+                              name=getattr(INVENTORY_SCROLL, 'name', 'TrainingInventoryScroll'))
+            self.device.sleep(0.3)
+            after = self._stable_inventory_position()
+            if after > current + 0.001:
+                INVENTORY_SCROLL.stalled = False
+                logger.info(f'Inventory content drag advanced to {after:.3f}')
+                return True
+            current = after
+        return False
 
     def _read_item(self, key, position):
         if not self._storage_in_material():
@@ -206,17 +251,26 @@ class TrainingInventory(StorageUI):
                 return counts, scores
             if INVENTORY_SCROLL.at_bottom(main=self) or self._inventory_at_end():
                 return counts, scores
-            before = INVENTORY_SCROLL.cal_position(main=self)
+            before = self._inventory_scroll_position()
             INVENTORY_SCROLL.next_page(main=self, page=self.SCAN_PAGE)
             self.device.sleep(0.5)
             self.device.screenshot()
-            after = INVENTORY_SCROLL.cal_position(main=self)
+            if not self._storage_in_material():
+                raise RequestHumanTakeover('Lost inventory material page during scan')
+            after = self._inventory_scroll_position()
             if getattr(INVENTORY_SCROLL, 'stalled', False):
-                # The swipe was issued over the whole remaining distance and the
-                # thumb did not move, so this was the end of the list after all:
-                # see _inventory_at_end().  Looping on would only keep swiping at
-                # an unreachable position and abort the task with this same
-                # RequestHumanTakeover.
+                # A stall near the measured list end remains the terminal
+                # signal. Earlier stalls may be caused by the thumb drag itself;
+                # try a small bounded drag over the scrollable content.
+                if after >= self.END_POSITION_FLOOR:
+                    continue
+                if not self._content_drag_forward(after):
+                    # Keep the existing end-of-list test as the only terminal
+                    # signal; a middle-of-list stall remains an error.
+                    if self._inventory_at_end():
+                        continue
+                    raise RequestHumanTakeover('Inventory scan stopped before verified bottom')
+                self.device.click_record_clear()
                 continue
             if after <= before + 0.001:
                 raise RequestHumanTakeover('Inventory scan stopped before verified bottom')
