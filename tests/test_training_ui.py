@@ -37,6 +37,21 @@ def candidate(name, faction='白鹰', position='main', level=90, cap=None):
 
 
 class TrainingUiReviewTest(unittest.TestCase):
+    def test_real_tiger_intermediate_level_does_not_require_unused_exp_ocr(self):
+        from PIL import Image
+        frame = np.asarray(Image.open(
+            ROOT / 'tests/fixtures/opsi_training/tiger-104-noncap-exp-noise.png').convert('RGB'))
+        inspector = TrainingShipInspector.__new__(TrainingShipInspector)
+        inspector.config = SimpleNamespace(SERVER='cn')
+        inspector.device = SimpleNamespace(image=frame, screenshot=Mock())
+        inspector.appear = Mock(return_value=True)
+        with patch.object(training_ui, 'Ocr', wraps=training_ui.Ocr) as ocr:
+            actual = inspector.read_ship()
+        self.assertEqual((actual.name, actual.level, actual.level_cap, actual.is_locked),
+                         ('虎', 104, 105, True))
+        self.assertIsNone(actual.stored_exp)
+        self.assertNotIn('TrainingStoredExp', [c.kwargs.get('name') for c in ocr.call_args_list])
+
     def test_cn_york_shared_name_cannot_select_royal_identity(self):
         self.assertIsNone(catalog_name("约克"))
         self.assertIsNone(catalog_name("_约克"))
