@@ -470,17 +470,21 @@ class TrainingFleetManager(TrainingShipInspector):
         self._check_cn()
         if self.config.OpsiFleet_Fleet != 4:
             raise RequestHumanTakeover('Training maintenance requires hazard-one fleet 4')
+        priority_names = priority_ship_names(self.config)
         self.ui_ensure(page_shipyard)
         shipyard = ShipyardDevelopment(self.config, self.device)
+        requirement = None
         try:
             ship_name, requirement = shipyard.inspect_current_project(submit_materials=True)
         except WorkingProjectUnavailable as error:
             logger.warning(f'Training development project deferred: {error}')
-            opsi.os_init(skip_first_auto_search=True)
-            self.config.cross_set(keys='OpsiHazard1Leveling.OpsiTraining.LastCheck', value=int(time.time()))
-            return False
-        logger.info(f'Training development project: {ship_name}: {requirement}')
-        priority_names = priority_ship_names(self.config)
+            if not priority_names:
+                opsi.os_init(skip_first_auto_search=True)
+                self.config.cross_set(keys='OpsiHazard1Leveling.OpsiTraining.LastCheck', value=int(time.time()))
+                return False
+            logger.warning('Shipyard project unavailable; continuing configured priority and rainbow training without a faction requirement')
+        else:
+            logger.info(f'Training development project: {ship_name}: {requirement}')
         opsi.os_init(skip_first_auto_search=True)
         opsi.globe_goto(opsi.name_to_zone('NY'))
         current = self.inspect_map_fleet(opsi)

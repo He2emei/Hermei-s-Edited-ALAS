@@ -981,6 +981,113 @@ class TrainingUnavailableProjectRecoveryTest(unittest.TestCase):
         opsi.os_init.assert_called_once_with(skip_first_auto_search=True)
         self.assertEqual(writes, [])
 
+    def test_unavailable_project_still_awakens_exact_configured_locked_priority_ship(self):
+        from dataclasses import replace
+        from module.os.training_policy import ShipCandidate
+        from module.shipyard.development import WorkingProjectUnavailable
+
+        manager = TrainingFleetManager.__new__(TrainingFleetManager)
+        writes = []
+        manager.config = SimpleNamespace(
+            SERVER='cn', OpsiFleet_Fleet=4,
+            PriorityTraining_Ships='虎 > 安土', PriorityTraining_Allow125Awakening=True,
+            cross_set=lambda **kwargs: writes.append(kwargs))
+        manager.device = SimpleNamespace(image=np.zeros((720, 1280, 3), dtype=np.uint8))
+        manager._check_cn = Mock()
+        manager.ui_ensure = Mock()
+
+        def ship(name, side, level, cap, faction='重樱'):
+            return ShipCandidate(name, faction, side, level, True, True, 0, cap, True)
+
+        current = {
+            1: ship('英仙座', 'main', 125, 125, '皇家'),
+            2: ship('安土', 'main', 110, 110),
+            3: ship('虎', 'main', 100, 110, '皇家'),
+            4: ship('普利茅斯', 'vanguard', 125, 125, '皇家'),
+            5: ship('吾妻', 'vanguard', 100, 120),
+            6: ship('德雷克', 'vanguard', 100, 120, '皇家'),
+        }
+        manager.inspect_map_fleet = Mock(return_value=current)
+        manager.find_candidates = Mock(side_effect=AssertionError('unexpected candidate search'))
+        manager._awaken_planned_ship = Mock(side_effect=lambda target, names: replace(target, level_cap=115))
+        manager._deploy = Mock(return_value=False)
+        opsi = SimpleNamespace(os_init=Mock(), name_to_zone=Mock(return_value='NY'), globe_goto=Mock())
+        captured_requirements = []
+        from module.os.training import plan_rotation as real_plan_rotation
+
+        def capture_plan(requirements, *args, **kwargs):
+            captured_requirements.append(requirements)
+            return real_plan_rotation(requirements, *args, **kwargs)
+
+        with patch('module.shipyard.development.ShipyardDevelopment') as shipyard, \
+                patch('module.os.training.time.time', return_value=1234), \
+                patch('module.os.training.plan_rotation', side_effect=capture_plan):
+            shipyard.return_value.inspect_current_project.side_effect = WorkingProjectUnavailable(
+                'No visible working ship found in shipyard series')
+            manager.maintain(opsi)
+        requirements = captured_requirements[0]
+        self.assertTrue(all(requirement is None for requirement in requirements.values()))
+        manager.inspect_map_fleet.assert_called_once_with(opsi)
+        manager._awaken_planned_ship.assert_called_once_with(current[2], ('虎', '安土'))
+        self.assertEqual(writes, [{'keys': 'OpsiHazard1Leveling.OpsiTraining.LastCheck', 'value': 1234}])
+
+    def test_priority_fallback_recovery_failures_do_not_write_last_check(self):
+        from module.os.training_policy import ShipCandidate
+        from module.shipyard.development import WorkingProjectUnavailable
+
+        for failing_step in ('os_init', 'globe_goto'):
+            with self.subTest(failing_step=failing_step):
+                manager = TrainingFleetManager.__new__(TrainingFleetManager)
+                writes = []
+                manager.config = SimpleNamespace(
+                    SERVER='cn', OpsiFleet_Fleet=4,
+                    PriorityTraining_Ships='虎 > 安土', PriorityTraining_Allow125Awakening=True,
+                    cross_set=lambda **kwargs: writes.append(kwargs))
+                manager.device = SimpleNamespace(image=np.zeros((720, 1280, 3), dtype=np.uint8))
+                manager._check_cn = Mock()
+                manager.ui_ensure = Mock()
+                manager.inspect_map_fleet = Mock(return_value={
+                    1: ShipCandidate('英仙座', '皇家', 'main', 125, True, True, 0, 125, True),
+                    2: ShipCandidate('安土', '重樱', 'main', 110, True, True, 0, 110, True),
+                    3: ShipCandidate('虎', '皇家', 'main', 100, True, True, 0, 110, True),
+                    4: ShipCandidate('普利茅斯', '皇家', 'vanguard', 125, True, True, 0, 125, True),
+                    5: ShipCandidate('吾妻', '重樱', 'vanguard', 100, True, True, 0, 120, True),
+                    6: ShipCandidate('德雷克', '皇家', 'vanguard', 100, True, True, 0, 120, True),
+                })
+                manager._awaken_planned_ship = Mock()
+                manager._deploy = Mock()
+                failure = ScriptError(f'{failing_step} failed')
+                opsi = SimpleNamespace(
+                    os_init=Mock(side_effect=failure if failing_step == 'os_init' else None),
+                    name_to_zone=Mock(return_value='NY'),
+                    globe_goto=Mock(side_effect=failure if failing_step == 'globe_goto' else None))
+                with patch('module.shipyard.development.ShipyardDevelopment') as shipyard:
+                    shipyard.return_value.inspect_current_project.side_effect = WorkingProjectUnavailable(
+                        'No visible working ship found in shipyard series')
+                    with self.assertRaisesRegex(ScriptError, f'{failing_step} failed'):
+                        manager.maintain(opsi)
+                manager._awaken_planned_ship.assert_not_called()
+                manager._deploy.assert_not_called()
+                self.assertEqual(writes, [])
+
+    def test_priority_fallback_other_script_error_propagates_before_fleet_scan(self):
+        from module.shipyard.development import WorkingProjectUnavailable
+
+        manager, writes = self.make_manager()
+        manager.config.PriorityTraining_Ships = '虎 > 安土'
+        manager.inspect_map_fleet = Mock()
+        manager._awaken_planned_ship = Mock()
+        opsi = SimpleNamespace(os_init=Mock(), globe_goto=Mock())
+        with patch('module.shipyard.development.ShipyardDevelopment') as shipyard:
+            shipyard.return_value.inspect_current_project.side_effect = WorkingProjectUnavailable('missing')
+            # A downstream failure represents an unknown/unhandled page during recovery.
+            opsi.os_init.side_effect = ScriptError('unknown page')
+            with self.assertRaisesRegex(ScriptError, 'unknown page'):
+                manager.maintain(opsi)
+        manager.inspect_map_fleet.assert_not_called()
+        manager._awaken_planned_ship.assert_not_called()
+        self.assertEqual(writes, [])
+
 
 if __name__ == '__main__':
     unittest.main()

@@ -1,6 +1,7 @@
 from module.base.base import ModuleBase
 from module.freebies.battle_pass import BattlePass
 from module.freebies.data_key import DataKey
+from module.freebies.event_supply import EventSupply
 from module.freebies.mail_white import MailWhite
 from module.freebies.supply_pack import SupplyPack_250814
 from module.logger import logger
@@ -25,5 +26,7 @@ class Freebies(ModuleBase):
         if self.config.SupplyPack_Collect:
             logger.hr('Supply pack', level=1)
             SupplyPack_250814(self.config, self.device).run()
+            logger.hr('Limited event convoy freebie', level=1)
+            EventSupply(self.config, self.device).run()
 
         self.config.task_delay(server_update=True)
