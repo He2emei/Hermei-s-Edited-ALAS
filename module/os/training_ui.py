@@ -313,7 +313,10 @@ class TrainingShipInspector(Awaken):
             full = stars == data['max_stars']
             at_cap = False
             stored = None
-            if level >= 100 and (full or data['rarity'] == 6):
+            # Only awakening boundaries can show capped/stored XP. At a
+            # verified intermediate level such as 104, the 105 cap follows
+            # from the level itself; noisy unused EXP text must not block it.
+            if level >= 100 and level % 5 == 0 and (full or data['rarity'] == 6):
                 text = Ocr([(1080, 277, 1248, 308)], name='TrainingStoredExp').ocr(self.device.image)
                 match = re.fullmatch(r'(\d{1,7})/[MmM8][Aa8][XxX]', text.replace(' ', ''))
                 # The game font's lowercase "a" is regularly recognized as 8.
