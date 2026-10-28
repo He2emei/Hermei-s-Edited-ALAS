@@ -52,6 +52,51 @@ class TrainingUiReviewTest(unittest.TestCase):
         self.assertIsNone(actual.stored_exp)
         self.assertNotIn('TrainingStoredExp', [c.kwargs.get('name') for c in ocr.call_args_list])
 
+    def test_real_tiger_105_after_awakening_reads_numeric_exp_without_false_max(self):
+        from PIL import Image
+        frame = np.asarray(Image.open(
+            ROOT / 'tests/fixtures/opsi_training/tiger-105-post-awakening-exp-noise.png').convert('RGB'))
+        inspector = TrainingShipInspector.__new__(TrainingShipInspector)
+        inspector.config = SimpleNamespace(SERVER='cn')
+        inspector.device = SimpleNamespace(image=frame, screenshot=Mock())
+        inspector.appear = Mock(return_value=True)
+        real_ocr = training_ui.Ocr
+
+        def ocr_factory(buttons, **kwargs):
+            if kwargs.get('name') == 'TrainingName':
+                return SimpleNamespace(ocr=lambda current_image: ['虎', '虎'])
+            return real_ocr(buttons, **kwargs)
+
+        with patch('module.os.training_ui.Ocr', side_effect=ocr_factory):
+            actual = inspector.read_ship()
+        self.assertEqual((actual.name, actual.level, actual.level_cap, actual.is_locked),
+                         ('虎', 105, 110, True))
+        self.assertIsNone(actual.stored_exp)
+
+    def test_tiger_105_unverifiable_numeric_exp_fails_closed(self):
+        from PIL import Image
+        frame = np.asarray(Image.open(
+            ROOT / 'tests/fixtures/opsi_training/tiger-105-post-awakening-exp-noise.png').convert('RGB'))
+        inspector = TrainingShipInspector.__new__(TrainingShipInspector)
+        inspector.config = SimpleNamespace(SERVER='cn')
+        inspector.device = SimpleNamespace(image=frame, screenshot=Mock())
+        inspector.appear = Mock(return_value=True)
+        real_ocr = training_ui.Ocr
+
+        def ocr_factory(buttons, **kwargs):
+            name = kwargs.get('name')
+            if name == 'TrainingName':
+                return SimpleNamespace(ocr=lambda current_image: ['虎', '虎'])
+            if name == 'TrainingStoredExp':
+                return SimpleNamespace(ocr=lambda current_image: 'M29854/78000')
+            if name == 'TrainingCurrentExp':
+                return SimpleNamespace(ocr=lambda current_image: '78000/29854')
+            return real_ocr(buttons, **kwargs)
+
+        with patch('module.os.training_ui.Ocr', side_effect=ocr_factory), \
+                self.assertRaises(RequestHumanTakeover):
+            inspector.read_ship()
+
     def test_cn_york_shared_name_cannot_select_royal_identity(self):
         self.assertIsNone(catalog_name("约克"))
         self.assertIsNone(catalog_name("_约克"))
