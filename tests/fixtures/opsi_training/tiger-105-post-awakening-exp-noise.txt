@@ -1,0 +1,1 @@
+Source: code_workflow/evidence/2026-10-28-cc706-uptime-recovery/screenshots/alas2-current-stopped-page.png (ALAS2 Tiger detail, 2026-10-28). The unrelated top resource/header strip is masked; the ship identity, level, lock, stars, and EXP counter regions are preserved for OCR regression coverage.

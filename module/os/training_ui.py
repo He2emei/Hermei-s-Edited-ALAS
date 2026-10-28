@@ -327,16 +327,34 @@ class TrainingShipInspector(Awaken):
                     if level == 125:
                         continue
                 else:
-                    # The full-width stored-XP OCR can merge the leftmost digit
-                    # with UI noise. Recover only when an independent, exact MAX
-                    # suffix read confirms the cap label.
-                    tail = Ocr([(1208, 277, 1248, 308)], name='TrainingStoredExpTail').ocr(self.device.image)
-                    if not re.fullmatch(r'/M[a8][xX]', tail.replace(' ', '')):
-                        continue
-                    stored = Digit((1130, 277, 1208, 308), name='TrainingStoredExpDigits').ocr(self.device.image)
-                    if not isinstance(stored, int) or not 0 <= stored <= 3_000_000:
-                        continue
-                    at_cap = True
+                    # The full-width OCR may merge left-side UI noise
+                    # into a numeric EXP fraction (e.g. M29854/78000). Read the
+                    # digits-only counter independently, excluding that noise;
+                    # accept only a bounded, internally valid fraction.
+                    counter = Ocr([(1130, 277, 1248, 308)], name='TrainingCurrentExp').ocr(
+                        self.device.image).replace(' ', '')
+                    fraction = re.fullmatch(r'(\d{1,7})/([1-9]\d{1,6})', counter)
+                    if fraction:
+                        current, total = map(int, fraction.groups())
+                        if current < total <= 3_000_000:
+                            if level == 125:
+                                continue
+                            # Numeric current EXP is not the MAX stored-XP
+                            # marker. Keep stored_exp unset and derive the
+                            # next cap from the verified ship level below.
+                            pass
+                        else:
+                            continue
+                    else:
+                        # MAX recovery remains gated by an independent exact
+                        # suffix and bounded digit OCR.
+                        tail = Ocr([(1208, 277, 1248, 308)], name='TrainingStoredExpTail').ocr(self.device.image)
+                        if not re.fullmatch(r'/M[a8][xX]', tail.replace(' ', '')):
+                            continue
+                        stored = Digit((1130, 277, 1208, 308), name='TrainingStoredExpDigits').ocr(self.device.image)
+                        if not isinstance(stored, int) or not 0 <= stored <= 3_000_000:
+                            continue
+                        at_cap = True
             cap = level if at_cap else 100 if level < 100 else min(125, (level // 5 + 1) * 5)
             ship = ShipCandidate(name, faction, side, level, data['rarity'] == 6, full, stored, cap,
                                  is_locked)
