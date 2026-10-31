@@ -104,7 +104,8 @@ class AzurLaneAutoScript:
                 'Overdue OpsiCrossMonth cannot confirm the old Operation Siren world; '
                 'automatic game restart is blocked to preserve the pending catch-up'
             )
-            logger.critical(message)
+            logger.error(f'RequestHumanTakeover: {message}')
+            logger.critical('Request human takeover')
             raise RequestHumanTakeover(message) from error
 
     def _run(self, command, skip_first_screenshot=False):
