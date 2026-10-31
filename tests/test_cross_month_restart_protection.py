@@ -64,6 +64,17 @@ class CrossMonthRestartProtectionTests(unittest.TestCase):
         app.device.sleep.assert_called_once_with(10)
         app._notify_error.assert_not_called()
 
+    def test_protection_log_keeps_external_guard_terminal_contract(self):
+        app = self.make_app(error=GameTooManyClickError('MAP_SWIPE_0_-5'))
+        with patch('alas.logger') as log:
+            with self.assertRaises(RequestHumanTakeover):
+                self.call_at_reset(app)
+        # The external guard extracts the exception line immediately preceding
+        # its terminal CRITICAL record; a bare protection message is insufficient.
+        last_error = str(log.error.call_args[0][0])
+        self.assertTrue(last_error.startswith('RequestHumanTakeover: Overdue OpsiCrossMonth cannot confirm'))
+        log.critical.assert_called_with('Request human takeover')
+
     def test_cross_month_restart_is_allowed_outside_pending_old_world(self):
         cases = (
             ('before_clearout_window', datetime(2026, 10, 28, 23, 50), AFTER_RESET, False),
