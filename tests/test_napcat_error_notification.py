@@ -30,6 +30,56 @@ class FakeRunner:
 
 
 class NapCatErrorNotificationTest(unittest.TestCase):
+    def _failed_preview(self, stderr):
+        def runner(current_command, **kwargs):
+            return subprocess.CompletedProcess(current_command, 2, '', stderr)
+
+        with patch('module.notify.napcat.logger.warning') as warning:
+            sent = send_notification('test/context', 'test message', runner=runner)
+        self.assertFalse(sent)
+        warning.assert_called_once()
+        return warning.call_args[0][0]
+
+    def test_long_argparse_usage_keeps_actionable_error_at_the_end(self):
+        usage = 'usage: napcat_notify.py ' + ' '.join(
+            f'--option-{index} VALUE' for index in range(100))
+        stderr = (
+            f'{usage}\nnapcat_notify.py: error: '
+            'NAPCAT_ACCESS_TOKEN is required for this operation\n')
+
+        message = self._failed_preview(stderr)
+
+        self.assertIn('NAPCAT_ACCESS_TOKEN is required', message)
+        self.assertNotIn('usage:', message)
+        self.assertLessEqual(len(message), 300)
+
+    def test_failure_detail_redacts_token_and_bearer_values(self):
+        message = self._failed_preview(
+            'error: token=private-token Bearer abc.def/private\n')
+
+        self.assertIn('token=[REDACTED]', message)
+        self.assertIn('Bearer [REDACTED]', message)
+        self.assertNotIn('private-token', message)
+        self.assertNotIn('abc.def/private', message)
+
+    def test_empty_stderr_has_explicit_diagnostic(self):
+        message = self._failed_preview('  \n')
+
+        self.assertIn('no stderr output', message)
+
+    def test_runner_exception_is_redacted_and_bounded(self):
+        def runner(command, **kwargs):
+            raise OSError('NAPCAT_ACCESS_TOKEN=private-token ' + 'x' * 500)
+
+        with patch('module.notify.napcat.logger.warning') as warning:
+            sent = send_notification('test/context', 'test message', runner=runner)
+
+        self.assertFalse(sent)
+        warning.assert_called_once()
+        logged = warning.call_args[0][0]
+        self.assertNotIn('private-token', logged)
+        self.assertLessEqual(len(logged), 300)
+
     def _send_with_project_token(self, project_token, inherited_token=None):
         runner = FakeRunner()
         inherited_environment = {}

@@ -14,11 +14,43 @@ DEFAULT_NOTIFY_SCRIPT = (
 PROJECT_ENV_FILE = Path(__file__).resolve().parents[2] / '.env'
 PREVIEW_ID_PATTERN = re.compile(r'^preview_id:\s*([0-9a-f]{16}|[A-Za-z0-9_-]+)\s*$', re.MULTILINE)
 SAFE_LABEL_PATTERN = re.compile(r'[^A-Za-z0-9_.-]+')
+SENSITIVE_VALUE_PATTERNS = (
+    re.compile(r'(?i)(NAPCAT_ACCESS_TOKEN\s*[=:]\s*)[^\s,;]+'),
+    re.compile(r'(?i)(\b(?:access[_ -]?token|api[_ -]?token|token)\s*[=:]\s*)[^\s,;]+'),
+    re.compile(r'(?i)(\bBearer\s+)[A-Za-z0-9._~+/-]+=*'),
+)
+FAILURE_LINE_PATTERN = re.compile(
+    r'(?i)(?:\berror\b|\bexception\b|\bfailed\b|\bfailure\b|'
+    r'\bdenied\b|\bunauthorized\b|\binvalid\b|\btimeout\b)')
+# Leave room for the fixed logger prefix so the complete warning stays bounded.
+FAILURE_DETAIL_LIMIT = 260
 
 
 def _safe_label(value, fallback):
     value = SAFE_LABEL_PATTERN.sub('_', str(value)).strip('_.-')[:64]
     return value or fallback
+
+
+def _redact_sensitive_values(value):
+    value = str(value)
+    for pattern in SENSITIVE_VALUE_PATTERNS:
+        value = pattern.sub(lambda match: f'{match.group(1)}[REDACTED]', value)
+    return value
+
+
+def _failure_detail(stderr):
+    """Keep the actionable stderr tail while avoiding usage-only diagnostics."""
+    lines = [line.strip() for line in str(stderr or '').splitlines() if line.strip()]
+    if not lines:
+        return 'no stderr output'
+
+    # argparse prints its full usage before the short, actionable parser.error line.
+    error_lines = [line for line in lines if FAILURE_LINE_PATTERN.search(line)]
+    detail = error_lines[-1] if error_lines else '\n'.join(lines[-3:])
+    detail = _redact_sensitive_values(detail)
+    if len(detail) > FAILURE_DETAIL_LIMIT:
+        detail = detail[-FAILURE_DETAIL_LIMIT:]
+    return detail
 
 
 def _notification_environment():
@@ -67,7 +99,9 @@ def send_notification(context, message, runner=None, timeout=5.0):
     try:
         preview = runner(command, **run_options)
         if preview.returncode != 0:
-            logger.warning(f'NapCat notification preview failed: {preview.stderr.strip()[:300]}')
+            logger.warning(
+                f'NapCat notification preview failed: '
+                f'{_failure_detail(preview.stderr)}')
             return False
         matched = PREVIEW_ID_PATTERN.search(preview.stdout)
         if matched is None:
@@ -81,11 +115,14 @@ def send_notification(context, message, runner=None, timeout=5.0):
         ]
         sent = runner(send_command, **run_options)
         if sent.returncode != 0:
-            logger.warning(f'NapCat notification failed: {sent.stderr.strip()[:300]}')
+            logger.warning(
+                f'NapCat notification failed: {_failure_detail(sent.stderr)}')
             return False
         return True
     except (OSError, subprocess.SubprocessError) as exc:
-        logger.warning(f'NapCat notification unavailable: {exc}')
+        logger.warning(
+            f'NapCat notification unavailable: '
+            f'{_failure_detail(str(exc))}')
         return False
 
 
