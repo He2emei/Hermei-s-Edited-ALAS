@@ -92,6 +92,21 @@ class AzurLaneAutoScript:
             self._notify_error(command, e)
             raise
 
+    def _protect_overdue_cross_month_restart(self, command, error):
+        """Keep an overdue old-world catch-up available for human recovery."""
+        if command != 'opsi_cross_month':
+            return
+        if self.config.OpsiCrossMonth_SkipPendingCatchUp is True:
+            return
+        from module.os.tasks.cross_month import is_cross_month_catch_up
+        if is_cross_month_catch_up(self.config.task.next_run, datetime.now()):
+            message = (
+                'Overdue OpsiCrossMonth cannot confirm the old Operation Siren world; '
+                'automatic game restart is blocked to preserve the pending catch-up'
+            )
+            logger.critical(message)
+            raise RequestHumanTakeover(message) from error
+
     def _run(self, command, skip_first_screenshot=False):
         try:
             if not skip_first_screenshot:
@@ -102,11 +117,13 @@ class AzurLaneAutoScript:
             return True
         except GameNotRunningError as e:
             logger.warning(e)
+            self._protect_overdue_cross_month_restart(command, e)
             self.config.task_call('Restart')
             return False
         except (GameStuckError, GameTooManyClickError) as e:
             logger.error(e)
             self.save_error_log()
+            self._protect_overdue_cross_month_restart(command, e)
             logger.warning(f'Game stuck, {self.device.package} will be restarted in 10 seconds')
             logger.warning('If you are playing by hand, please stop Alas')
             self.config.task_call('Restart')
@@ -115,6 +132,7 @@ class AzurLaneAutoScript:
         except GameBugError as e:
             logger.warning(e)
             self.save_error_log()
+            self._protect_overdue_cross_month_restart(command, e)
             logger.warning('An error has occurred in Azur Lane game client, Alas is unable to handle')
             logger.warning(f'Restarting {self.device.package} to fix it')
             self.config.task_call('Restart')
