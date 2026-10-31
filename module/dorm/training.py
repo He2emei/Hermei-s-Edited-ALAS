@@ -303,6 +303,19 @@ class DormTraining(TrainingShipInspector):
                 alternate = LevelOcr([(b.area[0]+76, b.area[1]+4, b.area[2], b.area[1]+28)
                                       for b in cards], name='DormSelectionLevelsAlternate').ocr(self.device.image)
                 levels = [old if 1 <= old <= 125 else new for old, new in zip(levels, alternate)]
+            if target:
+                # An independent right-side numeric read can retain a leading digit
+                # that the portrait banner makes LevelOcr strip.
+                numeric_levels = Digit(
+                    [(b.area[0]+90, b.area[1]+5, b.area[2], b.area[1]+27) for b in cards],
+                    letter=(255, 255, 255), threshold=90, alphabet='0123456789',
+                    name='DormSelectionNumericLevels',
+                ).ocr(self.device.image)
+                # The regular-dock card uses a blue banner behind the level.
+                # When all three digits are legible in the isolated numeric crop,
+                # use that independent reading to resolve prefix-strip errors.
+                levels = [value if 100 <= value <= 125 else old
+                          for old, value in zip(levels, numeric_levels)]
             fresh = {n for n in visible if n} - names
             if fresh:
                 self.device.click_record_clear()
