@@ -227,6 +227,26 @@ def catalog_name(text):
     return matches[0] if len(matches) == 1 else None
 
 
+def _decorated_short_u_submarine_candidate(texts):
+    """Return an exact catalogued U-number only for two unknown decorated reads."""
+    if not isinstance(texts, (list, tuple)) or len(texts) != 2:
+        return None
+
+    names = []
+    for text in texts:
+        if not isinstance(text, str) or catalog_name(text) is not None:
+            return None
+        match = re.fullmatch(r"[_']*(U-\d{1,4})[_']*", text.strip())
+        if not match:
+            return None
+        name = match.group(1)
+        data = CATALOG.get(name)
+        if data is None or data.get('type') not in (8, 17):
+            return None
+        names.append(name)
+    return names[0] if names[0] == names[1] else None
+
+
 def protected_fleet_anchors(config):
     """Return configured fourth-fleet anchors after exact catalog validation."""
     main_name = getattr(config, 'OpsiTraining_ProtectedMainShip', '英仙座')
@@ -289,6 +309,17 @@ class TrainingShipInspector(Awaken):
                 region = cv2.cvtColor(self.device.image[88:120, 290:365], cv2.COLOR_RGB2GRAY)
                 if template is not None and template.ndim == 2 and cv2.matchTemplate(region, template, cv2.TM_CCOEFF_NORMED).max() > 0.95:
                     name = '朝凪'
+            if name is None:
+                candidate = _decorated_short_u_submarine_candidate(texts)
+                if candidate is not None:
+                    narrow_texts = Ocr(
+                        [(270, 88, 400, 115), (285, 88, 385, 115)],
+                        lang='cnocr', name='TrainingNameNarrow',
+                    ).ocr(self.device.image)
+                    if isinstance(narrow_texts, (list, tuple)) and len(narrow_texts) == 2 \
+                            and all(isinstance(text, str) and text == candidate
+                                    and catalog_name(text) == candidate for text in narrow_texts):
+                        name = candidate
             level = Digit(OCR_SHIP_LEVEL, letter=(255, 255, 255), threshold=128, name='TrainingLevel').ocr(self.device.image)
             if name is None or not 1 <= level <= 125:
                 continue
