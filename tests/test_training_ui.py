@@ -37,6 +37,71 @@ def candidate(name, faction='白鹰', position='main', level=90, cap=None):
 
 
 class TrainingUiReviewTest(unittest.TestCase):
+    def test_real_u73_detail_recovers_only_with_injected_original_wide_ocr_error(self):
+        from PIL import Image
+        frame = np.asarray(Image.open(
+            ROOT / 'tests/fixtures/opsi_training/u73-105-detail.png').convert('RGB'))
+        inspector = TrainingShipInspector.__new__(TrainingShipInspector)
+        inspector.config = SimpleNamespace(SERVER='cn')
+        inspector.device = SimpleNamespace(image=frame, screenshot=Mock())
+        inspector.appear = Mock(return_value=True)
+        real_ocr = training_ui.Ocr
+        narrow_areas = []
+
+        def ocr_factory(buttons, **kwargs):
+            if kwargs.get('name') == 'TrainingName':
+                return SimpleNamespace(ocr=lambda current_image: ["_U-73'", "U-73'"])
+            if kwargs.get('name') == 'TrainingNameNarrow':
+                narrow_areas.append(buttons)
+            return real_ocr(buttons, **kwargs)
+
+        with patch('module.os.training_ui.Ocr', side_effect=ocr_factory):
+            ship = inspector.read_ship()
+        self.assertEqual((ship.name, ship.level, ship.is_locked, ship.fully_limit_broken),
+                         ('U-73', 105, True, True))
+        self.assertEqual(ship.stored_exp, 0)
+        self.assertEqual(ship.level_cap, 105)
+        self.assertEqual(narrow_areas[0], [(270, 88, 400, 115), (285, 88, 385, 115)])
+        self.assertIsNone(catalog_name("U-73'"))
+
+    def test_u_number_narrow_recheck_rejects_ambiguous_or_malformed_labels(self):
+        from PIL import Image
+        frame = np.asarray(Image.open(
+            ROOT / 'tests/fixtures/opsi_training/u73-105-detail.png').convert('RGB'))
+        cases = (
+            ('wide conflict', ["_U-73'", "_U-81'"], None, False),
+            ('META suffix', ["_U-556META'", "U-556META'"], None, False),
+            ('extra suffix', ["_U-73X'", "U-73X'"], None, False),
+            ('Chinese suffix', ["_U-73舰'", "U-73舰'"], None, False),
+            ('unknown short name', ["_U-999'", "U-999'"], None, False),
+            ('narrow conflict', ["_U-73'", "U-73'"], ['U-73', 'U-81'], True),
+            ('narrow unreadable', ["_U-73'", "U-73'"], ['U-73', ''], True),
+            ('narrow decoration', ["_U-73'", "U-73'"], ['_U-73', 'U-73'], True),
+        )
+        real_ocr = training_ui.Ocr
+        for label, wide_names, narrow_names, expect_narrow in cases:
+            inspector = TrainingShipInspector.__new__(TrainingShipInspector)
+            inspector.config = SimpleNamespace(SERVER='cn')
+            inspector.device = SimpleNamespace(image=frame, screenshot=Mock())
+            inspector.appear = Mock(return_value=True)
+            narrow_calls = []
+
+            def ocr_factory(buttons, **kwargs):
+                name = kwargs.get('name')
+                if name == 'TrainingName':
+                    return SimpleNamespace(ocr=lambda current_image: wide_names)
+                if name == 'TrainingNameNarrow':
+                    narrow_calls.append(buttons)
+                    if narrow_names is not None:
+                        return SimpleNamespace(ocr=lambda current_image: narrow_names)
+                return real_ocr(buttons, **kwargs)
+
+            with self.subTest(case=label), \
+                    patch('module.os.training_ui.Ocr', side_effect=ocr_factory), \
+                    self.assertRaises(RequestHumanTakeover):
+                inspector.read_ship()
+            self.assertEqual(bool(narrow_calls), expect_narrow)
+
     def test_real_tiger_intermediate_level_does_not_require_unused_exp_ocr(self):
         from PIL import Image
         frame = np.asarray(Image.open(
