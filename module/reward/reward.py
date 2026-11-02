@@ -10,6 +10,7 @@ from module.reward.assets import *
 from module.reward.coin_resource import CoinResourceStatus, read_coin_storage
 from module.reward.exp_books import check_exp_book_warning
 from module.statistics.gem_ledger import record_home_frames
+from module.statistics.coin_care_events import emit_coin_care_event
 from module.ui.navbar import Navbar
 from module.ui.page import page_main, page_main_white, page_mission, page_reward
 from module.ui.ui import UI
@@ -26,6 +27,15 @@ class Reward(UI):
         )
         if not warning_reached:
             return False
+
+        try:
+            emit_coin_care_event(
+                self.config.config_name,
+                status,
+                getattr(self, '_coin_care_readings', ()),
+            )
+        except Exception as exc:
+            logger.warning(f'Unable to queue coin care event: {type(exc).__name__}')
 
         now = now or datetime.now().replace(microsecond=0)
         if not status.cooldown_elapsed(
@@ -66,6 +76,7 @@ class Reward(UI):
             logger.warning(f'Unable to record gem balance: {exc}')
 
         status = CoinResourceStatus.from_readings(readings)
+        self._coin_care_readings = readings
         if status.storage_limit <= 0:
             logger.warning(f'Unable to recognize coin storage: {readings}')
 
