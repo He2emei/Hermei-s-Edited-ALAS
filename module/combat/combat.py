@@ -31,6 +31,8 @@ class Combat(Level, HPBalancer, Retirement, SubmarineCall, CombatAuto, CombatMan
         if self.config.Campaign_UseFleetLock and not self.is_in_map():
             if self.is_combat_loading():
                 return True
+            if self.is_combat_executing():
+                return True
 
         if self.appear(BATTLE_PREPARATION, offset=(30, 20)):
             return True
