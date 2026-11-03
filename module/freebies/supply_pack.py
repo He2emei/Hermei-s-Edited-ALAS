@@ -2,6 +2,7 @@ from calendar import day_name
 import re
 
 import cv2
+import numpy as np
 
 from module.base.timer import Timer
 from module.base.utils import crop
@@ -59,39 +60,94 @@ class SupplyPack(CampaignStatus):
         logger.warning(f'Supply pack {supply_pack} not found after 8 swipes')
         return False
 
-    def _scan_weekly_free_price(self, max_swipes=8):
-        """Search the horizontal offer list for the legacy free-price marker.
+    def _weekly_free_price_candidate(self):
+        # This only opens a preview. Its two-frame name/zero-price gates remain
+        # authoritative for any later purchase, independent of this locator.
+        if self.appear(FREE_SUPPLY_PACK, offset=(700, 12)):
+            return FREE_SUPPLY_PACK
+        area = (195, 600, 1070, 655)
+        strip = crop(self.device.image, area, copy=False)
+        distance = np.max(np.abs(strip.astype(np.int16) - (55, 80, 90)), axis=2)
+        mask = np.asarray(distance < 35, dtype=np.uint8) * 255
+        contours = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)[-2]
+        rectangles = []
+        for contour in contours:
+            x, y, width, height = cv2.boundingRect(contour)
+            if 100 <= width <= 240 and 18 <= height <= 48:
+                rectangles.append((x + area[0], y + area[1],
+                                   x + width + area[0], y + height + area[1]))
+        for rectangle in sorted(rectangles):
+            text = str(Ocr([rectangle], lang='cnocr', letter=(255, 255, 255),
+                           threshold=128, name='WeeklyPackPriceLabel').ocr(self.device.image)).strip()
+            if text == '免费':
+                return Button(area=rectangle, color=(55, 80, 90), button=rectangle,
+                              file=None, name='WEEKLY_FREE_PRICE_LABEL')
+        return None
 
-        The marker alone does not prove the contents of its purchase dialog;
-        a stable match only opens the card preview, which has separate gates.
+    def _open_stable_weekly_candidate(self):
+        if not self.match_template_color(page_supply_pack.check_button, offset=(20, 20)):
+            return False
+        first = self._weekly_free_price_candidate()
+        if first is None:
+            return False
+        location = tuple(first.button)
+        self.device.screenshot()
+        if not self.match_template_color(page_supply_pack.check_button, offset=(20, 20)):
+            return False
+        second = self._weekly_free_price_candidate()
+        if second is None or tuple(second.button) != location:
+            return False
+        self.device.click(second)
+        return True
+
+    def _scan_weekly_free_price(self, max_swipes=20):
+        """Bounded full-list scan of the selected CN offer-pack page.
+
+        A remembered list position must not hide earlier cards. Small leftward
+        gestures overlap visible cards; the former 700-pixel gesture could
+        jump past several offers. No unclaimed item found is not a receipt.
         """
-        max_swipes = min(10, max(0, int(max_swipes)))
+        max_swipes = min(24, max(0, int(max_swipes)))
         list_area = (195, 180, 1000, 665)
-        previous = None
+        if not self.match_template_color(page_supply_pack.check_button, offset=(20, 20)):
+            return False
+        if self._open_stable_weekly_candidate():
+            return True
+        if not self.match_template_color(page_supply_pack.check_button, offset=(20, 20)):
+            return False
+        previous = crop(self.device.image, list_area, copy=True)
+        if max_swipes:
+            for _ in range(4):
+                self.device.swipe_vector((650, 0), box=list_area, duration=(0.8, 1.0))
+                self.device.sleep(0.7)
+                self.device.screenshot()
+                if not self.match_template_color(page_supply_pack.check_button, offset=(20, 20)):
+                    return False
+                current = crop(self.device.image, list_area, copy=True)
+                if cv2.absdiff(current, previous).mean() < 1.0:
+                    break
+                self.device.click_record_clear()
+                previous = current
         for swipe in range(max_swipes + 1):
             if not self.match_template_color(page_supply_pack.check_button, offset=(20, 20)):
                 return False
-            if self.appear(FREE_SUPPLY_PACK, offset=(700, 12)):
-                first_target = tuple(FREE_SUPPLY_PACK.button)
-                self.device.screenshot()
-                if self.appear(FREE_SUPPLY_PACK, offset=(700, 12)) \
-                        and tuple(FREE_SUPPLY_PACK.button) == first_target:
-                    self.device.click(FREE_SUPPLY_PACK)
-                    return True
-            current = crop(self.device.image, list_area, copy=True)
-            if previous is not None:
-                progress = cv2.absdiff(current, previous).mean()
-                if progress < 1.0:
-                    logger.info('Weekly offer-pack list stopped advancing; end bounded scan')
-                    return False
-                # Only clear gesture history after measured card-list progress.
-                self.device.click_record_clear()
+            if self._open_stable_weekly_candidate():
+                return True
+            if not self.match_template_color(page_supply_pack.check_button, offset=(20, 20)):
+                return False
             if swipe == max_swipes:
                 break
-            previous = current
-            self.device.swipe_vector((-700, 0), box=list_area, duration=(0.4, 0.6))
-            self.device.sleep(0.6)
+            previous = crop(self.device.image, list_area, copy=True)
+            self.device.swipe_vector((-150, 0), box=list_area, duration=(0.9, 1.1))
+            self.device.sleep(0.7)
             self.device.screenshot()
+            if not self.match_template_color(page_supply_pack.check_button, offset=(20, 20)):
+                return False
+            current = crop(self.device.image, list_area, copy=True)
+            if cv2.absdiff(current, previous).mean() < 1.0:
+                logger.info('Weekly offer-pack list reached its settled end; no receipt inferred')
+                return False
+            self.device.click_record_clear()
         return False
 
     def _ocr_text(self, area, letter=(255, 255, 255), threshold=100):
