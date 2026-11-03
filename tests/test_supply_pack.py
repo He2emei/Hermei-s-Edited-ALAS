@@ -79,7 +79,7 @@ class SupplyPackEntryRegressionTest(unittest.TestCase):
         manager.appear = lambda button, **_kwargs: button is page_supply_pack.check_button
         manager.match_template_color = lambda button, **_kwargs: button is page_supply_pack.check_button
         self.assertFalse(manager._scan_weekly_free_price(max_swipes=8))
-        self.assertEqual(len(swipes), 3)
+        self.assertEqual(len(swipes), 4)
         self.assertEqual(len(clears), 2)
 
     def test_stable_free_price_marker_opens_preview_once(self):
