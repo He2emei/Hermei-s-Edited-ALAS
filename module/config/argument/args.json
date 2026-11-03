@@ -1728,8 +1728,7 @@
       },
       "Use2xBook": {
         "type": "checkbox",
-        "value": false,
-        "display": "hide"
+        "value": false
       },
       "AmbushEvade": {
         "type": "checkbox",
