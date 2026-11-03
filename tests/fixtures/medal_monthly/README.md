@@ -1,0 +1,1 @@
+Real CN 1280x720 medal shop, profile1, 2026-11-03 21:57. Two native frames; only blueprint cards/title regions preserved, other pixels zeroed. No labels or rarity colors synthesized. Both boxes matched native DRS5 before the monthly classifier; top is DR, lower is PR. No purchase occurred in these frames.

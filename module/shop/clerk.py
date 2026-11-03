@@ -1,6 +1,7 @@
 import re
 
 import cv2
+import numbers
 
 from module.base.timer import Timer
 from module.exception import ScriptError
@@ -127,6 +128,25 @@ class ShopClerk(ShopBase, Retirement):
                             f'item group \'{group}\' entry is compromised')
             raise ScriptError
 
+    def shop_select_plan(self, item, stock_counter):
+        """Return the selection button and safe quantity for a select item."""
+        button = self.shop_get_select(item)
+        stock = stock_counter[2]
+        quantity = min(stock, self._currency // item.price)
+        return button, quantity
+
+    def shop_before_select_confirm(self, item, limit):
+        """Optional validation point before confirming a selection box."""
+        return None
+
+    def shop_before_amount_confirm(self, item, limit):
+        """Optional validation point before confirming an amount purchase."""
+        return None
+
+    def shop_before_single_confirm(self, item):
+        """Optional validation point before confirming a single purchase."""
+        return None
+
     def shop_buy_select_execute(self, item):
         """
         Args:
@@ -135,14 +155,11 @@ class ShopClerk(ShopBase, Retirement):
         Returns:
             bool:
         """
-        # Search for appropriate select grid button for item
-        select = self.shop_get_select(item)
-
         # Get displayed stock limit; varies between shops
         # If read 0, then warn and exit as cannot safely buy
         timeout = Timer(5, count=10).start()
         skip_first_screenshot = True
-        limit = 0
+        stock_counter = (0, 0, 0)
         while 1:
             if timeout.reached():
                 break
@@ -150,15 +167,22 @@ class ShopClerk(ShopBase, Retirement):
                 skip_first_screenshot = False
             else:
                 self.device.screenshot()
-            _, _, limit = OCR_SHOP_SELECT_STOCK.ocr(self.device.image)
-            if limit:
+            stock_counter = OCR_SHOP_SELECT_STOCK.ocr(self.device.image)
+            if stock_counter[2]:
                 break
 
-        if not limit:
+        if not stock_counter[2]:
             logger.critical(f'{item.name}\'s stock count cannot be '
                             'extracted. Advised to re-cut the asset '
                             'OCR_SHOP_SELECT_STOCK')
             raise ScriptError
+
+        # Resolve the choice only after reading the actual selector stock.
+        select, limit = self.shop_select_plan(item, stock_counter)
+        if isinstance(limit, bool) or not isinstance(limit, numbers.Integral) or limit <= 0:
+            logger.warning(f'{item.name}: no safe positive selection quantity')
+            raise ScriptError
+        limit = int(limit)
 
         # Click in intervals until plus/minus are onscreen
         click_timer = Timer(3, count=6)
@@ -197,6 +221,7 @@ class ShopClerk(ShopBase, Retirement):
         self.ui_ensure_index(limit, letter=shop_buy_select_ensure_index, prev_button=SELECT_MINUS,
                              next_button=SELECT_PLUS,
                              skip_first_screenshot=True)
+        self.shop_before_select_confirm(item, limit)
         self.device.click(SHOP_BUY_CONFIRM_SELECT)
         return True
 
@@ -251,8 +276,14 @@ class ShopClerk(ShopBase, Retirement):
         if diff > 0:
             limit = total
 
+        if isinstance(limit, bool) or not isinstance(limit, numbers.Integral) or limit <= 0:
+            logger.warning(f'{item.name}: no safe positive amount to purchase')
+            raise ScriptError
+        limit = int(limit)
+
         self.ui_ensure_index(limit, letter=OCR_SHOP_AMOUNT, prev_button=AMOUNT_MINUS, next_button=AMOUNT_PLUS,
                              skip_first_screenshot=True)
+        self.shop_before_amount_confirm(item, limit)
         self.device.click(SHOP_BUY_CONFIRM_AMOUNT)
         return True
 
@@ -300,7 +331,9 @@ class ShopClerk(ShopBase, Retirement):
             if self.appear(SHOP_BACK_ARROW, offset=(30, 30), interval=3):
                 self.device.click(item)
                 continue
-            if self.appear_then_click(SHOP_BUY_CONFIRM, offset=(20, 20), interval=3):
+            if self.appear(SHOP_BUY_CONFIRM, offset=(20, 20), interval=3):
+                self.shop_before_single_confirm(item)
+                self.device.click(SHOP_BUY_CONFIRM)
                 self.interval_reset(SHOP_BACK_ARROW)
                 continue
             if self.shop_buy_handle(item):
