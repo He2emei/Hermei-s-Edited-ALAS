@@ -162,6 +162,8 @@ class GemsFarming(CampaignRun, Dock):
                 return False
 
         self.campaign = GemsCampaign(device=self.campaign.device, config=self.campaign.config)
+        if not isinstance(folder, str) or not folder.startswith('event_'):
+            self.campaign.config.override(Campaign_Use2xBook=False)
         if not self.change_vanguard:
             self.campaign.config.override(Emotion_Mode='ignore')
         self.campaign.config.override(EnemyPriority_EnemyScaleBalanceWeight='S1_enemy_first')

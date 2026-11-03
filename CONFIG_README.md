@@ -85,3 +85,12 @@
 本工作区先在AzurLaneAutoScript-Original rebase并验证，以明确旧远端SHA的force-with-lease推送个人分支；保护生产配置与未提交变更后再同步AzurLaneAutoScript-Use。默认覆盖配置1（alas）和配置2（alas2），保留各自账号参数，最后核验实际运行及守护状态。
 
 用户于2026-10-21进一步授权：账号照顾节点、维护前后与故障处理收尾顺带检查上游，发现更新即主动按上述流程跟进，无需逐次确认。检查合并到有实际任务的单次节点，避免无更新时高频唤醒模型；人工游戏和既有维修互斥仍优先。开发验证、推送、生产同步和各账号实际恢复分别记录，不能把仅更新开发分支说成全部生效。
+
+
+## Monthly medal clearing and event farming (2026-11-03)
+
+`ShopOnce.MedalShop2.Filter = MonthlyClear` purchases known medal goods in the configured user order, excluding every ship-selector template. It scans all pages before moving to a lower priority. Gold retrofit selections and white parts are balanced by confirmed monthly purchase counts; selectable purple parts use general parts. Insufficient medal funds or unreadable item metadata leave lower priorities unspent. `log/shop_medal/<profile>-YYYY-MM.json` stores intent before confirmation and commits only an exact, stable medal debit. An unresolved intent is never automatically replayed or erased. Other filter values keep the original shop behavior.
+
+`GemsFarming.Campaign.Use2xBook` is now configurable (default false). Only an event directory may honor it; ordinary/unknown campaign directories force it off. Native clear-mode support, books, oil, morale and page checks remain required. Enabling it is not proof of successful double rewards or enough PT for a full shop.
+
+CN weekly offers are reset to their list start and scanned with overlapping small gestures. A stable free label only opens a preview; the existing two-frame same-name/zero-price and exact final confirmation remain mandatory. A completed scan with no candidate is not a claimed weekly pack.
