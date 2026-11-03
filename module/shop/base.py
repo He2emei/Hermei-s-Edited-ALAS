@@ -219,8 +219,8 @@ class ShopBase(UI):
         """
         # Handle shop obstructions
         if self.appear(GET_SHIP, offset=(20, 20), interval=1):
-            logger.info(f'Shop obstruct: {GET_SHIP} -> {SHOP_CLICK_SAFE_AREA}')
-            self.device.click(SHOP_CLICK_SAFE_AREA)
+            logger.info(f'Shop obstruct: {GET_SHIP} -> {GET_SHIP}')
+            self.device.click(GET_SHIP)
             return True
         # To lock new ships
         if self.handle_popup_confirm('SHOP_OBSTRUCT'):
