@@ -10,7 +10,8 @@ from module.shipyard.assets import (
     SHIPYARD_RESEARCH_COMPLETE,
 )
 from module.shipyard.auto_policy import infer_purchase_offsets, purchase_cost, safe_purchase_amount, server_day
-from module.shipyard.auto_ui import AutoShipyardUI, panel_text, panel_next_cost, required_level
+from module.shipyard.auto_ui import (AutoShipyardUI, ShipyardLevelGateUnknown, panel_text,
+                                     panel_next_cost, required_level)
 from module.shipyard.leveling import ShipyardLeveler
 from module.ui.page import page_shipyard
 
@@ -147,8 +148,6 @@ class AutoShipyard(AutoShipyardUI):
                 if self.auto_name() != name:
                     return 'moved'
                 continue
-            if self.auto_full():
-                return 'full'
             if not self._quantity_controls_visible():
                 # Nothing can be selected on this panel, so there is no catch-up
                 # to do and no amount to set.
@@ -217,7 +216,14 @@ class AutoShipyard(AutoShipyardUI):
                     if self.appear(SHIPYARD_RESEARCH_COMPLETE, offset=(20, 20)):
                         skipped.append(name + ': awaiting construction claim')
                         continue
-                    result = self._candidate(series, index, name, rarity, allow_level)
+                    try:
+                        result = self._candidate(series, index, name, rarity, allow_level)
+                    except ShipyardLevelGateUnknown as error:
+                        if not self.ui_page_appear(page_shipyard):
+                            raise
+                        deferred.append(f'{name}: unknown level gate: {error}')
+                        logger.warning(f'Shipyard candidate {name} deferred: unknown level gate')
+                        continue
                     logger.info(f'Shipyard candidate: series={series}, slot={index}, {rarity}, {name}: {result}')
                     if result == 'done':
                         done.add(rarity)
