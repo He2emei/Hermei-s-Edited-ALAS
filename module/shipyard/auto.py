@@ -93,7 +93,7 @@ class AutoShipyard(AutoShipyardUI):
                 return True
             if not 0 < before <= 3000:
                 raise RequestHumanTakeover('Unknown owned shipyard blueprint count')
-            if required_level(self.device.image, self.auto_fate()) or self.auto_full():
+            if self.auto_full() or required_level(self.device.image, self.auto_fate()):
                 return False
             selected = self.auto_set_amount(before)
             if selected <= 0:
@@ -111,6 +111,8 @@ class AutoShipyard(AutoShipyardUI):
         for _ in range(12):  # Development gates are bounded by levels 10..100.
             if not self.auto_enter():
                 return 'unbuilt'
+            if self.auto_full():
+                return 'full'
             gate = required_level(self.device.image, self.auto_fate())
             if gate:
                 if not allow_level or not self.config.ShipyardAuto_UseExpBooks:
@@ -152,9 +154,11 @@ class AutoShipyard(AutoShipyardUI):
                 # to do and no amount to set.
                 return 'unbuilt'
             if not self._use_owned(index):
+                if self.auto_full():
+                    return 'full'
                 if required_level(self.device.image, self.auto_fate()):
                     continue
-                return 'full' if self.auto_full() else 'retry'
+                return 'retry'
             if panel_text(self.device.image, self.auto_fate()) != '物资':
                 return 'unavailable'
             offsets, capacity, coins = self._offsets(rarity)
