@@ -6,7 +6,7 @@ import cv2
 from module.exception import RequestHumanTakeover
 from module.ocr.ocr import Ocr
 from module.os.training_ui import catalog_name, point_button
-from module.shipyard.auto_policy import parse_required_level
+from module.shipyard.auto_policy import parse_required_level, parse_required_level_readings
 from module.shipyard.ui import ShipyardUI
 from module.shipyard.assets import (SHIPYARD_IN_FATE,
                                    SHIPYARD_PROGRESS_DEV, SHIPYARD_PROGRESS_FATE)
@@ -55,9 +55,26 @@ def panel_next_cost(image, fate=False):
 
 
 def required_level(image, fate=False):
-    area = (1015, 175, 1190, 199) if fate else (1110, 149, 1278, 175)
-    return parse_required_level(Ocr(area, lang='cnocr', letter=(200, 50, 20) if fate else (255, 255, 255),
-                                    name='ShipyardLevelGate').ocr(image))
+    if fate:
+        text = Ocr((1015, 175, 1190, 199), lang='cnocr', letter=(200, 50, 20),
+                   name='ShipyardLevelGate').ocr(image)
+        level = parse_required_level(text)
+        if level is None and text:
+            raise RequestHumanTakeover('Unknown Fate shipyard level gate: ' + text)
+        return level
+
+    label = Ocr((1174, 149, 1244, 176), lang='cnocr', letter=(255, 255, 255),
+                name='ShipyardLevelGateLabel').ocr(image)
+    # Keep the digit-only read within the isolated gate line; the wider DEV
+    # panel OCR drops the trailing zero on values such as 70.
+    digits = Ocr((1230, 149, 1266, 176), lang='cnocr', letter=(255, 255, 255),
+                 alphabet='0123456789', name='ShipyardLevelGateDigits').ocr(image)
+    unit = Ocr((1258, 149, 1278, 176), lang='cnocr', letter=(255, 255, 255),
+               name='ShipyardLevelGateUnit').ocr(image)
+    try:
+        return parse_required_level_readings(label, digits, unit)
+    except ValueError as error:
+        raise RequestHumanTakeover('Unknown shipyard level requirement') from error
 
 
 class AutoShipyardUI(ShipyardUI):
