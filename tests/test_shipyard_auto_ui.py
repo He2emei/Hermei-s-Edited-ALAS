@@ -155,6 +155,83 @@ class ShipyardScreenshotTest(unittest.TestCase):
     def image(self, name):
         return np.asarray(Image.open(EVIDENCE / (name + '.png')).convert('RGB'))
 
+    def dev_max_frame(self, name='shipyard-dev-max-1'):
+        frame = np.zeros((720, 1280, 3), dtype='uint8')
+        frame[145:175, 1184:1273] = self.image(name)
+        return frame
+
+    def make_native_full_panel(self, image):
+        obj = AutoShipyard.__new__(AutoShipyard)
+        obj.device = SimpleNamespace(image=image, stuck_record_add=Mock())
+        obj.auto_fate = Mock(return_value=False)
+        return obj
+
+    def test_completed_panel_native_full_match_short_circuits_candidate_gate(self):
+        for fixture in ('shipyard-dev-max-1', 'shipyard-dev-max-2'):
+            obj = self.make_native_full_panel(self.dev_max_frame(fixture))
+            obj.auto_enter = Mock(return_value=True)
+            obj._use_owned = Mock(side_effect=AssertionError('MAX panel must not use blueprints'))
+            self.assertTrue(obj.auto_full())
+            with self.assertRaises(RequestHumanTakeover):
+                required_level(obj.device.image)
+            with patch('module.shipyard.auto.required_level', wraps=required_level) as gate:
+                self.assertEqual(obj._candidate(3, 2, '德雷克', 'DR', True), 'full')
+                gate.assert_not_called()
+            obj._use_owned.assert_not_called()
+
+    def test_owned_blueprint_path_checks_native_full_before_level_gate(self):
+        obj = self.make_native_full_panel(self.dev_max_frame())
+        obj._shipyard_get_bp_count = Mock(return_value=5)
+        obj.auto_set_amount = Mock(side_effect=AssertionError('MAX panel must not select BPs'))
+        obj._shipyard_buy_confirm = Mock(side_effect=AssertionError('MAX panel must not confirm BP use'))
+        with self.assertRaises(RequestHumanTakeover):
+            required_level(obj.device.image)
+        with patch('module.shipyard.auto.required_level', wraps=required_level) as gate:
+            self.assertFalse(obj._use_owned(1))
+            gate.assert_not_called()
+        obj.auto_set_amount.assert_not_called()
+        obj._shipyard_buy_confirm.assert_not_called()
+
+    def test_candidate_rechecks_full_before_level_after_owned_use(self):
+        class Partial(AutoShipyard):
+            def auto_enter(self): return True
+            def auto_fate(self): return False
+            def _quantity_controls_visible(self): return True
+
+        obj = Partial.__new__(Partial)
+        obj.device = SimpleNamespace(image=np.zeros((720, 1280, 3), dtype='uint8'))
+        full_state = {'value': False}
+        obj.auto_full = Mock(side_effect=lambda: full_state['value'])
+        def use_owned_then_complete(index):
+            full_state['value'] = True
+            return False
+        obj._use_owned = Mock(side_effect=use_owned_then_complete)
+        with patch('module.shipyard.auto.required_level',
+                   side_effect=(None, AssertionError('completed panel must not re-read level'))) as gate:
+            self.assertEqual(obj._candidate(3, 2, '德雷克', 'DR', False), 'full')
+            self.assertEqual(gate.call_count, 1)
+        obj._use_owned.assert_called_once_with(2)
+
+    def test_partial_gate_still_blocks_owned_blueprints_and_unknown_gate_raises(self):
+        class Partial(AutoShipyard):
+            def auto_enter(self): return True
+            def auto_fate(self): return False
+            def auto_full(self): return False
+            def _quantity_controls_visible(self): return True
+
+        obj = Partial.__new__(Partial)
+        obj.device = SimpleNamespace(image=np.zeros((720, 1280, 3), dtype='uint8'))
+        obj._use_owned = Mock(side_effect=AssertionError('level gate must be handled first'))
+        with patch('module.shipyard.auto.required_level', return_value=70) as gate:
+            self.assertEqual(obj._candidate(3, 2, '德雷克', 'DR', False), 'level')
+            gate.assert_called_once()
+        obj._use_owned.assert_not_called()
+
+        with patch('module.shipyard.auto.required_level',
+                   side_effect=RequestHumanTakeover('unknown gate')):
+            with self.assertRaises(RequestHumanTakeover):
+                obj._candidate(3, 2, '德雷克', 'DR', True)
+
     def test_cost_is_total_not_next_unit_price(self):
         for name, cost in (('shipyard-cheshire-coin1', 0), ('shipyard-cheshire-coin2', 0),
                            ('shipyard-cheshire-coin3', 150), ('shipyard-cheshire-coin9', 2400)):
