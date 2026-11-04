@@ -13,6 +13,7 @@ from module.shipyard.auto import AutoShipyard
 from module.shipyard.auto_policy import server_day
 from module.shipyard.auto_ui import (ShipyardLevelGateUnknown, panel_cost, panel_coins,
                                      required_level)
+from module.shipyard.assets import SHIPYARD_IN_DEV
 from module.shipyard.leveling import ShipyardLeveler, book_counts, level_gain
 from module.ui.page import page_shipyard
 
@@ -287,9 +288,77 @@ class ShipyardScreenshotTest(unittest.TestCase):
         frame[149:176, 1170:1278] = text
         return frame
 
+    def dev_page_anchor(self, frame):
+        asset = np.asarray(Image.open(ROOT / 'assets/cn/shipyard/SHIPYARD_IN_DEV.png').convert('RGB'))
+        frame[118:151, 5:90] = asset[118:151, 5:90]
+        self.assertTrue(SHIPYARD_IN_DEV.match(frame, offset=(20, 20)))
+        return frame
+
+    def exp_progress_frame(self, name, page_anchor=True):
+        frame = np.zeros((720, 1280, 3), dtype='uint8')
+        frame[149:176, 1174:1278] = self.image(name)
+        if page_anchor:
+            self.dev_page_anchor(frame)
+        return frame
+
     def test_development_gate_reads_two_digits_from_independent_roi(self):
         for name in ('shipyard-level-gate-70', 'shipyard-level-gate-70-repeat'):
             self.assertEqual(required_level(self.level_gate_frame(name)), 70)
+
+    def test_real_development_exp_progress_is_not_a_level_gate(self):
+        from module.ocr.ocr import DigitCounter, Ocr
+
+        for name in ('shipyard-exp-progress-0-600-1', 'shipyard-exp-progress-0-600-2'):
+            with self.subTest(name=name):
+                frame = self.exp_progress_frame(name)
+                cn_text = Ocr((1174, 149, 1278, 176), lang='cnocr',
+                              letter=(255, 255, 255), name='ShipyardLevelProgressTest').ocr(frame)
+                self.assertEqual(cn_text.replace(' ', '').translate(str.maketrans({'O': '0', 'o': '0'})), '0/600')
+                counter = DigitCounter((1174, 149, 1278, 176), lang='azur_lane',
+                                       letter=(255, 255, 255), alphabet='0123456789/',
+                                       name='ShipyardLevelProgressCounterTest').ocr(frame)
+                self.assertEqual(counter, (0, 600, 600))
+                self.assertIsNone(required_level(frame))
+
+    def test_exp_progress_without_native_dev_anchor_fails_closed(self):
+        frame = self.exp_progress_frame('shipyard-exp-progress-0-600-1', page_anchor=False)
+        self.assertFalse(SHIPYARD_IN_DEV.match(frame, offset=(20, 20)))
+        with self.assertRaises(ShipyardLevelGateUnknown):
+            required_level(frame)
+
+    def test_anchored_development_level_70_still_reads_as_gate(self):
+        frame = self.dev_page_anchor(self.level_gate_frame('shipyard-level-gate-70'))
+        self.assertEqual(required_level(frame), 70)
+
+    def test_untrusted_progress_ratios_and_counter_fail_closed(self):
+        frame = self.exp_progress_frame('shipyard-exp-progress-0-600-1')
+
+        def fake_ocr_outputs(outputs):
+            values = iter(outputs)
+            def factory(*args, **kwargs):
+                value = next(values)
+                return SimpleNamespace(ocr=lambda image: value)
+            return factory
+
+        for text in ('0/0', '600/600', '0/6xx', '0/', '未知进度'):
+            with self.subTest(text=text):
+                # Empty legacy gate reads mean "no gate". Invalid progress
+                # evidence must still fail closed instead of reaching that path.
+                factory = fake_ocr_outputs((text, '', '', ''))
+                with patch('module.shipyard.auto_ui.Ocr', side_effect=factory):
+                    with self.assertRaises(ShipyardLevelGateUnknown):
+                        required_level(frame)
+
+        for counter_result in ((0, 599, 599), (0, 599, 600), (0, 600, 601),
+                               (False, 600, 600), RuntimeError('counter OCR failed')):
+            with self.subTest(counter_result=counter_result):
+                factory = fake_ocr_outputs(('0/600', '', '', ''))
+                counter = (Mock(side_effect=counter_result) if isinstance(counter_result, Exception)
+                           else Mock(return_value=counter_result))
+                with patch('module.shipyard.auto_ui.Ocr', side_effect=factory), \
+                        patch('module.shipyard.auto_ui.DigitCounter', return_value=SimpleNamespace(ocr=counter)):
+                    with self.assertRaises(ShipyardLevelGateUnknown):
+                        required_level(frame)
 
     def test_missing_or_unknown_visible_gate_never_authorizes_purchase(self):
         self.assertIsNone(required_level(np.zeros((720, 1280, 3), dtype='uint8')))
