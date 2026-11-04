@@ -165,6 +165,31 @@ class ShipyardScreenshotTest(unittest.TestCase):
     def test_development_and_fate_level_gates(self):
         self.assertEqual(required_level(self.image('shipyard-series3')), 10)
         self.assertEqual(required_level(self.image('shipyard-odin-fate-ready'), True), 100)
+        for amount in (1, 2, 5):
+            self.assertIsNone(required_level(self.image('shipyard-fate-preview' + str(amount)), True))
+
+    def test_unrecognized_fate_gate_text_fails_closed(self):
+        with patch('module.shipyard.auto_ui.Ocr') as ocr:
+            ocr.return_value.ocr.return_value = '需角色到达7级'
+            with self.assertRaises(RequestHumanTakeover):
+                required_level(np.zeros((720, 1280, 3), dtype='uint8'), True)
+
+    def level_gate_frame(self, name):
+        frame = np.zeros((720, 1280, 3), dtype='uint8')
+        text = self.image(name)
+        frame[149:176, 1170:1278] = text
+        return frame
+
+    def test_development_gate_reads_two_digits_from_independent_roi(self):
+        for name in ('shipyard-level-gate-70', 'shipyard-level-gate-70-repeat'):
+            self.assertEqual(required_level(self.level_gate_frame(name)), 70)
+
+    def test_missing_or_unknown_visible_gate_never_authorizes_purchase(self):
+        self.assertIsNone(required_level(np.zeros((720, 1280, 3), dtype='uint8')))
+        frame = self.level_gate_frame('shipyard-level-gate-70')
+        frame[149:176, 1235:1270] = 0
+        with self.assertRaises(RequestHumanTakeover):
+            required_level(frame)
 
     def test_fate_total_has_a_different_right_aligned_position(self):
         for amount in (1, 2, 5):

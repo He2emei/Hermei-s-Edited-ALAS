@@ -2,7 +2,8 @@ import unittest
 from datetime import datetime
 
 from module.shipyard.auto_policy import (purchase_cost, infer_purchase_offsets,
-                                        safe_purchase_amount, parse_required_level, server_day)
+                                        safe_purchase_amount, parse_required_level,
+                                        parse_required_level_readings, server_day)
 
 
 class ShipyardDailyLimitTest(unittest.TestCase):
@@ -50,5 +51,18 @@ class ShipyardDailyLimitTest(unittest.TestCase):
         self.assertEqual(server_day(datetime(2026, 9, 16, 4)), '2026-09-16')
         self.assertEqual(parse_required_level('需角色到达10级'), 10)
         self.assertEqual(parse_required_level('需角色到达100级'), 100)
-        for text in ('MAX', '需角色到达120级', '开发等级10/30', '到达10级', None):
+        for text in ('MAX', '需角色到达7级', '需角色到达11级', '需角色到达120级',
+                     '开发等级10/30', '到达10级', None):
             self.assertIsNone(parse_required_level(text))
+
+    def test_split_level_gate_readings_fail_closed(self):
+        self.assertEqual(parse_required_level_readings('需角色到达', '70', '级'), 70)
+        self.assertIsNone(parse_required_level_readings('', '', ''))
+        for label, level, unit in (
+                ('需角色到达7', '70', '级'), ('需角色到达', '7', '70级'),
+                ('角色到达', 70, '级'), ('需角色到达', 0, '级'),
+                ('需角色到达', '7', '级'), ('需角色到达', '11', '级'),
+                ('需角色到达', '101', '级'), ('需角色到达', None, '级'),
+                ('需角色到达', '70x', '级'), ('', '70', '')):
+            with self.assertRaises(ValueError):
+                parse_required_level_readings(label, level, unit)
