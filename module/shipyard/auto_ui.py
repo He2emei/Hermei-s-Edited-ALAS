@@ -12,6 +12,10 @@ from module.shipyard.assets import (SHIPYARD_IN_FATE,
                                    SHIPYARD_PROGRESS_DEV, SHIPYARD_PROGRESS_FATE)
 
 
+class ShipyardLevelGateUnknown(RequestHumanTakeover):
+    """The shipyard level-gate reading is incomplete or untrusted."""
+
+
 def panel_text(image, fate=False):
     area = (1020, 412, 1100, 440) if fate else (1043, 388, 1125, 416)
     return Ocr(area, lang='cnocr', name='ShipyardResource').ocr(image).replace(' ', '')
@@ -60,7 +64,7 @@ def required_level(image, fate=False):
                    name='ShipyardLevelGate').ocr(image)
         level = parse_required_level(text)
         if level is None and text:
-            raise RequestHumanTakeover('Unknown Fate shipyard level gate: ' + text)
+            raise ShipyardLevelGateUnknown('Unknown Fate shipyard level gate: ' + text)
         return level
 
     label = Ocr((1174, 149, 1244, 176), lang='cnocr', letter=(255, 255, 255),
@@ -74,7 +78,7 @@ def required_level(image, fate=False):
     try:
         return parse_required_level_readings(label, digits, unit)
     except ValueError as error:
-        raise RequestHumanTakeover('Unknown shipyard level requirement') from error
+        raise ShipyardLevelGateUnknown('Unknown shipyard level requirement') from error
 
 
 class AutoShipyardUI(ShipyardUI):
