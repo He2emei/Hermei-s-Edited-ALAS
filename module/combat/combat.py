@@ -590,7 +590,9 @@ class Combat(Level, HPBalancer, Retirement, SubmarineCall, CombatAuto, CombatMan
             if self.handle_story_skip(drop=drop):
                 continue
             # Combat status
-            if not exp_info and self.handle_get_ship(drop=drop):
+            # An EXP template may appear before a ship reveal has finished. Keep
+            # polling the existing ship asset even after the EXP state is latched.
+            if self.handle_get_ship(drop=drop):
                 continue
             if handle_new_ship_page(self):
                 continue
