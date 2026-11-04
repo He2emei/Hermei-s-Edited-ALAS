@@ -72,7 +72,15 @@ def _notification_environment():
     return environment
 
 
-def send_notification(context, message, runner=None, timeout=5.0):
+def send_notification(context, message, runner=None, timeout=5.0, *, purpose=None):
+    """Send a permission request only when explicitly authorized by purpose."""
+    context = str(context).strip()[:80]
+    if purpose != 'permission_request' or not context.startswith('ALAS/permission/'):
+        return False
+    return _send_notification(context, message, runner=runner, timeout=timeout)
+
+
+def _send_notification(context, message, runner=None, timeout=5.0):
     """Send one guarded NapCat notification without exposing credentials."""
     runner = runner or subprocess.run
     context = str(context).strip()[:80]
@@ -84,6 +92,7 @@ def send_notification(context, message, runner=None, timeout=5.0):
         sys.executable,
         str(DEFAULT_NOTIFY_SCRIPT),
         '--context', context,
+        '--purpose', 'permission-request',
         '--message', message,
         '--timeout', str(timeout),
     ]
@@ -128,18 +137,16 @@ def send_notification(context, message, runner=None, timeout=5.0):
 
 def send_error_notification(
         config_name, task, error, runner=None, timeout=5.0):
-    """Send one guarded NapCat error notification without exposing credentials."""
-    safe_config = _safe_label(config_name, 'UnknownConfig')
-    safe_task = _safe_label(task, 'UnknownTask')
-    safe_error = _safe_label(type(error).__name__, 'Exception')
-    context = f'ALAS/error/{safe_config}/{safe_task}'
-    message = (
-        f'ALAS 配置 {safe_config} 的任务 {safe_task} 报错（{safe_error}），'
-        f'请查看本机错误日志。'
-    )
+    """Keep error handling local; QQ receives explicit permission questions only."""
+    return False
+
+
+def send_permission_request(context, message, runner=None, timeout=5.0):
+    """Send an explicit permission question through the guarded NapCat flow."""
     return send_notification(
         context=context,
         message=message,
         runner=runner,
         timeout=timeout,
+        purpose='permission_request',
     )
