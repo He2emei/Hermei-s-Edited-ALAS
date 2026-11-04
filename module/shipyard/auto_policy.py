@@ -52,6 +52,25 @@ def parse_required_level(text):
     if not isinstance(text, str):
         return None
     match = re.search(r'需角色到达(\d{1,3})级', re.sub(r'\s+', '', text))
-    if match and 1 <= int(match[1]) <= 100:
-        return int(match[1])
+    if match:
+        level = int(match[1])
+        if 10 <= level <= 100 and level % 10 == 0:
+            return level
     return None
+
+
+def parse_required_level_readings(label, digits, unit):
+    """Combine separately read CN gate text and digits without guessing OCR errors."""
+    label = re.sub(r'\s+', '', label) if isinstance(label, str) else None
+    digits = re.sub(r'\s+', '', digits) if isinstance(digits, str) else None
+    unit = re.sub(r'\s+', '', unit) if isinstance(unit, str) else None
+    if label == '' and digits == '' and unit == '':
+        return None
+    if label != '需角色到达' or unit != '级':
+        raise ValueError('Incomplete shipyard level gate')
+    if not isinstance(digits, str) or not re.fullmatch(r'\d{1,3}', digits):
+        raise ValueError('Invalid shipyard level digits')
+    level = int(digits)
+    if not 10 <= level <= 100 or level % 10:
+        raise ValueError('Invalid shipyard level digits')
+    return level
