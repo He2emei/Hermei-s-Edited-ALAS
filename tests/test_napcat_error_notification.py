@@ -15,7 +15,9 @@ if 'inflection' not in sys.modules:
 
 from alas import AzurLaneAutoScript
 from module.exception import GameNotRunningError
-from module.notify.napcat import send_error_notification, send_notification
+from module.notify.napcat import (
+    send_error_notification, send_notification, send_permission_request,
+)
 
 
 class FakeRunner:
@@ -35,7 +37,8 @@ class NapCatErrorNotificationTest(unittest.TestCase):
             return subprocess.CompletedProcess(current_command, 2, '', stderr)
 
         with patch('module.notify.napcat.logger.warning') as warning:
-            sent = send_notification('test/context', 'test message', runner=runner)
+            sent = send_permission_request(
+                'ALAS/permission/test', 'test message', runner=runner)
         self.assertFalse(sent)
         warning.assert_called_once()
         return warning.call_args[0][0]
@@ -72,7 +75,8 @@ class NapCatErrorNotificationTest(unittest.TestCase):
             raise OSError('NAPCAT_ACCESS_TOKEN=private-token ' + 'x' * 500)
 
         with patch('module.notify.napcat.logger.warning') as warning:
-            sent = send_notification('test/context', 'test message', runner=runner)
+            sent = send_permission_request(
+                'ALAS/permission/test', 'test message', runner=runner)
 
         self.assertFalse(sent)
         warning.assert_called_once()
@@ -92,8 +96,8 @@ class NapCatErrorNotificationTest(unittest.TestCase):
                 f'NAPCAT_ACCESS_TOKEN={project_token}\n', encoding='utf-8')
             with patch.dict(os.environ, inherited_environment, clear=True), \
                     patch('module.notify.napcat.PROJECT_ENV_FILE', env_file):
-                sent = send_error_notification(
-                    'alas-test', 'Main', RuntimeError('boom'), runner=runner)
+                sent = send_permission_request(
+                    'ALAS/permission/test', 'May I proceed?', runner=runner)
         return runner, sent
 
     def test_passes_project_dotenv_token_only_through_child_environment(self):
@@ -123,10 +127,9 @@ class NapCatErrorNotificationTest(unittest.TestCase):
     def test_previews_then_sends_error_to_the_fixed_owner_route(self):
         runner = FakeRunner()
 
-        sent = send_error_notification(
-            config_name='alas-test',
-            task='OpsiMeowfficerFarming',
-            error=RuntimeError('boom'),
+        sent = send_permission_request(
+            context='ALAS/permission/maintenance',
+            message='May I proceed with maintenance?',
             runner=runner,
         )
 
@@ -135,11 +138,14 @@ class NapCatErrorNotificationTest(unittest.TestCase):
         preview, send = [command for command, _ in runner.commands]
         self.assertNotIn('--send', preview)
         self.assertIn('--send', send)
+        self.assertEqual(
+            preview[preview.index('--purpose') + 1], 'permission-request')
+        self.assertEqual(
+            send[send.index('--purpose') + 1], 'permission-request')
         self.assertEqual(send[send.index('--reason') + 1], 'user-request')
         self.assertEqual(send[send.index('--preview-id') + 1], 'abc123')
         message = preview[preview.index('--message') + 1]
-        self.assertIn('alas-test', message)
-        self.assertIn('OpsiMeowfficerFarming', message)
+        self.assertEqual(message, 'May I proceed with maintenance?')
 
     def test_game_not_running_restarts_without_notifying_owner(self):
         class FakeConfig:
@@ -213,7 +219,7 @@ class NapCatErrorNotificationTest(unittest.TestCase):
         notify.assert_called_once()
         self.assertEqual(notify.call_args[0][:2], ('alas-test', 'FailingTask'))
 
-    def test_does_not_pass_raw_error_details_to_the_helper(self):
+    def test_error_notification_never_passes_raw_error_details_to_qq(self):
         runner = FakeRunner()
 
         sent = send_error_notification(
@@ -223,11 +229,8 @@ class NapCatErrorNotificationTest(unittest.TestCase):
             runner=runner,
         )
 
-        self.assertTrue(sent)
-        preview = runner.commands[0][0]
-        message = preview[preview.index('--message') + 1]
-        self.assertNotIn('do-not-expose', message)
-        self.assertIn('RuntimeError', message)
+        self.assertFalse(sent)
+        self.assertEqual(runner.commands, [])
 
     def test_sends_each_separate_exception_event(self):
         runner = FakeRunner()
@@ -237,31 +240,23 @@ class NapCatErrorNotificationTest(unittest.TestCase):
         second = send_error_notification(
             'repeat-config', 'Main', RuntimeError('same text'), runner=runner)
 
-        self.assertTrue(first)
-        self.assertTrue(second)
-        self.assertEqual(len(runner.commands), 4)
+        self.assertFalse(first)
+        self.assertFalse(second)
+        self.assertEqual(runner.commands, [])
 
     def test_generic_notification_uses_guarded_preview_and_send_flow(self):
         runner = FakeRunner()
 
-        sent = send_notification(
-            context='ALAS/resource/alas2/coin',
-            message='仓库物资 93000/94200',
-            runner=runner,
-        )
+        with patch('module.notify.napcat._notification_environment',
+                   side_effect=AssertionError('environment must not be read')):
+            error_sent = send_error_notification(
+                'alas2', 'Main', RuntimeError('failed'), runner=runner)
+            warning_sent = send_notification(
+                'ALAS/resource/alas2/coin', '仓库物资 93000/94200', runner=runner)
 
-        self.assertTrue(sent)
-        self.assertEqual(len(runner.commands), 2)
-        preview, send = [command for command, _ in runner.commands]
-        self.assertEqual(
-            preview[preview.index('--context') + 1],
-            'ALAS/resource/alas2/coin',
-        )
-        self.assertEqual(
-            preview[preview.index('--message') + 1],
-            '仓库物资 93000/94200',
-        )
-        self.assertIn('--send', send)
+        self.assertFalse(error_sent)
+        self.assertFalse(warning_sent)
+        self.assertEqual(runner.commands, [])
 
 
 if __name__ == '__main__':
