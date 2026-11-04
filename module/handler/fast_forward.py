@@ -3,6 +3,7 @@ import re
 
 from module.base.timer import Timer
 from module.base.utils import color_bar_percentage
+from module.exception import RequestHumanTakeover
 from module.handler.assets import *
 from module.handler.auto_search import AutoSearchHandler
 from module.logger import logger
@@ -337,10 +338,17 @@ class FastForwardHandler(AutoSearchHandler):
             return False
 
         logger.info('Auto search setting')
-        self.fleet_preparation_sidebar_ensure(3)
-        self.auto_search_setting_ensure(self.config.Fleet_FleetOrder)
+        if not self.fleet_preparation_sidebar_ensure(3):
+            raise RequestHumanTakeover('Auto-search fleet preparation sidebar could not be selected')
+
+        fleet_order = self.config.Fleet_FleetOrder
+        if not self.auto_search_setting_ensure(fleet_order):
+            raise RequestHumanTakeover(f'Auto-search fleet role could not be ensured: {fleet_order}')
+
         if self.config.SUBMARINE:
-            self.auto_search_setting_ensure(self.config.Submarine_AutoSearchMode)
+            submarine_mode = self.config.Submarine_AutoSearchMode
+            if not self.auto_search_setting_ensure(submarine_mode):
+                raise RequestHumanTakeover(f'Auto-search submarine role could not be ensured: {submarine_mode}')
         return True
 
     @property
