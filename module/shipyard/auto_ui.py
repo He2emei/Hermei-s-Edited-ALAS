@@ -4,12 +4,13 @@ import re
 import cv2
 
 from module.exception import RequestHumanTakeover
-from module.ocr.ocr import Ocr
+from module.ocr.ocr import DigitCounter, Ocr
 from module.os.training_ui import catalog_name, point_button
 from module.shipyard.auto_policy import parse_required_level, parse_required_level_readings
 from module.shipyard.ui import ShipyardUI
 from module.shipyard.assets import (SHIPYARD_IN_FATE,
-                                   SHIPYARD_PROGRESS_DEV, SHIPYARD_PROGRESS_FATE)
+                                   SHIPYARD_IN_DEV, SHIPYARD_PROGRESS_DEV,
+                                   SHIPYARD_PROGRESS_FATE)
 
 
 class ShipyardLevelGateUnknown(RequestHumanTakeover):
@@ -67,6 +68,33 @@ def required_level(image, fate=False):
             raise ShipyardLevelGateUnknown('Unknown Fate shipyard level gate: ' + text)
         return level
 
+    progress_text = ''
+    invalid_progress = False
+    if SHIPYARD_IN_DEV.match(image, offset=(20, 20)):
+        progress_text = Ocr((1174, 149, 1278, 176), lang='cnocr',
+                            letter=(255, 255, 255),
+                            name='ShipyardLevelProgress').ocr(image)
+        progress_text = re.sub(r'\s+', '', progress_text) if isinstance(progress_text, str) else ''
+        progress = re.fullmatch(r'([0-9Oo]{1,6})/([0-9Oo]{1,6})', progress_text)
+        if progress:
+            current, total = (int(value.translate(str.maketrans({'O': '0', 'o': '0'})))
+                              for value in progress.groups())
+            if total > 0 and 0 <= current < total:
+                try:
+                    counter = DigitCounter((1174, 149, 1278, 176), lang='azur_lane',
+                                           letter=(255, 255, 255),
+                                           alphabet='0123456789/',
+                                           name='ShipyardLevelProgressCounter').ocr(image)
+                    if (isinstance(counter, tuple) and len(counter) == 3
+                            and all(type(value) is int for value in counter)
+                            and counter[0] == current
+                            and counter[2] == total
+                            and counter[1] == total - current):
+                        return None
+                except Exception:
+                    pass
+            invalid_progress = True
+
     label = Ocr((1174, 149, 1244, 176), lang='cnocr', letter=(255, 255, 255),
                 name='ShipyardLevelGateLabel').ocr(image)
     # Keep the digit-only read within the isolated gate line; the wider DEV
@@ -76,7 +104,10 @@ def required_level(image, fate=False):
     unit = Ocr((1258, 149, 1278, 176), lang='cnocr', letter=(255, 255, 255),
                name='ShipyardLevelGateUnit').ocr(image)
     try:
-        return parse_required_level_readings(label, digits, unit)
+        level = parse_required_level_readings(label, digits, unit)
+        if invalid_progress or (progress_text and level is None):
+            raise ValueError('Untrusted development experience progress or gate text')
+        return level
     except ValueError as error:
         raise ShipyardLevelGateUnknown('Unknown shipyard level requirement') from error
 
