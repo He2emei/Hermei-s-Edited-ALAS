@@ -11,8 +11,10 @@ from PIL import Image
 from module.exception import RequestHumanTakeover
 from module.shipyard.auto import AutoShipyard
 from module.shipyard.auto_policy import server_day
-from module.shipyard.auto_ui import panel_cost, panel_coins, required_level
+from module.shipyard.auto_ui import (ShipyardLevelGateUnknown, panel_cost, panel_coins,
+                                     required_level)
 from module.shipyard.leveling import ShipyardLeveler, book_counts, level_gain
+from module.ui.page import page_shipyard
 
 
 ROOT = Path(__file__).parents[1]
@@ -137,6 +139,34 @@ class ShipyardAutoGuardTest(unittest.TestCase):
         obj._candidate.assert_not_called()
         obj.config.task_delay.assert_called_once_with(minute=60)
 
+    def test_unknown_gate_on_confirmed_shipyard_defers_and_continues_scan(self):
+        obj = self.scan_harness()
+        obj.ui_page_appear = Mock(return_value=True)
+        obj._candidate = Mock(side_effect=[ShipyardLevelGateUnknown('incomplete gate')] + ['full'] * 5)
+        obj.run_auto()
+        self.assertEqual(obj._candidate.call_count, 6)
+        obj.ui_page_appear.assert_called_once_with(page_shipyard)
+        self.assertEqual(obj.config.ShipyardAuto_PrLastRun.year, 2020)
+        self.assertEqual(obj.config.ShipyardAuto_DrLastRun.year, 2020)
+        obj._shipyard_buy_confirm.assert_not_called()
+        obj.config.task_delay.assert_called_once_with(minute=60)
+
+    def test_unknown_gate_off_shipyard_and_generic_takeover_still_propagate(self):
+        cases = (
+            (ShipyardLevelGateUnknown('incomplete gate'), False),
+            (RequestHumanTakeover('unknown coin fee'), True),
+        )
+        for error, on_shipyard in cases:
+            with self.subTest(error=type(error).__name__, on_shipyard=on_shipyard):
+                obj = self.scan_harness()
+                obj.ui_page_appear = Mock(return_value=on_shipyard)
+                obj._candidate = Mock(side_effect=error)
+                with self.assertRaises(type(error)):
+                    obj.run_auto()
+                obj.config.task_delay.assert_not_called()
+                self.assertEqual(obj.config.ShipyardAuto_PrLastRun.year, 2020)
+                self.assertEqual(obj.config.ShipyardAuto_DrLastRun.year, 2020)
+
     def test_book_selector_cap_requires_verified_level_100_preview(self):
         for gain, expected in ((99, 7), (98, None)):
             obj = ShipyardLeveler.__new__(ShipyardLeveler)
@@ -248,7 +278,7 @@ class ShipyardScreenshotTest(unittest.TestCase):
     def test_unrecognized_fate_gate_text_fails_closed(self):
         with patch('module.shipyard.auto_ui.Ocr') as ocr:
             ocr.return_value.ocr.return_value = '需角色到达7级'
-            with self.assertRaises(RequestHumanTakeover):
+            with self.assertRaises(ShipyardLevelGateUnknown):
                 required_level(np.zeros((720, 1280, 3), dtype='uint8'), True)
 
     def level_gate_frame(self, name):
@@ -267,6 +297,14 @@ class ShipyardScreenshotTest(unittest.TestCase):
         frame[149:176, 1235:1270] = 0
         with self.assertRaises(RequestHumanTakeover):
             required_level(frame)
+
+    def test_real_incomplete_brest_gate_raises_narrow_unknown_type(self):
+        for fixture in ('shipyard-brest-unknown-gate-1', 'shipyard-brest-unknown-gate-2'):
+            roi = self.image(fixture)
+            frame = np.zeros((720, 1280, 3), dtype='uint8')
+            frame[149:176, 1174:1278] = roi
+            with self.assertRaises(ShipyardLevelGateUnknown):
+                required_level(frame)
 
     def test_fate_total_has_a_different_right_aligned_position(self):
         for amount in (1, 2, 5):
