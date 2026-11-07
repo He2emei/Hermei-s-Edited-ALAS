@@ -14,7 +14,18 @@ from module.reward.reward import Reward
 class CoinResourceStatusTest(unittest.TestCase):
     def test_current_ocr_covers_the_existing_six_digit_main_screen_area(self):
         self.assertEqual(COIN_STORAGE_CURRENT.area, (716, 24, 780, 49))
-        self.assertEqual(COIN_STORAGE_LIMIT.area, (716, 0, 780, 22))
+        self.assertEqual(COIN_STORAGE_LIMIT.raw_area, {
+            'cn': (738, 0, 781, 22),
+            'en': (716, 0, 780, 22),
+            'jp': (716, 0, 780, 22),
+            'tw': (716, 0, 780, 22),
+        })
+        self.assertEqual(COIN_STORAGE_LIMIT.raw_button, {
+            'cn': (738, 0, 781, 22),
+            'en': (716, 0, 780, 22),
+            'jp': (716, 0, 780, 22),
+            'tw': (716, 0, 780, 22),
+        })
 
     def test_reward_retries_a_truncated_limit_before_using_the_reading(self):
         reward = object.__new__(Reward)
