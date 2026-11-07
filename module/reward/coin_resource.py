@@ -14,9 +14,19 @@ COIN_STORAGE_CURRENT = Button(
     name='COIN_STORAGE_CURRENT',
 )
 COIN_STORAGE_LIMIT = Button(
-    area=(716, 0, 780, 22),
+    area={
+        'cn': (738, 0, 781, 22),
+        'en': (716, 0, 780, 22),
+        'jp': (716, 0, 780, 22),
+        'tw': (716, 0, 780, 22),
+    },
     color=(239, 239, 239),
-    button=(716, 0, 780, 22),
+    button={
+        'cn': (738, 0, 781, 22),
+        'en': (716, 0, 780, 22),
+        'jp': (716, 0, 780, 22),
+        'tw': (716, 0, 780, 22),
+    },
     file=None,
     name='COIN_STORAGE_LIMIT',
 )
