@@ -322,6 +322,18 @@ class DormTraining(TrainingShipInspector):
             for card, name, level in zip(cards, visible, levels):
                 if name:
                     names.add(name)
+                if target and name == target.name and level in (10, 11):
+                    # Some regular-dock banners clip the last digit in the usual
+                    # numeric crop. Re-read only this exact-name candidate with
+                    # the full banner height before accepting a prefix-stripped
+                    # low reading as its actual level.
+                    expanded_level = Digit(
+                        [(card.area[0]+64, card.area[1]+4, card.area[2], card.area[1]+29)],
+                        letter=(255, 255, 255), threshold=90, alphabet='0123456789',
+                        name='DormSelectionExpandedNumericLevel',
+                    ).ocr(self.device.image)
+                    if 100 <= expanded_level <= 125:
+                        level = expanded_level
                 if target and name == target.name and level == target.level:
                     return card
             if DORM_SCROLL.at_bottom(main=self) or (previous == tuple(visible) and any(visible)):
