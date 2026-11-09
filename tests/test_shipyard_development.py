@@ -253,6 +253,32 @@ class ShipyardDevelopmentPolicyTest(unittest.TestCase):
             self.assertEqual(inspector._ocr_task_title(320), '铁血先锋技术测试II')
             self.assertEqual(calls[0], 3)
 
+    def test_royal_experience_uses_isolated_stage_when_suffix_loses_glyph(self):
+        fixtures = Path(__file__).parent / 'fixtures'
+        stage_two = cv2.imread(str(fixtures / 'shipyard_development_royal_stage_ii.png'))
+        stage_one_frame = cv2.imread(str(fixtures / 'shipyard_development_stage_ocr_20261015.png'))
+        self.assertIsNotNone(stage_two)
+        self.assertIsNotNone(stage_one_frame)
+        stage_one = stage_one_frame[142:173, 1124:1143]
+        inspector = ShipyardDevelopment.__new__(ShipyardDevelopment)
+        actual_ocr = Ocr
+        for glyph, expected in ((stage_two, 'II'), (stage_one, 'I')):
+            with self.subTest(expected=expected):
+                image = np.zeros((720, 1280, 3), dtype=np.uint8)
+                image[252:283, 1124:1143] = cv2.cvtColor(glyph, cv2.COLOR_BGR2RGB)
+                inspector.device = SimpleNamespace(image=image)
+                # First three readings recorded together before the live failure.
+                readings = iter(('皇家主力技术测试l29:39:52', '皇家主力技术测试‖', '技术测试'))
+
+                def make_ocr(*args, **kwargs):
+                    value = next(readings, None)
+                    if value is not None:
+                        return SimpleNamespace(ocr=lambda _image: value)
+                    return actual_ocr(*args, **kwargs)
+
+                with patch('module.shipyard.development.Ocr', side_effect=make_ocr):
+                    self.assertEqual(inspector._ocr_task_title(240), '皇家主力技术测试' + expected)
+
     def test_explicit_i_does_not_upgrade_without_exact_suffix_vote(self):
         inspector = ShipyardDevelopment.__new__(ShipyardDevelopment)
         inspector.device = SimpleNamespace(image=np.zeros((720, 1280, 3), dtype=np.uint8))
