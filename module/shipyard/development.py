@@ -139,6 +139,13 @@ class ShipyardDevelopment(ShipyardUI):
                                        ('先锋技术突破', '主力技术突破') else '技术测试II')
                     if suffix == expected_suffix:
                         return stage_title
+                    if bare_family == '皇家主力技术测试' and suffix == '技术测试':
+                        # The suffix crop can drop both strokes next to the timer.
+                        glyph_ocr = Ocr([(1124, header_y + 12, 1143, header_y + 43)],
+                                        lang='cnocr', letter=(214, 225, 235), threshold=128,
+                                        name='SHIPYARD_DEVELOPMENT_TASK_STAGE_GLYPH')
+                        if normalise_cn_task_title(glyph_ocr.ocr(self.device.image)) == 'II':
+                            return stage_title
             elif stage_title in (bare_family + 'I', bare_family + 'II'):
                 return stage_title
         return title
