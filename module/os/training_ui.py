@@ -365,6 +365,13 @@ class TrainingShipInspector(Awaken):
                     counter = Ocr([(1130, 277, 1248, 308)], name='TrainingCurrentExp').ocr(
                         self.device.image).replace(' ', '')
                     fraction = re.fullmatch(r'(\d{1,7})/([1-9]\d{1,6})', counter)
+                    if not fraction:
+                        # A clipped top border can be read as a stray leading
+                        # glyph by the full-height crop. Retry the same bounded
+                        # counter just below that border; do not strip OCR text.
+                        counter = Ocr([(1130, 281, 1248, 308)], name='TrainingCurrentExpNarrow').ocr(
+                            self.device.image).replace(' ', '')
+                        fraction = re.fullmatch(r'(\d{1,7})/([1-9]\d{1,6})', counter)
                     if fraction:
                         current, total = map(int, fraction.groups())
                         if current < total <= 3_000_000:
