@@ -138,6 +138,48 @@ class TrainingUiReviewTest(unittest.TestCase):
                          ('虎', 105, 110, True))
         self.assertIsNone(actual.stored_exp)
 
+    def test_tiger_105_retries_numeric_exp_below_clipped_top_border(self):
+        from PIL import Image
+        frame = np.asarray(Image.open(
+            ROOT / 'tests/fixtures/opsi_training/tiger-105-post-awakening-exp-noise.png').convert('RGB'))
+        exp_strip = np.asarray(Image.open(
+            ROOT / 'tests/fixtures/opsi_training/tiger115-current-exp-crop.png').convert('RGB'))
+        frames = []
+        for crop_frame in (exp_strip[:, :118], exp_strip[:, 118:]):
+            current = frame.copy()
+            current[281:308, 1130:1248] = crop_frame
+            frames.append(current)
+        inspector = TrainingShipInspector.__new__(TrainingShipInspector)
+        inspector.config = SimpleNamespace(SERVER='cn')
+        frame_index = [0]
+
+        def screenshot():
+            inspector.device.image = frames[frame_index[0]]
+            frame_index[0] += 1
+
+        inspector.device = SimpleNamespace(image=frame, screenshot=screenshot)
+        inspector.appear = Mock(return_value=True)
+        real_ocr = training_ui.Ocr
+
+        def ocr_factory(buttons, **kwargs):
+            name = kwargs.get('name')
+            values = {
+                'TrainingName': ['虎', '虎'],
+                'TrainingStoredExp': 'M55774/174000',
+                'TrainingCurrentExp': 'I55774/174000',
+            }
+            if name in values:
+                value = values[name]
+                return SimpleNamespace(ocr=lambda current_image: value)
+            return real_ocr(buttons, **kwargs)
+
+        with patch('module.os.training_ui.Ocr', side_effect=ocr_factory):
+            actual = inspector.read_ship()
+        self.assertEqual((actual.name, actual.level, actual.level_cap, actual.is_locked),
+                         ('虎', 105, 110, True))
+        self.assertIsNone(actual.stored_exp)
+        self.assertEqual(frame_index[0], 2)
+
     def test_tiger_105_unverifiable_numeric_exp_fails_closed(self):
         from PIL import Image
         frame = np.asarray(Image.open(
