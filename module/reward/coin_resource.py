@@ -2,6 +2,7 @@ from dataclasses import dataclass
 from datetime import datetime, timedelta
 from statistics import median
 
+import module.config.server as server
 from module.base.button import Button
 from module.ocr.ocr import Digit
 
@@ -33,12 +34,20 @@ COIN_STORAGE_LIMIT = Button(
 OCR_COIN_STORAGE_CURRENT = Digit(
     COIN_STORAGE_CURRENT, letter=(239, 239, 239), threshold=128,
     name='OCR_COIN_STORAGE_CURRENT')
+OCR_COIN_STORAGE_CURRENT_CN = Digit(
+    COIN_STORAGE_CURRENT, letter=(255, 255, 255), threshold=48,
+    name='OCR_COIN_STORAGE_CURRENT_CN')
 OCR_COIN_STORAGE_LIMIT = Digit(
     COIN_STORAGE_LIMIT, letter=(239, 239, 239), threshold=128,
     name='OCR_COIN_STORAGE_LIMIT')
 def read_coin_storage(image):
+    current_reader = (
+        OCR_COIN_STORAGE_CURRENT_CN
+        if server.server == 'cn'
+        else OCR_COIN_STORAGE_CURRENT
+    )
     return (
-        OCR_COIN_STORAGE_CURRENT.ocr(image),
+        current_reader.ocr(image),
         OCR_COIN_STORAGE_LIMIT.ocr(image),
     )
 
