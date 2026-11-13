@@ -175,6 +175,23 @@ class TrainingFleetManager(TrainingShipInspector):
                         names[index] = exact_name
         return names
 
+    def _deployment_card_levels(self, cards):
+        """Read card levels, retrying only implausibly high decorated readings."""
+        areas = [(b.area[0] + 77, b.area[1] + 5, b.area[2], b.area[1] + 27)
+                 for b in cards]
+        levels = LevelOcr(areas, name='TrainingSelectionLevels').ocr(self.device.image)
+        for index, (button, level) in enumerate(zip(cards, levels)):
+            if level <= 125:
+                continue
+            x, y = button.area[:2]
+            retry_areas = [(x + 77, y + 5, button.area[2] - inset, y + 27)
+                           for inset in (2, 6)]
+            readings = [LevelOcr([area], name='TrainingSelectionLevelRetry').ocr(self.device.image)
+                        for area in retry_areas]
+            if readings[0] == readings[1] and 100 <= readings[0] <= 125:
+                levels[index] = readings[0]
+        return levels
+
     def _scan_selection(self, target=None, fail_if_missing=True):
         names = set()
         matches = []
@@ -189,8 +206,7 @@ class TrainingFleetManager(TrainingShipInspector):
             new_names = {n for n in visible if n is not None} - names
             levels = None
             if isinstance(target, ShipCandidate):
-                levels = LevelOcr([(b.area[0] + 77, b.area[1] + 5, b.area[2], b.area[1] + 27)
-                                   for b in self._visible_cards], name='TrainingSelectionLevels').ocr(self.device.image)
+                levels = self._deployment_card_levels(self._visible_cards)
             for index, (button, name) in enumerate(zip(self._visible_cards, visible)):
                 if name is not None:
                     names.add(name)
@@ -287,10 +303,7 @@ class TrainingFleetManager(TrainingShipInspector):
         for _ in range(40):
             self.device.screenshot()
             visible = self._visible_names()
-            levels = LevelOcr([
-                (b.area[0] + 77, b.area[1] + 5, b.area[2], b.area[1] + 27)
-                for b in self._visible_cards
-            ], name='TrainingSelectionLevels').ocr(self.device.image)
+            levels = self._deployment_card_levels(self._visible_cards)
             for button, name, level in zip(self._visible_cards, visible, levels):
                 if name == target.name and level == target.level \
                         and dock_card_lock(self.device.image, button) is True:
