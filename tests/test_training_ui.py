@@ -37,23 +37,29 @@ def candidate(name, faction='白鹰', position='main', level=90, cap=None):
 
 
 class TrainingUiReviewTest(unittest.TestCase):
-    def test_short_max_helper_requires_exact_dual_max_and_matching_short_counters(self):
+    def test_max_helper_requires_exact_glyphs_and_matching_full_width_counters(self):
         from PIL import Image
         fixture = ROOT / 'tests/fixtures/opsi_training/exp-max-short-counter.png'
         self.assertEqual(Image.open(fixture).size, (118, 31))
         image = np.asarray(Image.open(fixture).convert('RGB'))
         cases = (
-            ('exact', ['M8X', 'M8X'], [5002, 5002], 5002),
+            ('5002', ['M8X', 'M8X'], [5002, 5002], 5002),
+            ('zero', ['M8X', 'M8X'], [0, 0], 0),
+            ('three million', ['M8X', 'M8X'], [3_000_000, 3_000_000], 3_000_000),
             ('unknown max', ['M?X', 'M8X'], [5002, 5002], None),
-            ('max conflict', ['M8X', 'M6X'], [5002, 5002], None),
-            ('counter conflict', ['M8X', 'M8X'], [5002, 502], None),
-            ('bool counter', ['M8X', 'M8X'], [True, True], None),
-            ('over short bound', ['M8X', 'M8X'], [10000, 10000], None),
+            ('conflicting max', ['M8X', 'M6X'], [5002, 5002], None),
+            ('45k versus 5k', ['M8X', 'M8X'], [45002, 5002], None),
+            ('clipped 2082 versus 20842', ['M8X', 'M8X'], [2082, 20842], None),
+            ('negative', ['M8X', 'M8X'], [-1, -1], None),
+            ('over cap', ['M8X', 'M8X'], [3_000_001, 3_000_001], None),
+            ('bool', ['M8X', 'M8X'], [True, True], None),
+            ('noninteger', ['M8X', 'M8X'], ['5002', 5002], None),
+            ('blank', ['M8X', 'M8X'], [None, None], None),
         )
         expected_max_areas = [[(1214, 284, 1248, 306)], [(1215, 286, 1247, 306)]]
         expected_digit_calls = [
-            ((1130, 277, 1208, 308), 48),
-            ((1162, 282, 1208, 307), 128),
+            ((1124, 284, 1208, 306), 96),
+            ((1130, 284, 1208, 306), 128),
         ]
         for label, max_values, counters, expected in cases:
             ocr_calls, digit_calls = [], []
@@ -71,13 +77,13 @@ class TrainingUiReviewTest(unittest.TestCase):
             def digit_factory(area, **kwargs):
                 name = kwargs.get('name')
                 digit_calls.append((area, kwargs))
-                index = 0 if name == 'TrainingStoredExpShortFull' else 1
+                index = 0 if name == 'TrainingStoredExpMaxCounterFull96' else 1
                 return SimpleNamespace(ocr=lambda current: counters[index])
 
             with self.subTest(case=label), \
                     patch('module.os.training_ui.Ocr', side_effect=ocr_factory), \
                     patch('module.os.training_ui.Digit', side_effect=digit_factory):
-                self.assertEqual(training_ui._read_short_stored_exp_max(image), expected)
+                self.assertEqual(training_ui._read_stored_exp_max_counter(image), expected)
             self.assertEqual([call[0] for call in ocr_calls], expected_max_areas)
             self.assertTrue(all(call[1].get('letter') == (255, 255, 255)
                                 and call[1].get('threshold') == 128 for call in ocr_calls))
@@ -86,14 +92,19 @@ class TrainingUiReviewTest(unittest.TestCase):
             self.assertTrue(all(kwargs.get('letter') == (255, 255, 255)
                                 for _, kwargs in digit_calls))
 
-    def test_real_anonymized_exp_crop_recovers_short_max(self):
+    def test_real_anonymized_exp_crops_recover_full_width_max_counters(self):
         from PIL import Image
-        crop = np.asarray(Image.open(
-            ROOT / 'tests/fixtures/opsi_training/exp-max-short-counter.png'
-        ).convert('RGB'))
-        image = np.zeros((720, 1280, 3), dtype=np.uint8)
-        image[277:308, 1130:1248] = crop
-        self.assertEqual(training_ui._read_short_stored_exp_max(image), 5002)
+        for filename, expected in (
+                ('exp-max-short-counter.png', 5002),
+                ('exp-max-full-counter-20842.png', 20842)):
+            crop = np.asarray(Image.open(
+                ROOT / 'tests/fixtures/opsi_training' / filename
+            ).convert('RGB'))
+            self.assertEqual(crop.shape[:2], (31, 118))
+            image = np.zeros((720, 1280, 3), dtype=np.uint8)
+            image[277:308, 1130:1248] = crop
+            with self.subTest(filename=filename):
+                self.assertEqual(training_ui._read_stored_exp_max_counter(image), expected)
 
     def test_read_ship_recovers_mogador_short_max_through_two_frame_gate(self):
         from PIL import Image
@@ -123,7 +134,7 @@ class TrainingUiReviewTest(unittest.TestCase):
 
         def digit_factory(area, **kwargs):
             name = kwargs.get('name')
-            if name in ('TrainingStoredExpShortFull', 'TrainingStoredExpShortNarrow'):
+            if name in ('TrainingStoredExpMaxCounterFull96', 'TrainingStoredExpMaxCounterFull128'):
                 return SimpleNamespace(ocr=lambda current: 5002)
             return real_digit(area, **kwargs)
 

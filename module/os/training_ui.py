@@ -77,8 +77,8 @@ def detail_ship_lock(image):
     return None
 
 
-def _read_short_stored_exp_max(image):
-    """Recover only the verified short counter when two independent ROIs agree."""
+def _read_stored_exp_max_counter(image):
+    """Recover a MAX counter only when two full-width reads agree."""
     max_reads = [
         Ocr([area], letter=(255, 255, 255), threshold=128,
             name=name).ocr(image)
@@ -93,12 +93,12 @@ def _read_short_stored_exp_max(image):
     counters = [
         Digit(area, letter=(255, 255, 255), threshold=threshold, name=name).ocr(image)
         for area, threshold, name in (
-            ((1130, 277, 1208, 308), 48, 'TrainingStoredExpShortFull'),
-            ((1162, 282, 1208, 307), 128, 'TrainingStoredExpShortNarrow'),
+            ((1124, 284, 1208, 306), 96, 'TrainingStoredExpMaxCounterFull96'),
+            ((1130, 284, 1208, 306), 128, 'TrainingStoredExpMaxCounterFull128'),
         )
     ]
     if any(not isinstance(value, int) or isinstance(value, bool)
-           or not 0 <= value <= 9999 for value in counters):
+           or not 0 <= value <= 3_000_000 for value in counters):
         return None
     return counters[0] if counters[0] == counters[1] else None
 
@@ -414,7 +414,7 @@ class TrainingShipInspector(Awaken):
                         # suffix and bounded digit OCR.
                         tail = Ocr([(1208, 277, 1248, 308)], name='TrainingStoredExpTail').ocr(self.device.image)
                         if not re.fullmatch(r'/M[a8][xX]', tail.replace(' ', '')):
-                            stored = _read_short_stored_exp_max(self.device.image)
+                            stored = _read_stored_exp_max_counter(self.device.image)
                             if stored is None:
                                 continue
                         else:
