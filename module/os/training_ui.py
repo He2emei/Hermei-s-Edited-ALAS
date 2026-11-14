@@ -77,8 +77,8 @@ def detail_ship_lock(image):
     return None
 
 
-def _read_stored_exp_max_counter(image):
-    """Recover a MAX counter only when two full-width reads agree."""
+def _read_exact_stored_exp_max(image):
+    """Require two independent exact reads of the MAX marker."""
     max_reads = [
         Ocr([area], letter=(255, 255, 255), threshold=128,
             name=name).ocr(image)
@@ -87,8 +87,13 @@ def _read_stored_exp_max_counter(image):
             ((1215, 286, 1247, 306), 'TrainingStoredExpMaxB'),
         )
     ]
-    if any(not isinstance(value, str)
-           or not re.fullmatch(r'[Mm][Aa8][Xx]', value) for value in max_reads):
+    return all(isinstance(value, str)
+               and re.fullmatch(r'[Mm][Aa8][Xx]', value) for value in max_reads)
+
+
+def _read_stored_exp_max_counter(image):
+    """Recover a MAX counter only when its marker and full-width reads agree."""
+    if not _read_exact_stored_exp_max(image):
         return None
     counters = [
         Digit(area, letter=(255, 255, 255), threshold=threshold, name=name).ocr(image)
@@ -101,6 +106,10 @@ def _read_stored_exp_max_counter(image):
            or not 0 <= value <= 3_000_000 for value in counters):
         return None
     return counters[0] if counters[0] == counters[1] else None
+
+
+class TrainingStoredExpUnavailable(RequestHumanTakeover):
+    """Known locked ship at an awakening boundary has an unreadable MAX counter."""
 
 
 
@@ -317,6 +326,7 @@ class TrainingShipInspector(Awaken):
         """Read a detail page twice, rejecting unknown identities and counters."""
         self._check_cn()
         previous = None
+        unreadable_max_previous = None
         star = cv2.imread('./assets/cn/opsi_training/gold_star.png')
         if star is None:
             raise RequestHumanTakeover('Training star template missing')
@@ -324,6 +334,7 @@ class TrainingShipInspector(Awaken):
         for _ in range(4):
             self.device.screenshot()
             if not self.appear(EQUIPMENT_OPEN, offset=(5, 5)):
+                unreadable_max_previous = None
                 continue
             texts = Ocr([(210, 88, 425, 120), (210, 90, 425, 115)], lang='cnocr', name='TrainingName').ocr(self.device.image)
             names = {catalog_name(t) for t in texts} - {None}
@@ -347,16 +358,20 @@ class TrainingShipInspector(Awaken):
                                     and catalog_name(text) == candidate for text in narrow_texts):
                         name = candidate
             level = Digit(OCR_SHIP_LEVEL, letter=(255, 255, 255), threshold=128, name='TrainingLevel').ocr(self.device.image)
-            if name is None or not 1 <= level <= 125:
+            if name is None or not isinstance(level, int) or isinstance(level, bool) \
+                    or not 1 <= level <= 125:
+                unreadable_max_previous = None
                 continue
             is_locked = detail_ship_lock(self.device.image)
             if is_locked is None:
+                unreadable_max_previous = None
                 continue
             data = CATALOG[name]
             faction = FACTIONS.get(data['faction'], '联动' if data['faction'] >= 100 else '')
             ship_type = data['type']
             side = 'main' if ship_type in (4, 5, 6, 7, 10, 12, 13, 21, 24) else 'vanguard' if ship_type in (1, 2, 3, 18, 19, 22, 23) else 'submarine' if ship_type in (8, 17) else ''
             if not side or not faction:
+                unreadable_max_previous = None
                 continue
             values = cv2.matchTemplate(crop(self.device.image, (285, 57, 425, 90)), star, cv2.TM_CCOEFF_NORMED)
             stars = 0
@@ -382,6 +397,7 @@ class TrainingShipInspector(Awaken):
                     stored = int(match.group(1))
                 elif re.fullmatch(r'\d{1,7}/[1-9]\d{1,6}', text.replace(' ', '')):
                     if level == 125:
+                        unreadable_max_previous = None
                         continue
                 else:
                     # The full-width OCR may merge left-side UI noise
@@ -402,26 +418,44 @@ class TrainingShipInspector(Awaken):
                         current, total = map(int, fraction.groups())
                         if current < total <= 3_000_000:
                             if level == 125:
+                                unreadable_max_previous = None
                                 continue
                             # Numeric current EXP is not the MAX stored-XP
                             # marker. Keep stored_exp unset and derive the
                             # next cap from the verified ship level below.
                             pass
                         else:
+                            unreadable_max_previous = None
                             continue
                     else:
                         # MAX recovery remains gated by an independent exact
                         # suffix and bounded digit OCR.
                         tail = Ocr([(1208, 277, 1248, 308)], name='TrainingStoredExpTail').ocr(self.device.image)
                         if not re.fullmatch(r'/M[a8][xX]', tail.replace(' ', '')):
-                            stored = _read_stored_exp_max_counter(self.device.image)
-                            if stored is None:
-                                continue
+                            has_exact_max = _read_exact_stored_exp_max(self.device.image)
+                            stored = _read_stored_exp_max_counter(self.device.image) if has_exact_max else None
                         else:
                             stored = Digit((1130, 277, 1208, 308), name='TrainingStoredExpDigits').ocr(self.device.image)
                             if not isinstance(stored, int) or not 0 <= stored <= 3_000_000:
-                                continue
+                                # Preserve the original positive numeric path.
+                                # Only classify this failed read for deferral;
+                                # do not recover a number through a new path.
+                                has_exact_max = _read_exact_stored_exp_max(self.device.image)
+                                stored = None
+                        if stored is None:
+                            metadata = (name, faction, side, level, stars, full, is_locked)
+                            defer_eligible = has_exact_max and is_locked is True \
+                                and 1 <= stars <= data['max_stars'] \
+                                and level >= 100 and level % 5 == 0 \
+                                and (full or data['rarity'] == 6)
+                            if defer_eligible and unreadable_max_previous == metadata:
+                                raise TrainingStoredExpUnavailable(
+                                    f'Stored EXP unreadable for {name} at level {level}')
+                            unreadable_max_previous = metadata if defer_eligible else None
+                            continue
+                        unreadable_max_previous = None
                         at_cap = True
+            unreadable_max_previous = None
             cap = level if at_cap else 100 if level < 100 else min(125, (level // 5 + 1) * 5)
             ship = ShipCandidate(name, faction, side, level, data['rarity'] == 6, full, stored, cap,
                                  is_locked)

@@ -14,13 +14,15 @@ from module.base.priority_training import priority_ship_names, allow_priority_12
 from module.os.deployment_cost import read_deployment_cost
 from module.os.training_ui import (TrainingShipInspector, DOCK_SCROLL,
                                    FILTER_FACTIONS, FACTIONS, CATALOG, catalog_name, dock_card_lock, point_button, dock_cards,
-                                   same_card_portrait, same_dock_page, TrainingAwakeningDeferred)
+                                   same_card_portrait, same_dock_page, TrainingAwakeningDeferred,
+                                   TrainingStoredExpUnavailable, EQUIPMENT_OPEN)
 from module.event.fleet_source import EventFleetNameOcr
 from module.retire.assets import DOCK_CHECK
 from module.retire.dock import OCR_DOCK_SELECTED
 from module.os_handler.assets import ORDER_ENTER
 from module.os_handler.port import PORT_CHECK
 from module.ui.page import page_shipyard
+from module.ui.assets import BACK_ARROW
 
 
 class TrainingFleetManager(TrainingShipInspector):
@@ -471,6 +473,21 @@ class TrainingFleetManager(TrainingShipInspector):
         logger.info('Fourth fleet deployment verified, both anchors preserved')
         return True
 
+    def _defer_after_stored_exp_unavailable(self, opsi):
+        """Leave only a twice-confirmed detail page and retry from the verified map."""
+        for _ in range(2):
+            self.device.screenshot()
+            if not self.appear(EQUIPMENT_OPEN, offset=(5, 5)):
+                raise RequestHumanTakeover('Stored EXP defer lost the verified ship detail page')
+        if not self.appear(BACK_ARROW, offset=(5, 5)):
+            raise RequestHumanTakeover('Stored EXP defer could not verify the native back arrow')
+        self.device.click(BACK_ARROW)
+        for _ in range(30):
+            self.device.screenshot()
+            if opsi.is_in_map() and self.appear(ORDER_ENTER, offset=(20, 20)):
+                return
+        raise RequestHumanTakeover('Stored EXP defer could not verify the OpSi map after returning')
+
     def _defer_after_awakening_resource_shortage(self, opsi):
         """Return to the known OpSi map before scheduling a resource retry."""
         opsi.os_init(skip_first_auto_search=True)
@@ -500,7 +517,14 @@ class TrainingFleetManager(TrainingShipInspector):
             logger.info(f'Training development project: {ship_name}: {requirement}')
         opsi.os_init(skip_first_auto_search=True)
         opsi.globe_goto(opsi.name_to_zone('NY'))
-        current = self.inspect_map_fleet(opsi)
+        try:
+            current = self.inspect_map_fleet(opsi)
+        except TrainingStoredExpUnavailable as error:
+            self._defer_after_stored_exp_unavailable(opsi)
+            logger.warning(f'Training deferred: stored EXP unreadable: {error}')
+            self.config.cross_set(
+                keys='OpsiHazard1Leveling.OpsiTraining.LastCheck', value=int(time.time()))
+            return False
         requirements = {slot: requirement if requirement and requirement.position == ('main' if slot < 4 else 'vanguard')
                         else None for slot in ROTATION_SLOTS}
         initial = plan_rotation(requirements, current, [], priority_names=priority_names)
