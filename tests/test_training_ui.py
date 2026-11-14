@@ -16,6 +16,7 @@ from module.os.training_ui import (
     FILTER_FACTIONS,
     TrainingShipInspector,
     TrainingAwakeningDeferred,
+    TrainingStoredExpUnavailable,
     catalog_name,
     detail_ship_lock,
     dock_card_lock,
@@ -25,6 +26,7 @@ from module.os.training_ui import (
 from module.os.training import TrainingFleetManager
 from module.os_handler.assets import ORDER_ENTER
 from module.os_handler.port import PORT_CHECK
+from module.ui.assets import BACK_ARROW
 from module.retire.assets import DOCK_EMPTY
 
 
@@ -105,6 +107,132 @@ class TrainingUiReviewTest(unittest.TestCase):
             image[277:308, 1130:1248] = crop
             with self.subTest(filename=filename):
                 self.assertEqual(training_ui._read_stored_exp_max_counter(image), expected)
+
+    def test_real_31186_crop_is_counter_unavailable_but_exact_max(self):
+        from PIL import Image
+        crop = np.asarray(Image.open(
+            ROOT / 'tests/fixtures/opsi_training/exp-max-counter-31186.png'
+        ).convert('RGB'))
+        self.assertEqual(crop.shape[:2], (31, 118))
+        image = np.zeros((720, 1280, 3), dtype=np.uint8)
+        image[277:308, 1130:1248] = crop
+        with patch('module.os.training_ui.Ocr', wraps=training_ui.Ocr):
+            self.assertTrue(training_ui._read_exact_stored_exp_max(image))
+            self.assertIsNone(training_ui._read_stored_exp_max_counter(image))
+
+    def _read_mogador_with_unreadable_max_sequence(self, names=None, locks=None, max_reads=None,
+                                                   tail=None, legacy_counter=None):
+        from PIL import Image
+        frame = np.asarray(Image.open(
+            ROOT / 'tests/fixtures/opsi_training/tiger-105-post-awakening-exp-noise.png'
+        ).convert('RGB'))
+        inspector = TrainingShipInspector.__new__(TrainingShipInspector)
+        inspector.config = SimpleNamespace(SERVER='cn')
+        frame_index = [0]
+
+        def screenshot():
+            frame_index[0] += 1
+            inspector.device.image = frame
+
+        inspector.device = SimpleNamespace(image=frame, screenshot=screenshot)
+        inspector.appear = Mock(return_value=True)
+        names = names or ['莫加多尔'] * 4
+        locks = locks or [True] * 4
+        max_reads = max_reads or [True] * 4
+        real_ocr, real_digit = training_ui.Ocr, training_ui.Digit
+
+        def ocr_factory(buttons, **kwargs):
+            name = kwargs.get('name')
+            current = max(0, min(frame_index[0] - 1, 3))
+            values = {
+                'TrainingName': [names[current], names[current]],
+                'TrainingStoredExp': '31186/M6X',
+                'TrainingCurrentExp': '31186/M6X',
+                'TrainingCurrentExpNarrow': '31186/M6X',
+                'TrainingStoredExpTail': tail if tail is not None else '/M6X',
+            }
+            if name == 'TrainingStoredExpMaxA':
+                return SimpleNamespace(ocr=lambda image: 'M8X' if max_reads[current] else 'M?X')
+            if name == 'TrainingStoredExpMaxB':
+                return SimpleNamespace(ocr=lambda image: 'M8X' if max_reads[current] else 'M?X')
+            if name in values:
+                return SimpleNamespace(ocr=lambda image: values[name])
+            return real_ocr(buttons, **kwargs)
+
+        def digit_factory(area, **kwargs):
+            name = kwargs.get('name')
+            if name == 'TrainingMax':
+                return real_digit(area, **kwargs)
+            if name == 'TrainingStoredExpDigits' and legacy_counter is not None:
+                return SimpleNamespace(ocr=lambda image: legacy_counter)
+            if name in ('TrainingStoredExpMaxCounterFull96', 'TrainingStoredExpMaxCounterFull128'):
+                value = 2082 if name.endswith('Full96') else 20842
+                return SimpleNamespace(ocr=lambda image: value)
+            return real_digit(area, **kwargs)
+
+        with patch('module.os.training_ui.Ocr', side_effect=ocr_factory), \
+                patch('module.os.training_ui.Digit', side_effect=digit_factory), \
+                patch('module.os.training_ui.detail_ship_lock',
+                      side_effect=lambda image: locks[min(frame_index[0], 3)]):
+            return inspector.read_ship()
+
+    def test_real_31186_crop_causes_read_ship_to_defer_only_counter(self):
+        from PIL import Image
+        frame = np.asarray(Image.open(
+            ROOT / 'tests/fixtures/opsi_training/tiger-105-post-awakening-exp-noise.png'
+        ).convert('RGB'))
+        crop = np.asarray(Image.open(
+            ROOT / 'tests/fixtures/opsi_training/exp-max-counter-31186.png'
+        ).convert('RGB'))
+        frame[277:308, 1130:1248] = crop
+        inspector = TrainingShipInspector.__new__(TrainingShipInspector)
+        inspector.config = SimpleNamespace(SERVER='cn')
+        inspector.device = SimpleNamespace(image=frame, screenshot=Mock())
+        inspector.appear = Mock(return_value=True)
+        real_ocr, real_digit = training_ui.Ocr, training_ui.Digit
+
+        def ocr_factory(buttons, **kwargs):
+            name = kwargs.get('name')
+            values = {
+                'TrainingName': ['莫加多尔', '莫加多尔'],
+                'TrainingStoredExp': '31186/M6X',
+                'TrainingCurrentExp': '31186/M6X',
+                'TrainingCurrentExpNarrow': '31186/M6X',
+                'TrainingStoredExpTail': '/M6X',
+            }
+            if name in values:
+                return SimpleNamespace(ocr=lambda image: values[name])
+            return real_ocr(buttons, **kwargs)
+
+        with patch('module.os.training_ui.Ocr', side_effect=ocr_factory), \
+                patch('module.os.training_ui.detail_ship_lock', return_value=True), \
+                patch('module.os.training_ui.Digit', wraps=real_digit):
+            with self.assertRaises(TrainingStoredExpUnavailable):
+                inspector.read_ship()
+
+    def test_stable_exact_max_with_unreadable_counter_raises_specific_defer(self):
+        with self.assertRaises(TrainingStoredExpUnavailable):
+            self._read_mogador_with_unreadable_max_sequence()
+
+    def test_valid_legacy_tail_with_invalid_digits_can_defer_but_not_gain_numeric_recovery(self):
+        with patch('module.os.training_ui._read_stored_exp_max_counter',
+                   side_effect=AssertionError('do not add a positive numeric path')):
+            with self.assertRaises(TrainingStoredExpUnavailable):
+                self._read_mogador_with_unreadable_max_sequence(
+                    tail='/Max', legacy_counter=3_000_001)
+
+    def test_intervening_unknown_identity_lock_or_max_prevents_specific_defer(self):
+        sequences = (
+            {'names': ['莫加多尔', '未知舰船', '莫加多尔', '未知舰船']},
+            {'locks': [True, False, True, False]},
+            {'max_reads': [True, False, True, False]},
+            {'names': ['莫加多尔', '虎', '莫加多尔', '虎']},
+        )
+        for sequence in sequences:
+            with self.subTest(sequence=sequence), \
+                    self.assertRaises(RequestHumanTakeover) as raised:
+                self._read_mogador_with_unreadable_max_sequence(**sequence)
+            self.assertNotIsInstance(raised.exception, TrainingStoredExpUnavailable)
 
     def test_read_ship_recovers_mogador_short_max_through_two_frame_gate(self):
         from PIL import Image
@@ -605,6 +733,100 @@ class TrainingUiReviewTest(unittest.TestCase):
         inspector.read_ship = lambda: ship
         with self.assertRaises(RequestHumanTakeover):
             inspector.awaken_for_training(ship, ('虎',))
+
+    def _make_stored_exp_defer_manager(self, detail=True, back_visible=True,
+                                       map_visible=True, initial_error=None, current=None):
+        manager = TrainingFleetManager.__new__(TrainingFleetManager)
+        manager.config = SimpleNamespace(
+            SERVER='cn', OpsiFleet_Fleet=4, PriorityTraining_Ships='',
+            PriorityTraining_Allow125Awakening=False, cross_set=Mock())
+        manager.device = SimpleNamespace(
+            image=np.zeros((720, 1280, 3), dtype=np.uint8),
+            screenshot=Mock(), click=Mock())
+        manager._check_cn = Mock()
+        manager.ui_ensure = Mock()
+        manager.inspect_map_fleet = Mock(
+            side_effect=initial_error if initial_error is not None else [current])
+        manager._available_ships = Mock(side_effect=AssertionError('must not scan candidates'))
+        manager.find_candidates = Mock(side_effect=AssertionError('must not select candidates'))
+        manager._deploy = Mock(side_effect=AssertionError('must not deploy'))
+        manager._awaken_planned_ship = Mock(side_effect=AssertionError('must not awaken'))
+        manager.appear = Mock(side_effect=lambda asset, **kwargs:
+                              detail if asset is training_ui.EQUIPMENT_OPEN
+                              else back_visible if asset is BACK_ARROW
+                              else map_visible if asset is ORDER_ENTER else False)
+        return manager
+
+    def test_initial_stored_exp_failure_returns_to_verified_map_before_last_check(self):
+        manager = self._make_stored_exp_defer_manager(
+            initial_error=TrainingStoredExpUnavailable('counter unreadable'))
+        opsi = SimpleNamespace(
+            os_init=Mock(), globe_goto=Mock(), name_to_zone=lambda name: name,
+            is_in_map=Mock(return_value=True))
+        with patch('module.shipyard.development.ShipyardDevelopment') as shipyard, \
+                patch('module.os.training.priority_ship_names', return_value=()), \
+                patch('module.os.training.time.time', return_value=1_800_000_000):
+            shipyard.return_value.inspect_current_project.return_value = ('柴郡', None)
+            self.assertFalse(manager.maintain(opsi))
+        manager.device.click.assert_called_once_with(BACK_ARROW)
+        self.assertEqual(manager.device.screenshot.call_count, 3)
+        manager.config.cross_set.assert_called_once_with(
+            keys='OpsiHazard1Leveling.OpsiTraining.LastCheck', value=1_800_000_000)
+        manager._available_ships.assert_not_called()
+        manager.find_candidates.assert_not_called()
+        manager._deploy.assert_not_called()
+        manager._awaken_planned_ship.assert_not_called()
+        opsi.os_init.assert_called_once_with(skip_first_auto_search=True)
+
+    def test_initial_defer_fails_closed_without_last_check_if_detail_or_map_unknown(self):
+        for detail, back_visible, map_visible in (
+                (False, True, True), (True, False, True), (True, True, False)):
+            manager = self._make_stored_exp_defer_manager(
+                detail=detail, back_visible=back_visible, map_visible=map_visible,
+                initial_error=TrainingStoredExpUnavailable('counter unreadable'))
+            opsi = SimpleNamespace(
+                os_init=Mock(), globe_goto=Mock(), name_to_zone=lambda name: name,
+                is_in_map=Mock(return_value=map_visible))
+            with self.subTest(detail=detail, back_visible=back_visible, map_visible=map_visible), \
+                    patch('module.shipyard.development.ShipyardDevelopment') as shipyard, \
+                    patch('module.os.training.priority_ship_names', return_value=()):
+                shipyard.return_value.inspect_current_project.return_value = ('柴郡', None)
+                with self.assertRaises(RequestHumanTakeover):
+                    manager.maintain(opsi)
+            manager.config.cross_set.assert_not_called()
+            manager._available_ships.assert_not_called()
+
+    def test_generic_initial_error_and_later_stored_exp_error_are_not_deferred(self):
+        generic = self._make_stored_exp_defer_manager(
+            initial_error=RequestHumanTakeover('unknown ship state'))
+        opsi = SimpleNamespace(os_init=Mock(), globe_goto=Mock(), name_to_zone=lambda name: name)
+        with patch('module.shipyard.development.ShipyardDevelopment') as shipyard, \
+                patch('module.os.training.priority_ship_names', return_value=()):
+            shipyard.return_value.inspect_current_project.return_value = ('柴郡', None)
+            with self.assertRaisesRegex(RequestHumanTakeover, 'unknown ship state'):
+                generic.maintain(opsi)
+        generic.config.cross_set.assert_not_called()
+        generic.device.click.assert_not_called()
+
+        current = {
+            1: ShipCandidate('英仙座', '白鹰', 'main', 120, True, False, 0, 125, True),
+            2: ShipCandidate('彩主力甲', '白鹰', 'main', 100, True, False, 0, 100, True),
+            3: ShipCandidate('彩主力乙', '重樱', 'main', 100, True, False, 0, 100, True),
+            4: ShipCandidate('伊吹', '重樱', 'vanguard', 120, True, False, 0, 125, True),
+            5: ShipCandidate('彩先锋甲', '白鹰', 'vanguard', 100, True, False, 0, 100, True),
+            6: ShipCandidate('彩先锋乙', '重樱', 'vanguard', 100, True, False, 0, 100, True),
+        }
+        later = self._make_stored_exp_defer_manager(current=current)
+        later._awaken_planned_ship = Mock(
+            side_effect=TrainingStoredExpUnavailable('after-awakening read'))
+        with patch('module.shipyard.development.ShipyardDevelopment') as shipyard, \
+                patch('module.os.training.priority_ship_names', return_value=()):
+            shipyard.return_value.inspect_current_project.return_value = ('柴郡', None)
+            with self.assertRaisesRegex(TrainingStoredExpUnavailable, 'after-awakening read'):
+                later.maintain(opsi)
+        later.config.cross_set.assert_not_called()
+        later._awaken_planned_ship.assert_called_once()
+        later.device.click.assert_not_called()
 
     def test_no_candidate_retains_current_without_fleet_edit(self):
         current = {
