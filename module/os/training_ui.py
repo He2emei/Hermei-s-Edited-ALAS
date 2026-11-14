@@ -77,6 +77,32 @@ def detail_ship_lock(image):
     return None
 
 
+def _read_short_stored_exp_max(image):
+    """Recover only the verified short counter when two independent ROIs agree."""
+    max_reads = [
+        Ocr([area], letter=(255, 255, 255), threshold=128,
+            name=name).ocr(image)
+        for area, name in (
+            ((1214, 284, 1248, 306), 'TrainingStoredExpMaxA'),
+            ((1215, 286, 1247, 306), 'TrainingStoredExpMaxB'),
+        )
+    ]
+    if any(not isinstance(value, str)
+           or not re.fullmatch(r'[Mm][Aa8][Xx]', value) for value in max_reads):
+        return None
+    counters = [
+        Digit(area, letter=(255, 255, 255), threshold=threshold, name=name).ocr(image)
+        for area, threshold, name in (
+            ((1130, 277, 1208, 308), 48, 'TrainingStoredExpShortFull'),
+            ((1162, 282, 1208, 307), 128, 'TrainingStoredExpShortNarrow'),
+        )
+    ]
+    if any(not isinstance(value, int) or isinstance(value, bool)
+           or not 0 <= value <= 9999 for value in counters):
+        return None
+    return counters[0] if counters[0] == counters[1] else None
+
+
 
 
 def normalise_name(name):
@@ -388,10 +414,13 @@ class TrainingShipInspector(Awaken):
                         # suffix and bounded digit OCR.
                         tail = Ocr([(1208, 277, 1248, 308)], name='TrainingStoredExpTail').ocr(self.device.image)
                         if not re.fullmatch(r'/M[a8][xX]', tail.replace(' ', '')):
-                            continue
-                        stored = Digit((1130, 277, 1208, 308), name='TrainingStoredExpDigits').ocr(self.device.image)
-                        if not isinstance(stored, int) or not 0 <= stored <= 3_000_000:
-                            continue
+                            stored = _read_short_stored_exp_max(self.device.image)
+                            if stored is None:
+                                continue
+                        else:
+                            stored = Digit((1130, 277, 1208, 308), name='TrainingStoredExpDigits').ocr(self.device.image)
+                            if not isinstance(stored, int) or not 0 <= stored <= 3_000_000:
+                                continue
                         at_cap = True
             cap = level if at_cap else 100 if level < 100 else min(125, (level // 5 + 1) * 5)
             ship = ShipCandidate(name, faction, side, level, data['rarity'] == 6, full, stored, cap,

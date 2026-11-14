@@ -37,6 +37,102 @@ def candidate(name, faction='白鹰', position='main', level=90, cap=None):
 
 
 class TrainingUiReviewTest(unittest.TestCase):
+    def test_short_max_helper_requires_exact_dual_max_and_matching_short_counters(self):
+        from PIL import Image
+        fixture = ROOT / 'tests/fixtures/opsi_training/exp-max-short-counter.png'
+        self.assertEqual(Image.open(fixture).size, (118, 31))
+        image = np.asarray(Image.open(fixture).convert('RGB'))
+        cases = (
+            ('exact', ['M8X', 'M8X'], [5002, 5002], 5002),
+            ('unknown max', ['M?X', 'M8X'], [5002, 5002], None),
+            ('max conflict', ['M8X', 'M6X'], [5002, 5002], None),
+            ('counter conflict', ['M8X', 'M8X'], [5002, 502], None),
+            ('bool counter', ['M8X', 'M8X'], [True, True], None),
+            ('over short bound', ['M8X', 'M8X'], [10000, 10000], None),
+        )
+        expected_max_areas = [[(1214, 284, 1248, 306)], [(1215, 286, 1247, 306)]]
+        expected_digit_calls = [
+            ((1130, 277, 1208, 308), 48),
+            ((1162, 282, 1208, 307), 128),
+        ]
+        for label, max_values, counters, expected in cases:
+            ocr_calls, digit_calls = [], []
+            valid_max = all(value in ('M8X', 'Max') for value in max_values)
+
+            def ocr_factory(buttons, **kwargs):
+                name = kwargs.get('name')
+                ocr_calls.append((buttons, kwargs))
+                if name == 'TrainingStoredExpMaxA':
+                    return SimpleNamespace(ocr=lambda current: max_values[0])
+                if name == 'TrainingStoredExpMaxB':
+                    return SimpleNamespace(ocr=lambda current: max_values[1])
+                self.fail(f'unexpected OCR call: {name}')
+
+            def digit_factory(area, **kwargs):
+                name = kwargs.get('name')
+                digit_calls.append((area, kwargs))
+                index = 0 if name == 'TrainingStoredExpShortFull' else 1
+                return SimpleNamespace(ocr=lambda current: counters[index])
+
+            with self.subTest(case=label), \
+                    patch('module.os.training_ui.Ocr', side_effect=ocr_factory), \
+                    patch('module.os.training_ui.Digit', side_effect=digit_factory):
+                self.assertEqual(training_ui._read_short_stored_exp_max(image), expected)
+            self.assertEqual([call[0] for call in ocr_calls], expected_max_areas)
+            self.assertTrue(all(call[1].get('letter') == (255, 255, 255)
+                                and call[1].get('threshold') == 128 for call in ocr_calls))
+            self.assertEqual([(area, kwargs.get('threshold')) for area, kwargs in digit_calls],
+                             expected_digit_calls if valid_max else [])
+            self.assertTrue(all(kwargs.get('letter') == (255, 255, 255)
+                                for _, kwargs in digit_calls))
+
+    def test_real_anonymized_exp_crop_recovers_short_max(self):
+        from PIL import Image
+        crop = np.asarray(Image.open(
+            ROOT / 'tests/fixtures/opsi_training/exp-max-short-counter.png'
+        ).convert('RGB'))
+        image = np.zeros((720, 1280, 3), dtype=np.uint8)
+        image[277:308, 1130:1248] = crop
+        self.assertEqual(training_ui._read_short_stored_exp_max(image), 5002)
+
+    def test_read_ship_recovers_mogador_short_max_through_two_frame_gate(self):
+        from PIL import Image
+        frame = np.asarray(Image.open(
+            ROOT / 'tests/fixtures/opsi_training/tiger-105-post-awakening-exp-noise.png'
+        ).convert('RGB'))
+        inspector = TrainingShipInspector.__new__(TrainingShipInspector)
+        inspector.config = SimpleNamespace(SERVER='cn')
+        inspector.device = SimpleNamespace(image=frame, screenshot=Mock())
+        inspector.appear = Mock(return_value=True)
+        real_ocr, real_digit = training_ui.Ocr, training_ui.Digit
+
+        def ocr_factory(buttons, **kwargs):
+            name = kwargs.get('name')
+            values = {
+                'TrainingName': ['莫加多尔', '莫加多尔'],
+                'TrainingStoredExp': '5002/M6X',
+                'TrainingCurrentExp': '5002/M6X',
+                'TrainingCurrentExpNarrow': '5002/M6X',
+                'TrainingStoredExpTail': '/M6X',
+                'TrainingStoredExpMaxA': 'M8X',
+                'TrainingStoredExpMaxB': 'M8X',
+            }
+            if name in values:
+                return SimpleNamespace(ocr=lambda current: values[name])
+            return real_ocr(buttons, **kwargs)
+
+        def digit_factory(area, **kwargs):
+            name = kwargs.get('name')
+            if name in ('TrainingStoredExpShortFull', 'TrainingStoredExpShortNarrow'):
+                return SimpleNamespace(ocr=lambda current: 5002)
+            return real_digit(area, **kwargs)
+
+        with patch('module.os.training_ui.Ocr', side_effect=ocr_factory), \
+                patch('module.os.training_ui.Digit', side_effect=digit_factory):
+            ship = inspector.read_ship()
+        self.assertEqual((ship.name, ship.level, ship.stored_exp, ship.is_locked),
+                         ('莫加多尔', 105, 5002, True))
+
     def test_real_u73_detail_recovers_only_with_injected_original_wide_ocr_error(self):
         from PIL import Image
         frame = np.asarray(Image.open(
