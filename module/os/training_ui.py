@@ -327,11 +327,15 @@ class TrainingShipInspector(Awaken):
         self._check_cn()
         previous = None
         unreadable_max_previous = None
+        max_metadata_history = []
         star = cv2.imread('./assets/cn/opsi_training/gold_star.png')
         if star is None:
             raise RequestHumanTakeover('Training star template missing')
         star = cv2.cvtColor(star, cv2.COLOR_BGR2RGB)
         for _ in range(4):
+            max_metadata_history.append(None)
+            if len(max_metadata_history) > 2:
+                max_metadata_history.pop(0)
             self.device.screenshot()
             if not self.appear(EQUIPMENT_OPEN, offset=(5, 5)):
                 unreadable_max_previous = None
@@ -389,6 +393,10 @@ class TrainingShipInspector(Awaken):
             # verified intermediate level such as 104, the 105 cap follows
             # from the level itself; noisy unused EXP text must not block it.
             if level >= 100 and level % 5 == 0 and (full or data['rarity'] == 6):
+                max_metadata = (name, faction, side, level, stars, full, is_locked)
+                if is_locked is True and 1 <= stars <= data['max_stars'] \
+                        and _read_exact_stored_exp_max(self.device.image):
+                    max_metadata_history[-1] = max_metadata
                 text = Ocr([(1080, 277, 1248, 308)], name='TrainingStoredExp').ocr(self.device.image)
                 match = re.fullmatch(r'(\d{1,7})/[MmM8][Aa8][XxX]', text.replace(' ', ''))
                 # The game font's lowercase "a" is regularly recognized as 8.
@@ -463,6 +471,11 @@ class TrainingShipInspector(Awaken):
                 logger.info(f'Training ship: {ship}')
                 return ship
             previous = ship
+        if len(max_metadata_history) == 2 and max_metadata_history[0] is not None \
+                and max_metadata_history[0] == max_metadata_history[1]:
+            name, _, _, level, _, _, _ = max_metadata_history[-1]
+            raise TrainingStoredExpUnavailable(
+                f'Stored EXP remained unreadable for {name} at level {level}')
         raise RequestHumanTakeover('Cannot reliably read ship identity, level, stars or stored XP')
 
     def awaken_for_training(self, ship, priority_names=()):
