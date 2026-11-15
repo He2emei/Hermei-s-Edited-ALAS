@@ -59,6 +59,15 @@ class RuntimeHealthTest(unittest.TestCase):
             self.assertEqual(self.document()['phase'], 'waiting')
             self.assertEqual(self.document()['updated_at'], 1007)
 
+    def test_waiting_can_publish_selected_task_without_marking_it_active(self):
+        tracker = runtime_health.RuntimeHealth('alas2', self.temp.name, self.clock)
+        with patch.object(runtime_health, '_tracker', tracker):
+            self.clock.value += 4
+            runtime_health.waiting('OpsiExplore')
+        self.assertEqual(self.document()['phase'], 'waiting')
+        self.assertEqual(self.document()['task'], 'OpsiExplore')
+        self.assertEqual(self.document()['updated_at'], 1004)
+
     def test_pulse_is_throttled_and_state_changes_force_write(self):
         tracker = runtime_health.RuntimeHealth('alas2', self.temp.name, self.clock)
         with patch.object(runtime_health, '_tracker', tracker):
@@ -139,6 +148,50 @@ class RuntimeHealthTest(unittest.TestCase):
         with patch.object(runtime_health, 'waiting', side_effect=lambda: events.append('health-wait')):
             self.assertFalse(script._run('maintenance_probe'))
         self.assertEqual(events, ['health-wait', 'checker-wait'])
+
+    def test_get_next_task_publishes_future_task_before_all_idle_optimizations(self):
+        class StopAtWait(Exception):
+            pass
+
+        for method in ('close_game', 'goto_main', 'stay_there', 'invalid'):
+            with self.subTest(method=method):
+                tracker = runtime_health.RuntimeHealth('alas2', self.temp.name, self.clock)
+                script = object.__new__(AzurLaneAutoScript)
+                task = type('Task', (), {
+                    'command': 'OpsiExplore',
+                    'next_run': __import__('datetime').datetime.now() + __import__('datetime').timedelta(hours=1),
+                })()
+                config = type('Config', (), {
+                    'get_next': lambda self: task,
+                    'bind': lambda self, selected: None,
+                    'Optimization_WhenTaskQueueEmpty': method,
+                    'task_call': lambda self, name: None,
+                })()
+                script.config = config
+                device_events = []
+                script.device = type('Device', (), {
+                    'app_stop': lambda self: device_events.append('app_stop'),
+                    'release_during_wait': lambda self: device_events.append('release'),
+                })()
+                script.run = lambda name: device_events.append(name)
+                events = []
+
+                def stop_at_wait(future):
+                    data = self.document()
+                    events.append((data['phase'], data['task']))
+                    raise StopAtWait()
+
+                script.wait_until = stop_at_wait
+                script.is_first_task = True
+                config.task = None
+                with patch.object(runtime_health, '_tracker', tracker), \
+                        patch('module.base.resource.release_resources'), \
+                        patch('alas.AzurLaneConfig.is_hoarding_task', False, create=True), \
+                        patch('alas.logger.info'), patch('alas.logger.warning'):
+                    with self.assertRaises(StopAtWait):
+                        script.get_next_task()
+                self.assertEqual(events, [('waiting', 'OpsiExplore')])
+                self.assertEqual(self.document()['phase'], 'waiting')
 
 
 if __name__ == '__main__':
