@@ -70,8 +70,8 @@ class RuntimeHealth:
     def begin_task(self, task):
         self._set_state('active', str(task))
 
-    def waiting(self):
-        self._set_state('waiting', self.task)
+    def waiting(self, task=None):
+        self._set_state('waiting', self.task if task is None else str(task))
 
     def pulse(self):
         now = self.clock()
@@ -91,9 +91,9 @@ def begin_task(task):
         _tracker.begin_task(task)
 
 
-def waiting():
+def waiting(task=None):
     if _tracker is not None:
-        _tracker.waiting()
+        _tracker.waiting(task)
 
 
 def pulse():
