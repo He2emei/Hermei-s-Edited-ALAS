@@ -210,6 +210,97 @@ class TrainingUiReviewTest(unittest.TestCase):
             with self.assertRaises(TrainingStoredExpUnavailable):
                 inspector.read_ship()
 
+    def test_end_of_read_defers_only_when_final_two_exact_max_metadata_match(self):
+        sequences = (
+            (['莫加多尔'] * 4, [True] * 4,
+             [(72970, 72970), (2082, 20842), (2970, 2970), (72970, 72970)],
+             'defer', None),
+            (['莫加多尔', '未知舰船', '莫加多尔', '莫加多尔'], [True] * 4,
+             [(72970, 72970), (2082, 20842), (2082, 20842), (2082, 20842)],
+             'defer', None),
+            (['莫加多尔', '虎', '莫加多尔', '虎'], [True] * 4,
+             [(72970, 72970), (2082, 20842), (2970, 2970), (2970, 2970)],
+             'generic', None),
+            (['莫加多尔'] * 4, [True, True, False, True],
+             [(72970, 72970), (2082, 20842), (2970, 2970), (2970, 2970)],
+             'generic', None),
+            (['莫加多尔'] * 4, [True] * 4,
+             [(72970, 72970), (2082, 20842), (2970, 2970), (2970, 2970)],
+             'normal', None),
+            (['莫加多尔'] * 4, [True] * 4,
+             [(72970, 72970), (2082, 20842), (2970, 2970), (2082, 20842)],
+             'generic', [True, True, True, False]),
+        )
+        for names, locks, counters, expected, max_reads in sequences:
+            with self.subTest(names=names, locks=locks, counters=counters,
+                              expected=expected, max_reads=max_reads):
+                if expected == 'defer':
+                    with self.assertRaises(TrainingStoredExpUnavailable):
+                        self._read_mogador_with_recorded_counter_sequence(
+                            names, locks, counters, max_reads)
+                elif expected == 'generic':
+                    with self.assertRaises(RequestHumanTakeover) as raised:
+                        self._read_mogador_with_recorded_counter_sequence(
+                            names, locks, counters, max_reads)
+                    self.assertNotIsInstance(raised.exception, TrainingStoredExpUnavailable)
+                else:
+                    ship = self._read_mogador_with_recorded_counter_sequence(
+                        names, locks, counters, max_reads)
+                    self.assertEqual((ship.name, ship.stored_exp), ('莫加多尔', 2970))
+
+    def _read_mogador_with_recorded_counter_sequence(self, names, locks, counters,
+                                                       max_reads=None):
+        from PIL import Image
+        frame = np.asarray(Image.open(
+            ROOT / 'tests/fixtures/opsi_training/tiger-105-post-awakening-exp-noise.png'
+        ).convert('RGB'))
+        inspector = TrainingShipInspector.__new__(TrainingShipInspector)
+        inspector.config = SimpleNamespace(SERVER='cn')
+        frame_index = [-1]
+
+        def screenshot():
+            frame_index[0] += 1
+            inspector.device.image = frame
+
+        inspector.device = SimpleNamespace(image=frame, screenshot=screenshot)
+        inspector.appear = Mock(return_value=True)
+        real_ocr, real_digit = training_ui.Ocr, training_ui.Digit
+
+        def ocr_factory(buttons, **kwargs):
+            name = kwargs.get('name')
+            current = max(0, frame_index[0])
+            values = {
+                'TrainingName': [names[current], names[current]],
+                'TrainingStoredExp': '72970/M6X',
+                'TrainingCurrentExp': '72970/M6X',
+                'TrainingCurrentExpNarrow': '72970/M6X',
+                'TrainingStoredExpTail': '/M6X',
+            }
+            if name in ('TrainingStoredExpMaxA', 'TrainingStoredExpMaxB'):
+                current_max = max(0, frame_index[0])
+                return SimpleNamespace(ocr=lambda image:
+                                       'M8X' if max_reads is None or max_reads[current_max]
+                                       else 'M?X')
+            if name in values:
+                return SimpleNamespace(ocr=lambda image: values[name])
+            return real_ocr(buttons, **kwargs)
+
+        def digit_factory(area, **kwargs):
+            name = kwargs.get('name')
+            if name in ('TrainingStoredExpMaxCounterFull96', 'TrainingStoredExpMaxCounterFull128'):
+                index = 0 if name.endswith('Full96') else 1
+                return SimpleNamespace(ocr=lambda image: counters[current_index()][index])
+            return real_digit(area, **kwargs)
+
+        def current_index():
+            return max(0, frame_index[0])
+
+        with patch('module.os.training_ui.Ocr', side_effect=ocr_factory), \
+                patch('module.os.training_ui.Digit', side_effect=digit_factory), \
+                patch('module.os.training_ui.detail_ship_lock',
+                      side_effect=lambda image: locks[current_index()]):
+            return inspector.read_ship()
+
     def test_stable_exact_max_with_unreadable_counter_raises_specific_defer(self):
         with self.assertRaises(TrainingStoredExpUnavailable):
             self._read_mogador_with_unreadable_max_sequence()
