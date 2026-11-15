@@ -362,17 +362,24 @@ class SupplyPack(CampaignStatus):
         """
         self.ui_ensure(page_shop)
         self.goto_supply_pack()
-        if self.get_oil() < 21000:
-            server_today = get_server_weekday()
-            target = self.config.SupplyPack_DayOfWeek
-            target_name = day_name[target]
-            if server_today >= target:
+        oil = self.get_oil()
+        server_today = get_server_weekday()
+        target = self.config.SupplyPack_DayOfWeek
+        target_name = day_name[target]
+        eligible_day = server_today >= target
+
+        if oil < 21000:
+            if eligible_day:
                 if getattr(self.config, 'SERVER', '') == 'cn':
                     self._buy_cn_weekly_free()
                 else:
                     self.supply_pack_buy(FREE_SUPPLY_PACK)
             else:
                 logger.info(f'Delaying free week supply pack to {target_name}')
+        elif (getattr(self.config, 'SERVER', '') == 'cn'
+              and server_today in (5, 6) and eligible_day):
+            logger.info('Weekend CN weekly free pack claim bypasses the high-oil threshold')
+            self._buy_cn_weekly_free()
         else:
             logger.info('Oil > 21000, unable to buy free weekly supply pack')
 
