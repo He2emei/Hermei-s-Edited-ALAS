@@ -108,6 +108,32 @@ def _read_stored_exp_max_counter(image):
     return counters[0] if counters[0] == counters[1] else None
 
 
+def _read_split_current_exp(image):
+    """Read the verified five-digit/five-digit EXP layout without its slash.
+
+    This bounded CN layout is a fallback for a failed whole-fraction read.
+    It never recovers stored EXP and cannot replace an exact MAX marker.
+    """
+    if _read_exact_stored_exp_max(image):
+        return None
+    readings = []
+    for threshold in (96, 128):
+        current = Ocr([(1136, 283, 1190, 306)], threshold=threshold,
+                      name='TrainingCurrentExpNumerator').ocr(image)
+        total = Ocr([(1199, 282, 1248, 306)], threshold=threshold,
+                    name='TrainingCurrentExpDenominator').ocr(image)
+        # The fixed denominator crop covers only the verified five-digit
+        # layout. Do not accept a clipped four-digit total or guess a prefix.
+        if not isinstance(current, str) or not re.fullmatch(r'[1-9][0-9]{4}', current) \
+                or not isinstance(total, str) or not re.fullmatch(r'[1-9][0-9]{4}', total):
+            return None
+        pair = (int(current), int(total))
+        if not 0 <= pair[0] < pair[1] <= 3_000_000:
+            return None
+        readings.append(pair)
+    return readings[0] if readings[0] == readings[1] else None
+
+
 class TrainingStoredExpUnavailable(RequestHumanTakeover):
     """Known locked ship at an awakening boundary has an unreadable MAX counter."""
 
@@ -422,8 +448,15 @@ class TrainingShipInspector(Awaken):
                         counter = Ocr([(1130, 281, 1248, 308)], name='TrainingCurrentExpNarrow').ocr(
                             self.device.image).replace(' ', '')
                         fraction = re.fullmatch(r'(\d{1,7})/([1-9]\d{1,6})', counter)
-                    if fraction:
-                        current, total = map(int, fraction.groups())
+                    numeric_exp = tuple(map(int, fraction.groups())) if fraction else None
+                    if fraction is None and max_metadata_history[-1] is None \
+                            and re.fullmatch(r'[1-9][0-9]{4}[Zz:/]{1,3}[0-9]{4,5}', counter):
+                        # Only the verified numeric slash/7 merge uses this
+                        # layout. MAX-like or arbitrary unknown text retains
+                        # the existing stored-EXP protection path below.
+                        numeric_exp = _read_split_current_exp(self.device.image)
+                    if numeric_exp is not None:
+                        current, total = numeric_exp
                         if current < total <= 3_000_000:
                             if level == 125:
                                 unreadable_max_previous = None
