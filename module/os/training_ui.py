@@ -134,7 +134,11 @@ def _read_split_current_exp(image):
     return readings[0] if readings[0] == readings[1] else None
 
 
-class TrainingStoredExpUnavailable(RequestHumanTakeover):
+class TrainingExperienceUnavailable(RequestHumanTakeover):
+    """Stable locked ship detail has unreadable EXP; no candidate is returned."""
+
+
+class TrainingStoredExpUnavailable(TrainingExperienceUnavailable):
     """Known locked ship at an awakening boundary has an unreadable MAX counter."""
 
 
@@ -354,11 +358,15 @@ class TrainingShipInspector(Awaken):
         previous = None
         unreadable_max_previous = None
         max_metadata_history = []
+        unreadable_exp_history = []
         star = cv2.imread('./assets/cn/opsi_training/gold_star.png')
         if star is None:
             raise RequestHumanTakeover('Training star template missing')
         star = cv2.cvtColor(star, cv2.COLOR_BGR2RGB)
         for _ in range(4):
+            unreadable_exp_history.append(None)
+            if len(unreadable_exp_history) > 2:
+                unreadable_exp_history.pop(0)
             max_metadata_history.append(None)
             if len(max_metadata_history) > 2:
                 max_metadata_history.pop(0)
@@ -485,6 +493,8 @@ class TrainingShipInspector(Awaken):
                                 stored = None
                         if stored is None:
                             metadata = (name, faction, side, level, stars, full, is_locked)
+                            if is_locked is True and 1 <= stars <= data['max_stars'] and level < 125:
+                                unreadable_exp_history[-1] = metadata
                             defer_eligible = has_exact_max and is_locked is True \
                                 and 1 <= stars <= data['max_stars'] \
                                 and level >= 100 and level % 5 == 0 \
@@ -509,6 +519,11 @@ class TrainingShipInspector(Awaken):
             name, _, _, level, _, _, _ = max_metadata_history[-1]
             raise TrainingStoredExpUnavailable(
                 f'Stored EXP remained unreadable for {name} at level {level}')
+        if len(unreadable_exp_history) == 2 and unreadable_exp_history[0] is not None \
+                and unreadable_exp_history[0] == unreadable_exp_history[1]:
+            name, _, _, level, _, _, _ = unreadable_exp_history[-1]
+            raise TrainingExperienceUnavailable(
+                f'EXP unreadable for {name} at level {level}; ship metadata remained stable')
         raise RequestHumanTakeover('Cannot reliably read ship identity, level, stars or stored XP')
 
     def awaken_for_training(self, ship, priority_names=()):
