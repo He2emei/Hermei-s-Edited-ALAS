@@ -43,10 +43,12 @@ class OpsiAutoSearchProgressTest(unittest.TestCase):
         app.hp_reset = lambda: None
         app.hp_get = lambda: None
         app.appear = lambda *args, **kwargs: False
+        app.match_template_color = lambda *args, **kwargs: False
+        app.walk_counter_changed = Mock(return_value=False)
         app.handle_os_auto_search_map_option = lambda **kwargs: False
         app.handle_retirement = lambda: False
         app.combat_appear = lambda: False
-        app.handle_map_event = lambda: False
+        app.handle_map_event = Mock(return_value=False)
         app.on_auto_search_battle_count_reset = lambda: None
         app.on_auto_search_battle_count_add = lambda: None
         app.interrupt_auto_search = Mock()
@@ -77,7 +79,20 @@ class OpsiAutoSearchProgressTest(unittest.TestCase):
         app.interrupt_auto_search.assert_not_called()
         # At the exact 300-second boundary, repeated map frames and stuck
         # record cleanup have not refreshed the business-progress deadline.
-        self.assertEqual(app.device.stuck_record_clear.call_count, 3)
+        self.assertEqual(app.device.stuck_record_clear.call_count, 1)
+
+    def test_visual_walk_changes_do_not_replace_business_progress(self):
+        from module.os.map import AUTO_SEARCH_OS_MAP_OPTION_ON
+
+        app = self.make_map()
+        app.match_template_color = lambda button, **kwargs: button is AUTO_SEARCH_OS_MAP_OPTION_ON
+        app.walk_counter_changed.return_value = True
+        clock_patch, timer_patch = self.run_with_clock(app, FakeClock())
+        with clock_patch, timer_patch, self.assertRaises(RequestHumanTakeover) as caught:
+            app.os_auto_search_daemon()
+        self.assertIn('no business progress', str(caught.exception))
+        self.assertGreater(app.device.stuck_record_clear.call_count, 1)
+        app.interrupt_auto_search.assert_not_called()
 
     def test_cross_month_timeout_preserves_old_month_protection(self):
         app = self.make_map(command='OpsiCrossMonth', switched=True)
@@ -131,7 +146,7 @@ class OpsiAutoSearchProgressTest(unittest.TestCase):
             app.os_auto_search_daemon()
         # The timeout occurs after three complete idle iterations after the
         # nested battle returns, proving that its duration was excluded.
-        self.assertEqual(app.device.stuck_record_clear.call_count, 3)
+        self.assertEqual(app.handle_map_event.call_count, 3)
 
     def test_each_daemon_invocation_starts_a_fresh_deadline(self):
         app = self.make_map()
@@ -141,11 +156,11 @@ class OpsiAutoSearchProgressTest(unittest.TestCase):
         with clock_patch, timer_patch:
             with self.assertRaises(RequestHumanTakeover):
                 app.os_auto_search_daemon()
-            first_count = app.device.stuck_record_clear.call_count
+            first_count = app.handle_map_event.call_count
             with self.assertRaises(RequestHumanTakeover):
                 app.os_auto_search_daemon()
         self.assertEqual(first_count, 3)
-        self.assertEqual(app.device.stuck_record_clear.call_count, 6)
+        self.assertEqual(app.handle_map_event.call_count, 6)
 
 
 if __name__ == '__main__':
