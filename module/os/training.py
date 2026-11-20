@@ -116,10 +116,53 @@ class TrainingFleetManager(TrainingShipInspector):
     def _open_slot(self, slot, target=None, priority=False):
         if slot not in ROTATION_SLOTS or not self._is_selector():
             raise RequestHumanTakeover('Attempt to edit an immutable slot or unknown UI')
-        y = self._fourth_row_y()
-        self.device.click(point_button((414, 517, 620, 729, 833, 934)[slot - 1], y,
-                                       'TRAINING_SLOT_' + str(slot)))
-        self._wait(lambda: self.appear(DOCK_CHECK, offset=(20, 20)), 'deployment ship dock')
+        x = (414, 517, 620, 729, 833, 934)[slot - 1]
+        button = 'TRAINING_SLOT_' + str(slot)
+        touches = 0
+        last_touch = None
+        selector_y = None
+        selector_stable = 0
+
+        def touch(row_y):
+            nonlocal touches, last_touch, selector_y, selector_stable
+            self.device.click(point_button(x, row_y, button))
+            touches += 1
+            last_touch = time.monotonic()
+            selector_y = None
+            selector_stable = 0
+
+        touch(self._fourth_row_y())
+        # A missed native touch can leave the selector looking unchanged. Retry
+        # only after two fresh selector observations agree on the row location,
+        # and at least two seconds after the previous touch. Unknown transition
+        # frames are observed but never clicked. Require a stable dock observation
+        # before running dock controls.
+        for _ in range(40):
+            self.device.sleep(0.15)
+            self.device.screenshot()
+            if self.appear(DOCK_CHECK, offset=(20, 20)):
+                self.device.sleep(0.6)
+                self.device.screenshot()
+                if self.appear(DOCK_CHECK, offset=(20, 20)):
+                    break
+                selector_y = None
+                selector_stable = 0
+                continue
+            if not self._is_selector():
+                selector_y = None
+                selector_stable = 0
+                continue
+            row_y = self._fourth_row_y()
+            if row_y == selector_y:
+                selector_stable += 1
+            else:
+                selector_y = row_y
+                selector_stable = 1
+            if selector_stable >= 2:
+                if touches < 3 and time.monotonic() - last_touch >= 2.0:
+                    touch(row_y)
+        else:
+            raise RequestHumanTakeover('Training UI timeout: deployment ship dock')
         self.dock_favourite_set(False)
         self.dock_sort_method_dsc_set(True)
         self.dock_filter_set(
