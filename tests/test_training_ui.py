@@ -594,10 +594,12 @@ class TrainingUiReviewTest(unittest.TestCase):
         inspector._is_selector = lambda: True
         inspector._fourth_row_y = lambda: 300
         inspector._wait = lambda *args, **kwargs: None
+        inspector.appear = lambda *args, **kwargs: True
         inspector.dock_favourite_set = lambda *args, **kwargs: None
         inspector.dock_sort_method_dsc_set = lambda *args, **kwargs: None
         inspector.dock_filter_set = lambda *args, **kwargs: None
-        inspector.device = SimpleNamespace(click=lambda button: None)
+        inspector.device = SimpleNamespace(click=lambda button: None, screenshot=lambda: None,
+                                            sleep=lambda seconds: None)
         with patch('module.os.training.DOCK_SCROLL.set_top') as set_top:
             for slot in (2, 3, 5, 6):
                 with self.subTest(slot=slot):
@@ -628,10 +630,11 @@ class TrainingUiReviewTest(unittest.TestCase):
         inspector._is_selector = lambda: True
         inspector._fourth_row_y = lambda: 300
         inspector._wait = lambda *args, **kwargs: None
+        inspector.appear = lambda *args, **kwargs: True
         inspector.dock_favourite_set = Mock()
         inspector.dock_sort_method_dsc_set = Mock()
         inspector.dock_filter_set = Mock()
-        inspector.device = SimpleNamespace(click=Mock())
+        inspector.device = SimpleNamespace(click=Mock(), screenshot=Mock(), sleep=Mock())
         target = ShipCandidate('虎', '皇家', 'vanguard', 71, True, False, None, 120, True)
         with patch('module.os.training.DOCK_SCROLL.set_top'):
             inspector._open_slot(5, target, priority=True)
