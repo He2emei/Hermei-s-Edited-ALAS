@@ -645,7 +645,12 @@ class AzurLaneConfig(ConfigUpdater, ManualConfig, GeneratedConfig, ConfigWatcher
     def campaign_profile(self):
         mode = self.cross_get(
             keys=['General', 'CampaignProfile', 'Mode'], default=CampaignProfile.DAILY)
-        return CampaignProfile(mode)
+        coalition_active = (
+            self.cross_get(keys=['Coalition', 'Scheduler', 'Enable'], default=False) is True
+            and self.cross_get(keys=['Coalition', 'Campaign', 'Event'], default='') == 'coalition_20261124'
+            and self.cross_get(keys=['Alas', 'Emulator', 'PackageName'], default='') == 'com.bilibili.azurlane'
+        )
+        return CampaignProfile(mode, coalition_active=coalition_active)
 
     @property
     def campaign_name(self):

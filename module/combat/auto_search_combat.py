@@ -206,6 +206,10 @@ class AutoSearchCombat(MapOperation, Combat, CampaignStatus):
         """
         return False
 
+    def auto_search_combat_early_end(self):
+        """Read-only early handoff for subclasses with a verified settlement UI."""
+        return False
+
     def auto_search_combat_execute(self, emotion_reduce, fleet_index):
         """
         Args:
@@ -222,6 +226,10 @@ class AutoSearchCombat(MapOperation, Combat, CampaignStatus):
         self.device.screenshot_interval_set('combat')
         for _ in self.loop():
 
+            if self.auto_search_combat_early_end():
+                self.device.screenshot_interval_set()
+                return
+
             if self.handle_combat_automation_confirm():
                 continue
             if self.handle_story_skip():
@@ -237,6 +245,12 @@ class AutoSearchCombat(MapOperation, Combat, CampaignStatus):
                 logger.attr('BattleUI', pause)
                 break
 
+        # A settlement may appear in the transition between loading and control.
+        # Check before reset/emotion handling so the caller can classify it safely.
+        if self.auto_search_combat_early_end():
+            self.device.screenshot_interval_set()
+            return
+
         logger.info('Auto Search combat execute')
         self.submarine_call_reset()
         submarine_mode = 'do_not_use'
@@ -251,6 +265,10 @@ class AutoSearchCombat(MapOperation, Combat, CampaignStatus):
         auto = self.config.Fleet_Fleet1Mode if fleet_index == 1 else self.config.Fleet_Fleet2Mode
 
         for _ in self.loop():
+
+            if self.auto_search_combat_early_end():
+                self.device.screenshot_interval_set()
+                return
 
             if self.handle_submarine_call(submarine_mode):
                 continue

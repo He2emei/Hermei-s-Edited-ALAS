@@ -39,6 +39,14 @@ class CoalitionCombat(CoalitionUI, CampaignBase):
         self.appear_then_click(button, offset=(0, 0), interval=2)
         return True
 
+    def auto_search_combat_early_end(self):
+        """Yield settlement screens to the double-frame handler without clicking."""
+        if (self.config.SERVER != 'cn' or
+                self.config.Campaign_Event != 'coalition_20261124'):
+            return False
+        return TruthAcademyReader().read_reward(self.device.image) in (
+            'battle_result', 'total_rewards')
+
     def coalition_combat_re_enter(self, skip_first_screenshot=True):
         """
         Pages:
@@ -55,14 +63,16 @@ class CoalitionCombat(CoalitionUI, CampaignBase):
             else:
                 self.device.screenshot()
 
+            # Settlement screens can retain battle HUD cues. Classify them before
+            # loading/HUD checks so they reach the event's double-frame gate.
+            if self.handle_truth_academy_reward():
+                continue
+
             # End
             if self.is_combat_loading():
                 break
             if self.is_combat_executing():
                 break
-
-            if self.handle_truth_academy_reward():
-                continue
             if self.in_coalition():
                 raise CampaignEnd
 

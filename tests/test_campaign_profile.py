@@ -69,6 +69,31 @@ class CampaignProfileTest(unittest.TestCase):
         self.assertFalse(config.is_task_enabled('Event'))
         self.assertTrue(config.data['Event']['Scheduler']['Enable'])
 
+    def coalition_config(self, enabled=True, event='coalition_20261124', package='com.bilibili.azurlane'):
+        config = object.__new__(AzurLaneConfig)
+        config.data = {'General': {'CampaignProfile': {'Mode': 'event'}},
+                       'Alas': {'Emulator': {'PackageName': package}},
+                       'Coalition': {'Campaign': {'Event': event}, 'Scheduler': {'Enable': enabled}},
+                       'GemsFarming': {'Scheduler': {'Enable': True}}}
+        return config
+
+    def test_active_truth_masks_main_gems_without_mutating_saved_enable(self):
+        config = self.coalition_config()
+        self.assertFalse(config.is_task_enabled('GemsFarming'))
+        self.assertTrue(config.is_task_enabled('Coalition'))
+        self.assertTrue(config.data['GemsFarming']['Scheduler']['Enable'])
+        self.assertTrue(config.campaign_profile.allows('OpsiHazard1Leveling'))
+
+    def test_native_event_unavailable_or_user_disable_restores_saved_gems(self):
+        config = self.coalition_config()
+        config.data['Coalition']['Scheduler']['Enable'] = False
+        self.assertTrue(config.is_task_enabled('GemsFarming'))
+        self.assertTrue(config.data['GemsFarming']['Scheduler']['Enable'])
+
+    def test_foreign_legacy_or_unverified_enable_do_not_mask_gems(self):
+        for kwargs in ({'event': 'coalition_20260723'}, {'package': 'com.YoStarEN.AzurLane'}, {'enabled': 'true'}):
+            self.assertTrue(self.coalition_config(**kwargs).is_task_enabled('GemsFarming'))
+
     def test_scheduler_excludes_profile_masked_tasks(self):
         due = datetime.now() - timedelta(minutes=1)
         config = object.__new__(AzurLaneConfig)

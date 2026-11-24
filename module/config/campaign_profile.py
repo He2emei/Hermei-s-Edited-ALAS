@@ -11,13 +11,14 @@ class CampaignProfile:
         'Raid', 'RaidDaily', 'Hospital', 'Coalition', 'CoalitionSp',
     })
 
-    def __init__(self, mode):
+    def __init__(self, mode, coalition_active=False):
         self.mode = mode if mode in (self.DAILY, self.EVENT) else self.DAILY
+        self.coalition_active = coalition_active is True
 
     def allows(self, task):
         if self.mode == self.DAILY:
             return task not in self.EVENT_SORTIES
-        return task not in self.MAIN_SORTIES
+        return task not in self.MAIN_SORTIES and not (self.coalition_active and task == 'GemsFarming')
 
     def gems_farming_route(self, name, folder, mode):
         if self.mode == self.DAILY and folder != 'campaign_main':

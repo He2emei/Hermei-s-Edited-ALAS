@@ -586,6 +586,10 @@ class UI(InfoHandler):
         Args:
             get_ship:
         """
+        from module.ui.known_settings import dismiss_known_voice_settings
+        if dismiss_known_voice_settings(self):
+            return True
+
         # Popups appear at page_os
         # Has a popup_confirm variant
         # so must take precedence
