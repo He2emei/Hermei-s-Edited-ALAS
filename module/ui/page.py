@@ -1,6 +1,7 @@
 import traceback
 
 from module.coalition.assets import *
+from module.coalition.truth_academy import TRUTH_HOME, TRUTH_MAIN_CHECK
 from module.event_hospital.assets import HOSIPITAL_CHECK
 from module.freebies.assets import MAIL_ENTER
 from module.raid.assets import *
@@ -172,6 +173,11 @@ page_coalition = Page(VERITAS_COALITION_CHECK)
 page_coalition.link(button=VERITAS_GOTO_HOME, destination=page_main)
 page_coalition.link(button=BACK_ARROW, destination=page_campaign_menu)
 page_campaign_menu.link(button=CAMPAIGN_MENU_GOTO_EVENT, destination=page_coalition)
+
+# Truth Academy (CN only); its other destinations are not yet verified.
+page_coalition_truth = Page(TRUTH_MAIN_CHECK)
+page_coalition_truth.link(button=TRUTH_HOME, destination=page_main)
+page_campaign_menu.link(button=CAMPAIGN_MENU_GOTO_EVENT, destination=page_coalition_truth)
 
 # Operation Siren
 page_os = Page(OS_CHECK)

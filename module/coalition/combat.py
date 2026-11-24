@@ -2,6 +2,11 @@ from module.base.timer import Timer
 from module.campaign.campaign_base import CampaignBase
 from module.coalition.assets import *
 from module.coalition.ui import CoalitionUI
+from module.coalition.truth_academy import (
+    TRUTH_BATTLE_RESULT_CONFIRM,
+    TRUTH_TOTAL_REWARDS_LEAVE,
+    TruthAcademyReader,
+)
 from module.exception import CampaignEnd
 from module.logger import logger
 from module.os_ash.assets import BATTLE_STATUS
@@ -9,6 +14,30 @@ from module.os_ash.assets import BATTLE_STATUS
 
 class CoalitionCombat(CoalitionUI, CampaignBase):
     battle_status_click_interval = 2
+
+    def handle_truth_academy_reward(self):
+        """Safely dismiss only the two verified CN Truth Academy settlements."""
+        if (self.config.SERVER != 'cn' or
+                self.config.Campaign_Event != 'coalition_20261124'):
+            return False
+
+        reader = TruthAcademyReader()
+        reward = reader.read_reward(self.device.image)
+        if reward not in ('battle_result', 'total_rewards'):
+            return False
+
+        # A second independent screenshot is required before any event-specific click.
+        self.device.screenshot()
+        if reader.read_reward(self.device.image) != reward:
+            # Consume this changed frame so legacy reward clicks cannot act on it.
+            return True
+
+        if reward == 'battle_result':
+            button = TRUTH_BATTLE_RESULT_CONFIRM
+        else:
+            button = TRUTH_TOTAL_REWARDS_LEAVE
+        self.appear_then_click(button, offset=(0, 0), interval=2)
+        return True
 
     def coalition_combat_re_enter(self, skip_first_screenshot=True):
         """
@@ -31,6 +60,9 @@ class CoalitionCombat(CoalitionUI, CampaignBase):
                 break
             if self.is_combat_executing():
                 break
+
+            if self.handle_truth_academy_reward():
+                continue
             if self.in_coalition():
                 raise CampaignEnd
 

@@ -21,7 +21,7 @@ from module.os_handler.assets import (AUTO_SEARCH_REWARD, EXCHANGE_CHECK, RESET_
 from module.raid.assets import *
 from module.ui.assets import *
 from module.ui.page import Page, page_academy, page_campaign, page_event, page_main, page_main_white, page_sp, \
-    page_tactical
+    page_tactical, page_coalition_truth
 from module.ui_white.assets import *
 
 
@@ -35,6 +35,11 @@ class UI(InfoHandler):
             offset:
             interval:
         """
+        if page is page_coalition_truth:
+            if self.config.SERVER != 'cn':
+                return False
+            from module.coalition.truth_academy import TruthAcademyReader
+            return TruthAcademyReader().read(self.device.image) == 'main'
         if page == page_main:
             if self.appear(page_main_white.check_button, offset=offset, interval=interval):
                 return True

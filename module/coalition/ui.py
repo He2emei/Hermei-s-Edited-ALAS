@@ -1,4 +1,7 @@
+import time
+
 from module.base.timer import Timer
+from module.base.button import Button
 from module.coalition.assets import *
 from module.combat.assets import BATTLE_PREPARATION
 from module.combat.combat import Combat
@@ -7,6 +10,13 @@ from module.logger import logger
 from module.ui.assets import BACK_ARROW
 from module.ui.page import page_coalition
 from module.ui.switch import Switch
+from module.coalition.truth_academy import (
+    TruthAcademyReader, TRUTH_EASY, TRUTH_NORMAL, TRUTH_HARD, TRUTH_PROCEED,
+)
+
+TRUTH_EVENT = 'coalition_20261124'
+TRUTH_SELECT_SINGLE = Button(area=(964, 384, 1056, 407), color=(54, 68, 96),
+                             button=(964, 384, 1056, 407), name='TRUTH_SELECT_SINGLE')
 
 
 class NeoncitySwitch(Switch):
@@ -45,6 +55,8 @@ class VeritasSwitch(Switch):
 class CoalitionUI(Combat):
     def in_coalition(self):
         # The same as raid
+        if self.config.SERVER == 'cn' and self.config.Campaign_Event == TRUTH_EVENT:
+            return TruthAcademyReader().read(self.device.image) == 'main'
         return self.ui_page_appear(page_coalition, offset=(20, 20))
 
     def in_coalition_20251120_difficulty_selection(self):
@@ -59,7 +71,11 @@ class CoalitionUI(Combat):
         Pages:
             in: in_coalition
         """
-        if event == 'coalition_20230323':
+        if event == TRUTH_EVENT:
+            if self.config.SERVER != 'cn' or mode != 'battle' or not self.in_coalition():
+                raise RequestHumanTakeover('Truth Academy mode/page is unverified')
+            return
+        elif event == 'coalition_20230323':
             mode_switch = Switch('CoalitionMode', offset=(20, 20))
             # Note that switch button are reversed
             # but TW rerun event at 20260703 does not have button reversed
@@ -166,6 +182,9 @@ class CoalitionUI(Combat):
             Button: Entrance button
         """
         dic = {
+            (TRUTH_EVENT, 'easy'): TRUTH_EASY,
+            (TRUTH_EVENT, 'normal'): TRUTH_NORMAL,
+            (TRUTH_EVENT, 'hard'): TRUTH_HARD,
             # FROSTFALL
             ('coalition_20230323', 'tc1'): FROSTFALL_TC1,
             ('coalition_20230323', 'tc2'): FROSTFALL_TC2,
@@ -266,6 +285,9 @@ class CoalitionUI(Combat):
             int: Number of battles
         """
         dic = {
+            (TRUTH_EVENT, 'easy'): 1,
+            (TRUTH_EVENT, 'normal'): 2,
+            (TRUTH_EVENT, 'hard'): 3,
             # FROSTFALL
             ('coalition_20230323', 'tc1'): 1,
             ('coalition_20230323', 'tc2'): 2,
@@ -363,6 +385,9 @@ class CoalitionUI(Combat):
         """
         stage = stage.lower()
 
+        if event == TRUTH_EVENT:
+            return self._truth_handle_fleet_preparation(stage, mode)
+
         if event == 'coalition_20230323':
             # No fleet switch in TC1
             if stage in ['tc1', 'sp']:
@@ -392,6 +417,75 @@ class CoalitionUI(Combat):
             raise RequestHumanTakeover
 
         return clicked
+
+    def _truth_handle_fleet_preparation(self, stage, mode):
+        """Validate current page and party; never auto-prepare the fleet."""
+        if self.config.SERVER != 'cn' or stage not in ('easy', 'normal', 'hard') or mode != 'single':
+            raise RequestHumanTakeover('Truth Academy stage/fleet mode is unverified')
+        reader = TruthAcademyReader()
+
+        def frame():
+            self.device.screenshot()
+            return self.device.image
+
+        def read_mode(image):
+            page = reader.read(image)
+            expected = {
+                'easy': 'simple_preparation',
+                'normal': 'normal_preparation',
+                'hard': 'hard_preparation',
+            }[stage]
+            if page != expected:
+                return None
+            return reader.read_fleet_mode(image)
+
+        first, second = frame(), frame()
+        first_mode, second_mode = read_mode(first), read_mode(second)
+        if first_mode not in ('single', 'multi') or first_mode != second_mode:
+            raise RequestHumanTakeover('Truth Academy preparation state is unknown or changing')
+
+        changed = False
+        if stage in ('normal', 'hard') and first_mode == 'multi':
+            deadline = time.monotonic() + 8
+            confirmed = False
+            last_click = 0.0
+            for _ in range(2):
+                if time.monotonic() >= deadline:
+                    break
+                if last_click:
+                    wait = max(0.0, 1.0 - (time.monotonic() - last_click))
+                    if wait:
+                        time.sleep(wait)
+                if time.monotonic() >= deadline:
+                    break
+                self.device.click(TRUTH_SELECT_SINGLE)
+                last_click = time.monotonic()
+                changed = True
+                after_a, after_b = frame(), frame()
+                mode_a, mode_b = read_mode(after_a), read_mode(after_b)
+                if mode_a not in ('single', 'multi') or mode_a != mode_b:
+                    raise RequestHumanTakeover('Truth Academy fleet selector changed unexpectedly')
+                if mode_a == 'single':
+                    first, second = after_a, after_b
+                    confirmed = True
+                    break
+            if not confirmed or time.monotonic() > deadline:
+                raise RequestHumanTakeover('Truth Academy single fleet selection was not confirmed')
+        elif first_mode != 'single':
+            raise RequestHumanTakeover('Truth Academy multi fleet is unsupported')
+
+        levels_a = reader.read_fleet_levels(first)
+        levels_b = reader.read_fleet_levels(second)
+        valid_levels = lambda levels: (
+            levels is not None and len(levels) == 6 and
+            all(type(level) is int and 0 <= level <= 125 for level in levels) and
+            any(level > 0 for level in levels[:3]) and
+            any(level > 0 for level in levels[3:])
+        )
+        if (not valid_levels(levels_a) or not valid_levels(levels_b) or
+                levels_a != levels_b):
+            raise RequestHumanTakeover('Truth Academy party levels are unreadable or changing')
+        return changed
 
     def coalition_map_exit(self, event):
         """

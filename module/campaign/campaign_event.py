@@ -4,9 +4,10 @@ from datetime import datetime
 from module.campaign.campaign_status import CampaignStatus
 from module.config.config_updater import COALITIONS, EVENTS, GEMS_FARMINGS, HOSPITAL, MARITIME_ESCORTS, RAIDS
 from module.config.utils import DEFAULT_TIME
+from module.exception import ScriptError
 from module.logger import logger
 from module.ui.assets import CAMPAIGN_MENU_NO_EVENT
-from module.ui.page import page_campaign_menu, page_coalition, page_event, page_sp
+from module.ui.page import page_campaign_menu, page_coalition, page_coalition_truth, page_event, page_sp
 from module.war_archives.assets import WAR_ARCHIVES_CAMPAIGN_CHECK
 
 
@@ -179,6 +180,18 @@ class CampaignEvent(CampaignStatus):
             return True
 
     def ui_goto_coalition(self):
+        if self.config.Campaign_Event == 'coalition_20261124':
+            if self.config.SERVER != 'cn':
+                raise ScriptError('Truth Academy coalition is only verified for CN')
+            if self.ui_get_current_page() == page_coalition_truth:
+                logger.info('Already at page_coalition_truth')
+                return True
+            self.ui_goto(page_campaign_menu)
+            if self.is_event_entrance_available():
+                self.ui_goto(page_coalition_truth)
+                return True
+            return
+
         # Already in page_event, skip event_check.
         if self.ui_get_current_page() == page_coalition:
             logger.info('Already at page_coalition')
