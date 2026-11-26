@@ -1,4 +1,5 @@
 import unittest
+from itertools import cycle
 from unittest.mock import Mock, patch
 
 from module.exception import RequestHumanTakeover
@@ -44,7 +45,7 @@ class OpsiAutoSearchProgressTest(unittest.TestCase):
         app.hp_get = lambda: None
         app.appear = lambda *args, **kwargs: False
         app.match_template_color = lambda *args, **kwargs: False
-        app.walk_counter_changed = Mock(return_value=False)
+        app.get_walk_counter = Mock(return_value=0)
         app.handle_os_auto_search_map_option = lambda **kwargs: False
         app.handle_retirement = lambda: False
         app.combat_appear = lambda: False
@@ -86,7 +87,7 @@ class OpsiAutoSearchProgressTest(unittest.TestCase):
 
         app = self.make_map()
         app.match_template_color = lambda button, **kwargs: button is AUTO_SEARCH_OS_MAP_OPTION_ON
-        app.walk_counter_changed.return_value = True
+        app.get_walk_counter.side_effect = cycle((1, 2, 3, 0))
         clock_patch, timer_patch = self.run_with_clock(app, FakeClock())
         with clock_patch, timer_patch, self.assertRaises(RequestHumanTakeover) as caught:
             app.os_auto_search_daemon()

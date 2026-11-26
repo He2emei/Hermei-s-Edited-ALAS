@@ -6,7 +6,7 @@ import numpy as np
 
 from module.base.button import Button
 from module.exception import RequestHumanTakeover
-from module.os.training import TrainingFleetManager
+from module.os.training import DeploymentTargetUnavailable, TrainingFleetManager
 from module.os.training_policy import ShipCandidate
 
 
@@ -114,10 +114,55 @@ class TrainingSelectionStepTest(unittest.TestCase):
         self.assertTrue(scroll.pages)
         self.assertTrue(all(page == 0.45 for page in scroll.pages))
 
+
+    def test_repeated_ocr_page_with_measured_scroll_progress_scans_to_end(self):
+        scroll = NarrowBandScroll()
+        manager = self.manager(scroll)
+        card = Button((10, 10, 150, 70), (0, 0, 0), (10, 10, 150, 70), name='麦考尔-card')
+
+        def repeated_visible():
+            scroll.visited.append(scroll.position)
+            manager._visible_cards = [card]
+            manager._raw_names = [self.TARGET.name]
+            return [self.TARGET.name]
+
+        manager._visible_names = repeated_visible
+        manager._deployment_card_levels = lambda cards: [80]
+        manager._locate_verified_locked_card = lambda target: Button(
+            (1, 1, 2, 2), (0, 0, 0), (1, 1, 2, 2), name='relocated')
+        with patch('module.os.training.DOCK_SCROLL', scroll), \
+                patch('module.os.training.dock_card_lock', return_value=True), \
+                patch('module.os.training.same_card_portrait', return_value=True):
+            selected = manager._scan_selection(self.TARGET)
+        self.assertEqual(selected.name, 'relocated')
+        self.assertGreater(len(scroll.visited), 10)
+        self.assertGreater(scroll.visited[-1], 0.95)
+
+    def test_repeated_page_without_scroll_progress_still_stops(self):
+        scroll = NarrowBandScroll()
+        scroll.next_page = lambda main, page=0.45: scroll.pages.append(page)
+        manager = self.manager(scroll)
+        manager._raw_names = ['same']
+        manager._visible_names = lambda: self.visible(manager, scroll, (), ())
+        # Force identical OCR and no scrollbar movement.
+        manager._visible_names = lambda: self._same_reading(manager, scroll)
+        with patch('module.os.training.DOCK_SCROLL', scroll):
+            names = manager._scan_selection()
+        self.assertIn('same', names)
+        self.assertLessEqual(len(scroll.visited), 2)
+        self.assertEqual(len(scroll.pages), 1)
+
+    @staticmethod
+    def _same_reading(manager, scroll):
+        scroll.visited.append(scroll.position)
+        manager._visible_cards = [Button((10, 10, 150, 70), (0, 0, 0), (10, 10, 150, 70))]
+        manager._raw_names = ['same']
+        return ['same']
+
     def test_missing_unlocked_or_duplicate_targets_remain_rejected(self):
         missing_scroll = NarrowBandScroll()
         missing_manager = self.manager(missing_scroll)
-        with self.assertRaisesRegex(RequestHumanTakeover, 'not available'):
+        with self.assertRaisesRegex(DeploymentTargetUnavailable, 'not available'):
             self.scan(missing_manager, missing_scroll, self.TARGET)
 
         duplicate_scroll = NarrowBandScroll()

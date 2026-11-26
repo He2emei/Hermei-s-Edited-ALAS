@@ -25,6 +25,10 @@ from module.ui.page import page_shipyard
 from module.ui.assets import BACK_ARROW
 
 
+class DeploymentTargetUnavailable(RequestHumanTakeover):
+    """A bounded scan found no verified locked target."""
+
+
 class TrainingFleetManager(TrainingShipInspector):
     def _is_priority_ur(self, ship):
         data = CATALOG.get(ship.name)
@@ -301,11 +305,11 @@ class TrainingFleetManager(TrainingShipInspector):
                 and not same_dock_page(previous_reading, self._raw_names)
             repeated_page = previous_reading is not None and not new_names \
                 and same_dock_page(previous_reading, self._raw_names)
-            if repeated_page:
-                # The same cards are printed again. cnocr never reads a page
-                # twice the same way, so this is a tolerant comparison rather
-                # than an exact one.
-                logger.info('Deployment dock page repeated after scrolling, stop')
+            if repeated_page and not moved:
+                # Repeated OCR text can overlap while the scrollbar still
+                # advances. Stop only when that repeated page also has no
+                # measured movement.
+                logger.info('Deployment dock page repeated without scroll progress, stop')
                 break
             if position is not None and not moved and not changed_content and not new_names:
                 stalled += 1
@@ -334,7 +338,8 @@ class TrainingFleetManager(TrainingShipInspector):
             if len(matches) > 1:
                 raise RequestHumanTakeover(f'Ambiguous duplicate deployment cards: {target.name} level {target.level}')
             name = target.name if isinstance(target, ShipCandidate) else target
-            raise RequestHumanTakeover('Planned locked ship is not available in deployment dock: ' + name)
+            raise DeploymentTargetUnavailable(
+                'Planned locked ship is not available in deployment dock: ' + name)
         return names
 
     def _locate_verified_locked_card(self, target):
@@ -468,7 +473,33 @@ class TrainingFleetManager(TrainingShipInspector):
         # Preflight every selected identity before making the first edit.
         for slot in changed:
             self._open_slot(slot, planned[slot], priority=self._is_priority_ur(planned[slot]))
-            button = self._scan_selection(planned[slot])
+            try:
+                button = self._scan_selection(planned[slot])
+            except DeploymentTargetUnavailable:
+                # This is the first preflight only: no SHIP_CONFIRM draft has
+                # been made. Leave the current slot untouched and defer the
+                # original fleet after proving an empty/one-item selector.
+                empty_count = None
+                for observation in range(2):
+                    if observation:
+                        self.device.sleep(0.3)
+                    self.device.screenshot()
+                    if not self.appear(DOCK_CHECK, offset=(20, 20)):
+                        raise RequestHumanTakeover(
+                            'Cannot safely defer from unknown deployment dock')
+                    current_count, _, total_count = OCR_DOCK_SELECTED.ocr(self.device.image)
+                    if type(current_count) is not int or current_count != 0 \
+                            or type(total_count) is not int or total_count != 1:
+                        raise RequestHumanTakeover(
+                            'Cannot safely defer from unknown deployment selection count')
+                    if empty_count is not None and current_count != empty_count:
+                        raise RequestHumanTakeover(
+                            'Deployment selection count changed during defer check')
+                    empty_count = current_count
+                self._cancel_slot()
+                self._close_selector(opsi)
+                logger.warning('Training preflight target unavailable; keeping the original fleet and deferring')
+                return False
             self.device.click(button)
             self.device.sleep(0.6)
             self.device.screenshot()

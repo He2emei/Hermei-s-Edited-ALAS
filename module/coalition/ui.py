@@ -468,18 +468,33 @@ class CoalitionUI(Combat):
         elif first_mode != 'single':
             raise RequestHumanTakeover('Truth Academy multi fleet is unsupported')
 
-        levels_a = reader.read_fleet_levels(first)
-        levels_b = reader.read_fleet_levels(second)
         valid_levels = lambda levels: (
             levels is not None and len(levels) == 6 and
             all(type(level) is int and 0 <= level <= 125 for level in levels) and
             any(level > 0 for level in levels[:3]) and
             any(level > 0 for level in levels[3:])
         )
-        if (not valid_levels(levels_a) or not valid_levels(levels_b) or
-                levels_a != levels_b):
-            raise RequestHumanTakeover('Truth Academy party levels are unreadable or changing')
-        return changed
+        levels_a = reader.read_fleet_levels(first)
+        levels_b = reader.read_fleet_levels(second)
+        if valid_levels(levels_a) and levels_a == levels_b:
+            return changed
+
+        previous = levels_b
+        # OCR can sample the transition between an animation and its settled
+        # party. Keep the page/mode gates strict and accept only two consecutive
+        # complete, identical six-ship reads within four total observations.
+        for _ in range(2):
+            time.sleep(0.3)
+            image = frame()
+            if read_mode(image) != 'single':
+                raise RequestHumanTakeover(
+                    'Truth Academy preparation page or single-fleet mode changed during OCR retry')
+            current = reader.read_fleet_levels(image)
+            if valid_levels(previous) and valid_levels(current) and previous == current:
+                return changed
+            previous = current
+
+        raise RequestHumanTakeover('Truth Academy party levels are unreadable or changing')
 
     def _truth_academy_map_exit(self):
         """Bounded exit using only verified battle/preparation/main pages."""

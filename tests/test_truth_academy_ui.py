@@ -139,11 +139,13 @@ class FakeDevice:
         self.frames = frames
         self.image = frames[0]
         self.index = 0
+        self.screenshot_count = 0
         self.clicks = []
 
     def screenshot(self):
         self.image = self.frames[min(self.index, len(self.frames) - 1)]
         self.index += 1
+        self.screenshot_count += 1
 
     def click(self, button):
         from module.base.button import Button
@@ -169,6 +171,45 @@ class TestTruthAcademyFleetSafety(unittest.TestCase):
         obj = self.make_ui('normal', 'single')
         self.run_with_reader(obj, ['normal_preparation'], ['single'], [(125, 125, 125, 125, 125, 120)])
         self.assertEqual(obj.device.clicks, [])
+
+    def test_transient_25_then_two_stable_125_reads_recovers_without_actions(self):
+        obj = self.make_ui('normal', 'single', repeat=4)
+        low = (125, 125, 25, 125, 125, 125)
+        stable = (125, 125, 125, 125, 125, 125)
+        with patch('module.coalition.ui.time.sleep') as sleep:
+            self.run_with_reader(
+                obj, ['normal_preparation'], ['single'], [low, stable, stable, stable])
+        self.assertEqual(obj.device.screenshot_count, 3)
+        self.assertEqual(sleep.call_args_list, [unittest.mock.call(0.3)])
+        self.assertEqual(obj.device.clicks, [])
+
+    def test_persistently_alternating_or_unreadable_levels_take_over_after_four_observations(self):
+        low = (125, 125, 25, 125, 125, 125)
+        stable = (125, 125, 125, 125, 125, 125)
+        for levels in ([low, stable, low, stable], [None, None, None, None]):
+            obj = self.make_ui('normal', 'single', repeat=4)
+            with self.subTest(levels=levels), patch('module.coalition.ui.time.sleep') as sleep:
+                with self.assertRaises(RequestHumanTakeover):
+                    self.run_with_reader(obj, ['normal_preparation'], ['single'], levels)
+                self.assertEqual(obj.device.screenshot_count, 4)
+                self.assertEqual(sleep.call_args_list,
+                                 [unittest.mock.call(0.3), unittest.mock.call(0.3)])
+                self.assertEqual(obj.device.clicks, [])
+
+    def test_unknown_page_or_mode_on_extra_observation_takes_over_immediately(self):
+        low = (125, 125, 25, 125, 125, 125)
+        stable = (125, 125, 125, 125, 125, 125)
+        cases = (
+            (['normal_preparation', 'normal_preparation', 'unknown'], ['single'] * 4),
+            (['normal_preparation'] * 4, ['single', 'single', 'multi', 'single']),
+        )
+        for pages, modes in cases:
+            obj = self.make_ui('normal', 'single', repeat=4)
+            with self.subTest(pages=pages, modes=modes):
+                with self.assertRaises(RequestHumanTakeover):
+                    self.run_with_reader(obj, pages, modes, [low, stable, stable, stable])
+                self.assertEqual(obj.device.screenshot_count, 3)
+                self.assertEqual(obj.device.clicks, [])
 
     def test_multi_to_single_is_bounded_and_validated(self):
         obj = self.make_ui('normal', 'single')

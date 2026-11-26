@@ -857,12 +857,12 @@ class DeploymentDockScanTest(unittest.TestCase):
         self.assertLess(len(device.swipes), 12)
 
     def test_scan_stops_on_a_repeated_page_read_with_ocr_noise(self):
-        # The thumb inches forward while the cards stay the same, so only the
-        # tolerant page comparison can tell that the dock is not advancing.
+        # A stationary thumb with the same cards is not measured progress.
+        # Tolerate OCR noise without swiping forever.
         pages = [['德意志', '希佩尔海军上将', 'Z23'],
                  ['德意志', '希佩尔海军上将', 'Z23']]
         manager, device, scroll = self.manager(pages, position=0.87, end=TRACK_END,
-                                               page_step=TRACK_END, step=0.06)
+                                               page_step=TRACK_END, step=0.0)
         turns = []
         real_next_page = scroll.next_page
         scroll.next_page = lambda main, page=0.45: (turns.append(page),
