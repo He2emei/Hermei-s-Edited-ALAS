@@ -220,8 +220,9 @@ class EventStoryBase(CampaignUI, Combat, LoginHandler):
                     self.app_start()
                     continue
                 else:
-                    self.combat_execute()
-                    self.combat_status(expected_end=self.combat_expected_end)
+                    expected_end = self.combat_expected_end
+                    self.combat_execute(expected_end=expected_end)
+                    self.combat_status(expected_end=expected_end)
                     continue
             if result == 'finish':
                 # Run after finished event story, in order to close GET_ITEMS

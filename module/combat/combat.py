@@ -373,13 +373,16 @@ class Combat(Level, HPBalancer, Retirement, SubmarineCall, CombatAuto, CombatMan
 
         return False
 
-    def combat_execute(self, auto='combat_auto', submarine='do_not_use', drop=None):
+    def combat_execute(self, auto='combat_auto', submarine='do_not_use', drop=None, expected_end=None):
         """
         Args:
             auto (str): ['combat_auto', 'combat_manual', 'stand_still_in_the_middle', 'hide_in_bottom_left']
             submarine (str): ['do_not_use', 'hunt_only', 'every_combat']
             drop (DropImage):
+            expected_end (callable | None): optional native terminal-page predicate.
         """
+        if expected_end is not None and not callable(expected_end):
+            raise TypeError('expected_end must be callable or None')
         logger.info('Combat execute')
         self.submarine_call_reset()
         self.combat_auto_reset()
@@ -389,7 +392,10 @@ class Combat(Level, HPBalancer, Retirement, SubmarineCall, CombatAuto, CombatMan
         confirm_timer = Timer(10)
         confirm_timer.start()
 
-        for _ in self.loop():
+        loop = self.loop(skip_first=False) if expected_end is not None else self.loop()
+        for _ in loop:
+            if expected_end is not None and expected_end():
+                break
 
             if not confirm_timer.reached():
                 if self.handle_combat_automation_confirm():
