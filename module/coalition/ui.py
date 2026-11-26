@@ -51,6 +51,32 @@ class VeritasSwitch(Switch):
 
         return 'unknown'
 
+    def set(self, state, main, skip_first_screenshot=True):
+        if getattr(self, 'truth_strict_mode', False):
+            return self._set_known_truth_mode(state, main)
+        return super().set(state, main, skip_first_screenshot=skip_first_screenshot)
+
+    def _set_known_truth_mode(self, state, main, observations=10):
+        """Switch only from a known Veritas mode and fail on unknown frames."""
+        if state not in ('story', 'battle'):
+            raise RequestHumanTakeover('Truth Academy mode request is unverified')
+        self.get_data(state)
+        current = self.get(main=main)
+        if current not in ('story', 'battle'):
+            raise RequestHumanTakeover('Truth Academy current mode is unverified')
+        if current == state:
+            return False
+        self.click(state, main=main)
+        for _ in range(observations):
+            main.device.sleep(0.2)
+            main.device.screenshot()
+            current = self.get(main=main)
+            if current not in ('story', 'battle'):
+                raise RequestHumanTakeover('Truth Academy mode transition is unverified')
+            if current == state:
+                return True
+        raise RequestHumanTakeover('Truth Academy mode transition timed out')
+
 
 class CoalitionUI(Combat):
     def in_coalition(self):
@@ -72,8 +98,15 @@ class CoalitionUI(Combat):
             in: in_coalition
         """
         if event == TRUTH_EVENT and self.config.SERVER == 'cn':
-            if mode != 'battle' or not self.in_coalition():
+            if mode not in ('story', 'battle'):
+                raise RequestHumanTakeover('Truth Academy mode request is unverified')
+            if not self.ui_page_appear(page_coalition, offset=(20, 20)):
                 raise RequestHumanTakeover('Truth Academy mode/page is unverified')
+            mode_switch = VeritasSwitch('CoalitionMode', is_selector=True, offset=(20, 20))
+            mode_switch.add_state('story', VERITAS_MODE_STORY)
+            mode_switch.add_state('battle', VERITAS_MODE_BATTLE)
+            mode_switch.truth_strict_mode = True
+            mode_switch.set(mode, main=self)
             return
         elif event == 'coalition_20230323':
             mode_switch = Switch('CoalitionMode', offset=(20, 20))
