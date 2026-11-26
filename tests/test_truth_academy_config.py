@@ -75,17 +75,16 @@ class TruthAcademyConfigIntegrationTest(unittest.TestCase):
                     self.assertIn(EVENT, options)
                     self.assertIn(selected, options)
 
-    def test_foreign_options_keep_legacy_and_exclude_cn_only_event(self):
+    def test_options_follow_native_current_event_per_locale(self):
         args = self.updater.args
         for task in ('Coalition', 'CoalitionSp'):
             for server in ('en', 'jp', 'tw'):
                 with self.subTest(task=task, server=server):
                     options = args[task]['Campaign']['Event']['option_' + server]
-                    self.assertIn(LEGACY_EVENT, options)
-                    self.assertNotIn(EVENT, options)
+                    expected = LEGACY_EVENT if server == 'tw' else EVENT
+                    self.assertIn(expected, options)
 
-                    # If a CN-only event ID is presented to a foreign profile in memory,
-                    # ConfigUpdater falls back to a valid foreign option.
+                    # Native schema owns current locale options; migrations stay valid.
                     _, _, current = self.read_production('alas')
                     foreign = copy.deepcopy(current)
                     package = {
@@ -98,9 +97,9 @@ class TruthAcademyConfigIntegrationTest(unittest.TestCase):
                     migrated = self.updater.config_update(foreign)
                     selected = deep_get(migrated, '{}.Campaign.Event'.format(task))
                     self.assertIn(selected, options)
-                    self.assertNotEqual(selected, EVENT)
+                    self.assertEqual(selected, expected)
 
-    def test_zero_pt_limit_does_not_call_unverified_coalition_ocr(self):
+    def test_zero_pt_limit_does_not_call_coalition_ocr(self):
         for profile in PROFILES:
             with self.subTest(profile=profile):
                 _, _, production = self.read_production(profile)
@@ -113,7 +112,7 @@ class TruthAcademyConfigIntegrationTest(unittest.TestCase):
                     Scheduler_Command='Coalition', Campaign_Name='easy',
                 )
                 app = SimpleNamespace(config=config, get_event_pt=Mock(
-                    side_effect=AssertionError('unverified PT OCR must not be called at PtLimit=0')))
+                    side_effect=AssertionError('PT OCR must not be called at PtLimit=0')))
                 self.assertFalse(CampaignEvent.event_pt_limit_triggered(app))
                 app.get_event_pt.assert_not_called()
 

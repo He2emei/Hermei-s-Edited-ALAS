@@ -3,7 +3,7 @@ from types import SimpleNamespace
 from unittest.mock import Mock, patch
 
 from module.campaign.campaign_event import CampaignEvent
-from module.coalition.assets import HORROR_COALITION_CHECK
+from module.coalition.assets import VERITAS_COALITION_CHECK
 from module.coalition.coalition import Coalition
 from module.exception import ScriptError
 from module.ui.assets import CAMPAIGN_MENU_GOTO_EVENT
@@ -30,7 +30,7 @@ class TruthAcademyRoutingTest(unittest.TestCase):
         self.assertIs(page_coalition_truth.check_button, TRUTH_MAIN_CHECK)
         self.assertIs(page_coalition_truth.links[page_main], TRUTH_HOME)
         self.assertIs(page_campaign_menu.links[page_coalition_truth], CAMPAIGN_MENU_GOTO_EVENT)
-        self.assertIs(page_coalition.check_button, HORROR_COALITION_CHECK)
+        self.assertIs(page_coalition.check_button, VERITAS_COALITION_CHECK)
 
     def test_native_page_scan_skips_cn_only_assets_for_foreign_servers(self):
         from module.ui.ui import UI
@@ -72,12 +72,11 @@ class TruthAcademyRoutingTest(unittest.TestCase):
         app.ui_goto.assert_called_once_with(page_campaign_menu)
         app.is_event_entrance_available.assert_called_once_with()
 
-    def test_non_cn_truth_event_fails_closed_without_navigation(self):
+    def test_non_cn_truth_event_uses_native_upstream_route(self):
         app = campaign_event(server='en', current=page_campaign_menu)
-        with self.assertRaises(ScriptError):
-            CampaignEvent.ui_goto_coalition(app)
-        app.ui_goto.assert_not_called()
-        app.is_event_entrance_available.assert_not_called()
+        self.assertTrue(CampaignEvent.ui_goto_coalition(app))
+        self.assertEqual(app.ui_goto.call_args_list, [
+            unittest.mock.call(page_campaign_menu), unittest.mock.call(page_coalition)])
 
     def test_old_event_keeps_original_coalition_target(self):
         app = campaign_event(event='coalition_20260723', current=page_campaign_menu)
@@ -101,22 +100,18 @@ class TruthAcademyRoutingTest(unittest.TestCase):
             unittest.mock.call(page_coalition),
         ])
 
-    def test_truth_pt_ocr_fails_closed_until_roi_is_verified(self):
-        app = SimpleNamespace(
-            config=SimpleNamespace(SERVER='cn', Campaign_Event=EVENT),
-        )
-        with patch('module.coalition.coalition.Digit') as digit:
-            with self.assertRaises(ScriptError):
-                Coalition.get_event_pt(app)
-        digit.assert_not_called()
-
-    def test_other_locale_truth_pt_fails_closed_before_digit_construction(self):
-        for server in ('jp', 'en', 'tw'):
-            app = SimpleNamespace(config=SimpleNamespace(SERVER=server, Campaign_Event=EVENT))
+    def test_truth_pt_reader_reuses_native_upstream_digit_roi(self):
+        from module.coalition.assets import VERITAS_PT_OCR
+        for server in ('cn', 'en'):
+            image = object()
+            app = SimpleNamespace(config=SimpleNamespace(SERVER=server, Campaign_Event=EVENT),
+                                  device=SimpleNamespace(image=image), loop=lambda **kw: iter((None,)))
             with patch('module.coalition.coalition.Digit') as digit:
-                with self.assertRaises(ScriptError):
-                    Coalition.get_event_pt(app)
-            digit.assert_not_called()
+                digit.return_value.ocr.return_value = 1234
+                self.assertEqual(Coalition.get_event_pt(app), 1234)
+                digit.assert_called_once_with(VERITAS_PT_OCR, name='OCR_PT', lang='cnocr',
+                                              letter=(255, 255, 255), threshold=128)
+                digit.return_value.ocr.assert_called_once_with(image)
 
     def test_oil_icon_policy_preserves_existing_event_matrix(self):
         cases = (
@@ -130,10 +125,10 @@ class TruthAcademyRoutingTest(unittest.TestCase):
             app = SimpleNamespace(config=SimpleNamespace(Campaign_Event=event, SERVER=server))
             self.assertEqual(Coalition._coalition_has_oil_icon.fget(app), expected)
 
-    def test_non_cn_truth_oil_policy_fails_closed(self):
-        app = SimpleNamespace(config=SimpleNamespace(Campaign_Event=EVENT, SERVER='tw'))
-        with self.assertRaises(ScriptError):
-            Coalition._coalition_has_oil_icon.fget(app)
+    def test_native_truth_oil_icon_policy_covers_other_locales(self):
+        for server in ('en', 'jp', 'tw'):
+            app = SimpleNamespace(config=SimpleNamespace(Campaign_Event=EVENT, SERVER=server))
+            self.assertFalse(Coalition._coalition_has_oil_icon.fget(app))
 
 
 if __name__ == '__main__':

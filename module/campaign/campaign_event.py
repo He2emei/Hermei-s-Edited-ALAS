@@ -180,9 +180,7 @@ class CampaignEvent(CampaignStatus):
             return True
 
     def ui_goto_coalition(self):
-        if self.config.Campaign_Event == 'coalition_20261124':
-            if self.config.SERVER != 'cn':
-                raise ScriptError('Truth Academy coalition is only verified for CN')
+        if self.config.SERVER == 'cn' and self.config.Campaign_Event == 'coalition_20261124':
             if self.ui_get_current_page() == page_coalition_truth:
                 logger.info('Already at page_coalition_truth')
                 return True

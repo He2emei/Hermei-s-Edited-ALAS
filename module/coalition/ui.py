@@ -11,7 +11,7 @@ from module.ui.assets import BACK_ARROW
 from module.ui.page import page_coalition
 from module.ui.switch import Switch
 from module.coalition.truth_academy import (
-    TruthAcademyReader, TRUTH_EASY, TRUTH_NORMAL, TRUTH_HARD, TRUTH_PROCEED,
+    TruthAcademyReader, TRUTH_EASY, TRUTH_NORMAL, TRUTH_HARD, TRUTH_PROCEED, TRUTH_CLOSE,
 )
 
 TRUTH_EVENT = 'coalition_20261124'
@@ -71,8 +71,8 @@ class CoalitionUI(Combat):
         Pages:
             in: in_coalition
         """
-        if event == TRUTH_EVENT:
-            if self.config.SERVER != 'cn' or mode != 'battle' or not self.in_coalition():
+        if event == TRUTH_EVENT and self.config.SERVER == 'cn':
+            if mode != 'battle' or not self.in_coalition():
                 raise RequestHumanTakeover('Truth Academy mode/page is unverified')
             return
         elif event == 'coalition_20230323':
@@ -182,9 +182,6 @@ class CoalitionUI(Combat):
             Button: Entrance button
         """
         dic = {
-            (TRUTH_EVENT, 'easy'): TRUTH_EASY,
-            (TRUTH_EVENT, 'normal'): TRUTH_NORMAL,
-            (TRUTH_EVENT, 'hard'): TRUTH_HARD,
             # FROSTFALL
             ('coalition_20230323', 'tc1'): FROSTFALL_TC1,
             ('coalition_20230323', 'tc2'): FROSTFALL_TC2,
@@ -285,9 +282,6 @@ class CoalitionUI(Combat):
             int: Number of battles
         """
         dic = {
-            (TRUTH_EVENT, 'easy'): 1,
-            (TRUTH_EVENT, 'normal'): 2,
-            (TRUTH_EVENT, 'hard'): 3,
             # FROSTFALL
             ('coalition_20230323', 'tc1'): 1,
             ('coalition_20230323', 'tc2'): 2,
@@ -385,7 +379,7 @@ class CoalitionUI(Combat):
         """
         stage = stage.lower()
 
-        if event == TRUTH_EVENT:
+        if event == TRUTH_EVENT and self.config.SERVER == 'cn':
             return self._truth_handle_fleet_preparation(stage, mode)
 
         if event == 'coalition_20230323':
@@ -487,12 +481,79 @@ class CoalitionUI(Combat):
             raise RequestHumanTakeover('Truth Academy party levels are unreadable or changing')
         return changed
 
+    def _truth_academy_map_exit(self):
+        """Bounded exit using only verified battle/preparation/main pages."""
+        reader = TruthAcademyReader()
+        deadline = time.monotonic() + 10
+        prep_pages = ('simple_preparation', 'normal_preparation', 'hard_preparation')
+        first_frame = True
+        last_click_at = None
+        transition_until = None
+        clicks = {'back_arrow': 0, 'truth_close': 0}
+
+        def click_bounded(kind, button):
+            nonlocal last_click_at, transition_until
+            if clicks[kind] >= 3:
+                raise RequestHumanTakeover('Truth Academy exit exceeded {} clicks'.format(kind))
+            now = time.monotonic()
+            if last_click_at is not None and now - last_click_at < 2:
+                # The already-verified frame must not survive an interval wait.
+                # Observe again in the outer loop before any subsequent click.
+                self.device.sleep(min(0.25, 2 - (now - last_click_at)))
+                return
+            if time.monotonic() >= deadline:
+                raise RequestHumanTakeover('Truth Academy exit exceeded 10 seconds')
+            self.device.click(button)
+            clicks[kind] += 1
+            last_click_at = time.monotonic()
+            transition_until = last_click_at + 3
+
+        for _ in range(100):
+            if time.monotonic() >= deadline:
+                raise RequestHumanTakeover('Truth Academy exit exceeded 10 seconds')
+            if first_frame:
+                first_frame = False
+            else:
+                self.device.screenshot()
+
+            page = reader.read(self.device.image)
+            if page == 'main':
+                self.device.screenshot()
+                if reader.read(self.device.image) == 'main':
+                    return True
+                continue
+
+            if self.appear(BATTLE_PREPARATION, offset=(20, 20)):
+                self.device.screenshot()
+                if self.appear(BATTLE_PREPARATION, offset=(20, 20)):
+                    click_bounded('back_arrow', BACK_ARROW)
+                continue
+
+            if page in prep_pages:
+                self.device.screenshot()
+                if reader.read(self.device.image) == page:
+                    click_bounded('truth_close', TRUTH_CLOSE)
+                continue
+
+            if transition_until is not None and time.monotonic() <= transition_until:
+                # After our own verified click, wait briefly for the UI transition.
+                # Unknown pages outside this narrow window still fail closed.
+                self.device.sleep(0.25)
+                continue
+            raise RequestHumanTakeover('Truth Academy exit encountered an unknown page')
+
+        raise RequestHumanTakeover('Truth Academy exit exceeded bounded retries')
+
     def coalition_map_exit(self, event):
         """
         Pages:
             in: BATTLE_PREPARATION, or coalition specific fleet_preparation
             out: in_coalition
         """
+        if event == TRUTH_EVENT and self.config.SERVER == 'cn':
+            self._truth_academy_map_exit()
+            return
+
         logger.info('Coalition map exit')
         fleet_preparation = self.coalition_get_fleet_preparation(event)
         for _ in self.loop():

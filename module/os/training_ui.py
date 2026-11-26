@@ -655,7 +655,11 @@ class TrainingShipInspector(Awaken):
                         f'disagrees with ship details {ship.name} level {ship.level}')
                     seen.add(ship.name)
                     self.device.click(BACK_ARROW)
-                    if not self.wait_until_appear(DOCK_CHECK, offset=(20, 20)):
+                    # wait_until_appear is a native void wait: successful return
+                    # is None. Verify the page explicitly after it returns rather
+                    # than treating that normal return value as a timeout.
+                    self.wait_until_appear(DOCK_CHECK, offset=(20, 20))
+                    if not self.appear(DOCK_CHECK, offset=(20, 20)):
                         raise RequestHumanTakeover(
                             'Could not return from mismatched ship details to dock')
                     continue

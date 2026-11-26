@@ -2,18 +2,46 @@ from module.base.timer import Timer
 from module.campaign.campaign_base import CampaignBase
 from module.coalition.assets import *
 from module.coalition.ui import CoalitionUI
+from module.combat.assets import BATTLE_PREPARATION
 from module.coalition.truth_academy import (
     TRUTH_BATTLE_RESULT_CONFIRM,
     TRUTH_TOTAL_REWARDS_LEAVE,
     TruthAcademyReader,
 )
-from module.exception import CampaignEnd
+from module.exception import CampaignEnd, RequestHumanTakeover, ScriptEnd
 from module.logger import logger
 from module.os_ash.assets import BATTLE_STATUS
+from module.coalition.truth_academy_emotion import TruthAcademyEmotionReader
 
 
 class CoalitionCombat(CoalitionUI, CampaignBase):
     battle_status_click_interval = 2
+
+    def handle_battle_preparation(self):
+        """Safely stop the verified CN single-fleet low-mood dead end."""
+        if (self.config.SERVER == 'cn' and
+                self.config.Campaign_Event == 'coalition_20261124' and
+                self.config.Coalition_Fleet == 'single' and
+                self.appear(BATTLE_PREPARATION, offset=(20, 20))):
+            reader = getattr(self, '_truth_academy_emotion_reader', None)
+            if reader is None:
+                reader = TruthAcademyEmotionReader()
+                self._truth_academy_emotion_reader = reader
+            if reader.read_low_mood_toast(self.device.image):
+                self.device.screenshot()
+                if (self.appear(BATTLE_PREPARATION, offset=(20, 20)) and
+                        reader.read_low_mood_toast(self.device.image)):
+                    logger.warning(
+                        'Truth Academy single-fleet low-mood lockout confirmed; '
+                        'returning to event main and deferring 120 minutes')
+                    self.coalition_map_exit('coalition_20261124')
+                    self.config.task_delay(minute=120)
+                    raise ScriptEnd('Truth Academy low emotion; deferred 120 minutes')
+                # A possible toast changed across frames. Consume this check and
+                # never issue the underlying battle-preparation click on it.
+                return True
+
+        return super().handle_battle_preparation()
 
     def handle_truth_academy_reward(self):
         """Safely dismiss only the two verified CN Truth Academy settlements."""

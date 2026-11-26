@@ -8,6 +8,7 @@ from module.base.button import Button
 from module.exception import RequestHumanTakeover
 from module.os.training_policy import PolicyDecision, ShipCandidate
 from module.os.training_ui import TrainingShipInspector
+from module.retire.assets import DOCK_CHECK
 
 
 class EndOfDock:
@@ -30,12 +31,16 @@ class TrainingCandidateInstanceTest(unittest.TestCase):
         inspector.dock_filter_set = lambda **kwargs: filter_calls.append(kwargs)
         inspector.ship_info_enter = lambda *args, **kwargs: None
         wait_iter = iter(wait_results)
-        inspector.wait_until_appear = lambda *args, **kwargs: next(wait_iter, True)
+        dock_verified = [False]
+        def native_void_wait(*args, **kwargs):
+            dock_verified[0] = next(wait_iter, True)
+            return None
+        inspector.wait_until_appear = native_void_wait
         inspector.device = SimpleNamespace(image=np.zeros((720, 1280, 3), dtype=np.uint8),
                                            screenshot=lambda: None, click=lambda *args, **kwargs: None,
                                            sleep=lambda *args, **kwargs: None,
                                            click_record_clear=lambda: None)
-        inspector.appear = lambda *args, **kwargs: False
+        inspector.appear = lambda button, **kwargs: button is DOCK_CHECK and dock_verified[0]
         detail_iter = iter(details)
 
         def read_ship():
