@@ -319,7 +319,10 @@ class TrainingFleetManager(TrainingShipInspector):
                     # but real movement still counts even below drag_threshold.
                     self.device.click_record_clear()
             previous_reading, position = self._raw_names, current
-            DOCK_SCROLL.next_page(main=self, page=0.45)
+            # Targeted uniqueness scans must not jump past narrow card bands.
+            # Broad name enumeration keeps its faster full-list sweep.
+            page_step = 0.2 if target is not None else 0.45
+            DOCK_SCROLL.next_page(main=self, page=page_step)
             self.device.sleep(0.6)
         if target is not None and not fail_if_missing:
             return None
