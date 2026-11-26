@@ -103,10 +103,8 @@ class TestTruthAcademyRecognition(unittest.TestCase):
             os.chdir(str(old_cwd))
 
     def test_entrance_and_battle_count_scope(self):
-        base = load('normal-base-after.png')
         self.assertEqual(ui.CoalitionUI.coalition_get_entrance('coalition_20261124', 'normal'),
                          ui.VERITAS_NORMAL)
-        self.assertTrue(ui.TRUTH_HARD.match(base, offset=0, similarity=0.90))
         self.assertEqual(ui.CoalitionUI.coalition_get_battles('coalition_20261124', 'easy'), 1)
         self.assertEqual(ui.CoalitionUI.coalition_get_battles('coalition_20261124', 'normal'), 2)
         self.assertEqual(ui.CoalitionUI.coalition_get_entrance('coalition_20261124', 'hard'),

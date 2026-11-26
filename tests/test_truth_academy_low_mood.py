@@ -19,20 +19,40 @@ from module.coalition.truth_academy_emotion import (
 
 
 STAGE_ROOT = Path(__file__).resolve().parents[1]
-TOAST_ASSET = STAGE_ROOT / 'assets' / 'cn' / 'coalition' / 'TRUTH_LOW_MOOD_TOAST.png'
+TOAST_TEMPLATE = Path('./assets/cn/coalition/TRUTH_LOW_MOOD_TOAST.png')
+TOAST_FIXTURES = (
+    STAGE_ROOT / 'tests' / 'fixtures' / 'low_mood_toast_20261126.png',
+    STAGE_ROOT / 'tests' / 'fixtures' / 'low_mood_toast_20261126_transient.png',
+)
+TOAST_SOURCES = (TOAST_TEMPLATE,) + TOAST_FIXTURES
 
 
 class TruthAcademyLowMoodTest(unittest.TestCase):
     def compose_toast(self):
-        template = cv2.imread(str(TOAST_ASSET), cv2.IMREAD_GRAYSCALE)
+        template = cv2.imread(str(TOAST_TEMPLATE), cv2.IMREAD_GRAYSCALE)
         self.assertEqual(template.shape, (31, 591))
         frame = np.zeros((720, 1280, 3), dtype=np.uint8)
         x1, y1, x2, y2 = TOAST_ROI
         frame[y1:y2, x1:x2] = np.repeat(template[:, :, None], 3, axis=2)
         return frame
 
+    def compose_live_fixture(self, fixture_path=None, erase_columns=None, alter_zero=False):
+        crop = cv2.imread(str(fixture_path or TOAST_FIXTURES[0]), cv2.IMREAD_GRAYSCALE)
+        self.assertEqual(crop.shape, (31, 591))
+        if erase_columns is not None:
+            crop = crop.copy()
+            crop[:, erase_columns[0]:erase_columns[1]] = 0
+        if alter_zero:
+            crop = crop.copy()
+            # Remove the middle stroke of the displayed zero in "<=30".
+            crop[10:22, 456:461] = 0
+        frame = np.zeros((720, 1280, 3), dtype=np.uint8)
+        x1, y1, x2, y2 = TOAST_ROI
+        frame[y1:y2, x1:x2] = np.repeat(crop[:, :, None], 3, axis=2)
+        return frame
+
     def test_only_the_cropped_generic_toast_matches(self):
-        reader = TruthAcademyEmotionReader(str(TOAST_ASSET))
+        reader = TruthAcademyEmotionReader(str(TOAST_TEMPLATE))
         frame = self.compose_toast()
         self.assertTrue(reader.read_low_mood_toast(frame))
         self.assertFalse(reader.read_low_mood_toast(np.zeros_like(frame)))
@@ -41,6 +61,25 @@ class TruthAcademyLowMoodTest(unittest.TestCase):
         changed[y1 + 4:y1 + 25, x1 + 5:x1 + 90] = 0
         self.assertFalse(reader.read_low_mood_toast(changed))
         self.assertFalse(reader.read_low_mood_toast(np.zeros((720, 1280, 4), dtype=np.uint8)))
+
+    def test_new_live_crop_replay_and_semantic_negatives(self):
+        reader = TruthAcademyEmotionReader(str(TOAST_TEMPLATE))
+        for fixture_path in TOAST_SOURCES:
+            with self.subTest(fixture=fixture_path.name):
+                live_frame = self.compose_live_fixture(fixture_path)
+                self.assertTrue(reader.read_low_mood_toast(live_frame))
+                # Each fixture must retain its <=30 and unique-text semantics.
+                self.assertFalse(reader.read_low_mood_toast(
+                    self.compose_live_fixture(fixture_path, (397, 466))))
+                self.assertFalse(reader.read_low_mood_toast(
+                    self.compose_live_fixture(fixture_path, (0, 184))))
+                self.assertFalse(reader.read_low_mood_toast(
+                    self.compose_live_fixture(fixture_path, (424, 438))))
+                self.assertFalse(reader.read_low_mood_toast(
+                    self.compose_live_fixture(fixture_path, alter_zero=True)))
+                self.assertFalse(reader.read_low_mood_toast(np.zeros_like(live_frame)))
+                self.assertFalse(reader.read_low_mood_toast(
+                    np.zeros((720, 1280, 4), dtype=np.uint8)))
 
     @staticmethod
     def combat(server='cn', event='coalition_20261124', fleet='single', prep=True):
@@ -64,8 +103,12 @@ class TruthAcademyLowMoodTest(unittest.TestCase):
             BATTLE_PREPARATION, offset=(20, 20), interval=2)
 
         instance = self.combat()
-        instance._truth_academy_emotion_reader = SimpleNamespace(
-            read_low_mood_toast=Mock(return_value=True))
+        first_fixture = self.compose_live_fixture(TOAST_FIXTURES[0])
+        second_fixture = self.compose_live_fixture(TOAST_FIXTURES[1])
+        instance.device.image = first_fixture
+        instance.device.screenshot = Mock(side_effect=lambda: setattr(
+            instance.device, 'image', second_fixture.copy()))
+        instance._truth_academy_emotion_reader = TruthAcademyEmotionReader(str(TOAST_TEMPLATE))
         with self.assertRaises(ScriptEnd):
             CoalitionCombat.handle_battle_preparation(instance)
         self.assertEqual(instance.appear.call_count, 2)

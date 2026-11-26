@@ -11,7 +11,7 @@ from module.ui.assets import BACK_ARROW
 from module.ui.page import page_coalition
 from module.ui.switch import Switch
 from module.coalition.truth_academy import (
-    TruthAcademyReader, TRUTH_EASY, TRUTH_NORMAL, TRUTH_HARD, TRUTH_PROCEED, TRUTH_CLOSE,
+    TruthAcademyReader, TRUTH_EASY, TRUTH_PROCEED, TRUTH_CLOSE,
 )
 
 TRUTH_EVENT = 'coalition_20261124'

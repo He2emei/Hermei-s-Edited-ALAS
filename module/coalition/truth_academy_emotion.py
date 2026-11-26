@@ -6,8 +6,10 @@ import numpy as np
 
 
 TOAST_ROI = (343, 308, 934, 339)  # x1, y1, x2, y2
+TOAST_CRITICAL_ROI = (397, 0, 466, 31)  # relative ROI for the "<=30" warning
 TOAST_THRESHOLD = 130
 TOAST_MIN_SCORE = 0.995
+TOAST_CRITICAL_MIN_SCORE = 0.99
 TOAST_TEMPLATE = Path('./assets/cn/coalition/TRUTH_LOW_MOOD_TOAST.png')
 
 
@@ -20,6 +22,11 @@ class TruthAcademyEmotionReader:
         expected = (TOAST_ROI[3] - TOAST_ROI[1], TOAST_ROI[2] - TOAST_ROI[0])
         if self.template is None or self.template.shape != expected:
             raise ValueError('Truth Academy low-mood template is missing or has wrong dimensions')
+        self.blurred_template = cv2.GaussianBlur(self.template, (5, 5), 0)
+        x1, y1, x2, y2 = TOAST_CRITICAL_ROI
+        self.critical_template = self.template[y1:y2, x1:x2]
+        self.blurred_critical_template = cv2.GaussianBlur(
+            self.critical_template, (3, 3), 0)
 
     @staticmethod
     def _binary_rgb(image):
@@ -36,5 +43,12 @@ class TruthAcademyEmotionReader:
         if roi.shape != self.template.shape + (3,):
             return False
         binary = self._binary_rgb(roi)
-        score = cv2.matchTemplate(binary, self.template, cv2.TM_CCOEFF_NORMED)[0, 0]
-        return bool(score >= TOAST_MIN_SCORE)
+        whole = cv2.GaussianBlur(binary, (5, 5), 0)
+        whole_score = cv2.matchTemplate(
+            whole, self.blurred_template, cv2.TM_CCOEFF_NORMED)[0, 0]
+        x1, y1, x2, y2 = TOAST_CRITICAL_ROI
+        critical = cv2.GaussianBlur(binary[y1:y2, x1:x2], (3, 3), 0)
+        critical_score = cv2.matchTemplate(
+            critical, self.blurred_critical_template, cv2.TM_CCOEFF_NORMED)[0, 0]
+        return bool(whole_score >= TOAST_MIN_SCORE and
+                    critical_score >= TOAST_CRITICAL_MIN_SCORE)
