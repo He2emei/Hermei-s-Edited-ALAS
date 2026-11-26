@@ -26,9 +26,13 @@ class TrainingPreflightUnavailableTest(unittest.TestCase):
 
     @staticmethod
     def fleets():
-        current_ship = SimpleNamespace(name='原舰', level=100, is_locked=True)
+        # Native inspect_map_fleet always supplies the complete six slots.
+        current = {slot: SimpleNamespace(name='原舰' + str(slot), level=100, is_locked=True)
+                   for slot in range(1, 7)}
         planned_ship = ShipCandidate('目标', '白鹰', 'vanguard', 80, False, True, None, 100, True)
-        return {2: current_ship}, {2: planned_ship}
+        planned = dict(current)
+        planned[2] = planned_ship
+        return current, planned
 
     def test_missing_target_before_any_draft_cancels_and_defers_on_two_zero_checks(self):
         manager = self.manager()

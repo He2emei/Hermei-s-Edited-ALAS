@@ -463,6 +463,7 @@ class TrainingFleetManager(TrainingShipInspector):
         def instance(ship):
             return ship.name, ship.level, ship.is_locked
 
+        self._fleet_snapshot(current)
         changed = [slot for slot in ROTATION_SLOTS if instance(current[slot]) != instance(planned[slot])]
         if not changed:
             return
@@ -521,7 +522,7 @@ class TrainingFleetManager(TrainingShipInspector):
         for x, before in zip((414, 729), anchors):
             after = crop(self.device.image, (x - 25, y - 24, x + 25, y + 24))
             if cv2.matchTemplate(after, before, cv2.TM_CCOEFF_NORMED).max() < 0.95:
-                raise RequestHumanTakeover('Protected fleet portrait changed; deployment stopped')
+                return self._rollback_uncommitted_deployment(opsi, current)
         if self._label((970, 584, 1155, 621)) != '立刻前往':
             raise RequestHumanTakeover('Deployment confirmation is unknown')
         self.device.click(point_button(1060, 608, 'TRAINING_DEPLOY_CONFIRM'))
@@ -549,6 +550,50 @@ class TrainingFleetManager(TrainingShipInspector):
             raise RequestHumanTakeover('A newly deployed ship no longer meets training requirements')
         logger.info('Fourth fleet deployment verified, both anchors preserved')
         return True
+
+    @staticmethod
+    def _fleet_snapshot(fleet):
+        """Return a strict, comparable six-slot identity snapshot."""
+        if not isinstance(fleet, dict) or any(type(slot) is not int for slot in fleet) \
+                or set(fleet) != set(range(1, 7)):
+            raise RequestHumanTakeover('Cannot verify the complete original fleet')
+        snapshot = {}
+        for slot, ship in fleet.items():
+            name = getattr(ship, 'name', None)
+            level = getattr(ship, 'level', None)
+            is_locked = getattr(ship, 'is_locked', None)
+            if not isinstance(name, str) or not name.strip() \
+                    or type(level) is not int or not 1 <= level <= 125 \
+                    or type(is_locked) is not bool:
+                raise RequestHumanTakeover('Original fleet identity or lock state is unknown')
+            snapshot[slot] = (name, level, is_locked)
+        return snapshot
+
+    def _rollback_uncommitted_deployment(self, opsi, current):
+        """Discard only an unsubmitted draft, then verify the original fleet."""
+        expected = self._fleet_snapshot(current)
+        for observation in range(2):
+            if observation:
+                self.device.sleep(0.3)
+            self.device.screenshot()
+            if not self._is_selector():
+                raise RequestHumanTakeover('Cannot safely roll back an unknown fleet UI')
+
+        # All draft changes are still uncommitted at this point.
+        self._close_selector(opsi)
+
+        for observation in range(2):
+            if observation:
+                self.device.sleep(0.3)
+            self.device.screenshot()
+            if not opsi.is_in_map() or not self.appear(ORDER_ENTER, offset=(20, 20)):
+                raise RequestHumanTakeover('Cannot verify the map after discarding fleet draft')
+
+        actual = self._fleet_snapshot(self.inspect_map_fleet(opsi))
+        if actual != expected:
+            raise RequestHumanTakeover('Original fleet changed while discarding uncommitted draft')
+        logger.warning('Protected fleet portrait mismatch; uncommitted draft discarded, original fleet verified, deferring')
+        return False
 
     def _defer_after_experience_unavailable(self, opsi):
         """Leave only a twice-confirmed detail page and retry from the verified map."""
