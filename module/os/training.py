@@ -177,8 +177,44 @@ class TrainingFleetManager(TrainingShipInspector):
         DOCK_SCROLL.set_top(main=self)
 
     def _cancel_slot(self):
-        self.device.click(point_button(808, 670, 'TRAINING_SHIP_CANCEL'))
-        self._wait(self._is_selector, 'cancel ship selection')
+        cancel = point_button(808, 670, 'TRAINING_SHIP_CANCEL')
+        touches = 0
+        last_touch = None
+        selector_frames = 0
+        dock_count = None
+
+        for _ in range(40):
+            self.device.screenshot()
+            selector = bool(self._is_selector())
+            dock = bool(self.appear(DOCK_CHECK, offset=(20, 20)))
+
+            if selector and not dock:
+                selector_frames += 1
+                dock_count = None
+                if selector_frames >= 2:
+                    return
+            elif dock and not selector:
+                selector_frames = 0
+                current_count, _, total_count = OCR_DOCK_SELECTED.ocr(self.device.image)
+                valid_count = (type(current_count) is int and current_count in (0, 1)
+                               and type(total_count) is int and total_count == 1)
+                if not valid_count:
+                    dock_count = None
+                elif dock_count == current_count:
+                    if touches < 3 and (last_touch is None or time.monotonic() - last_touch >= 2.0):
+                        self.device.click(cancel)
+                        touches += 1
+                        last_touch = time.monotonic()
+                        dock_count = None
+                else:
+                    dock_count = current_count
+            else:
+                selector_frames = 0
+                dock_count = None
+
+            self.device.sleep(0.2)
+
+        raise RequestHumanTakeover('Training UI timeout: cancel ship selection')
 
     def _visible_names(self):
         self._visible_cards = dock_cards(self.device.image)
