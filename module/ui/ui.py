@@ -11,6 +11,7 @@ from module.handler.assets import (AUTO_SEARCH_MENU_EXIT, BATTLE_PASS_NEW_SEASON
                                    LOGIN_ANNOUNCE, LOGIN_ANNOUNCE_2, LOGIN_CHECK, LOGIN_RETURN_SIGN,
                                    MAINTENANCE_ANNOUNCE, MONTHLY_PASS_NOTICE, POPUP_CANCEL)
 from module.handler.info_handler import InfoHandler
+from module.handler.os_search_reward import handle_os_search_reward, reset_os_search_reward
 from module.logger import logger
 from module.map.assets import (FLEET_PREPARATION, MAP_PREPARATION,
                                MAP_PREPARATION_HARD, MAP_PREPARATION_CANCEL, WITHDRAW)
@@ -206,6 +207,7 @@ class UI(InfoHandler):
                 if self.ui_page_appear(page=page):
                     logger.attr("UI", page.name)
                     self.ui_current = page
+                    reset_os_search_reward(self)
                     return page
 
             # Unknown page but able to handle
@@ -247,6 +249,9 @@ class UI(InfoHandler):
             # screen until it is left. It is there when a scheduler is restarted during a
             # combat - the guard does exactly that when it finds a stopped scheduler, so the
             # page poll must leave the battle instead of reporting the page.
+            if handle_os_search_reward(self):
+                timeout.reset()
+                continue
             if handle_combat_hud(self):
                 timeout.reset()
                 continue

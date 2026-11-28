@@ -3,6 +3,7 @@ from module.combat.assets import *
 from module.combat.battle_result import handle_battle_result_screen, handle_settlement_screen
 from module.exception import CampaignEnd
 from module.handler.android_no_respond import handle_android_no_respond
+from module.handler.os_search_reward import handle_os_search_reward, reset_os_search_reward
 from module.handler.assets import POPUP_CANCEL, POPUP_CONFIRM
 from module.logger import logger
 from module.os.assets import GLOBE_GOTO_MAP
@@ -31,6 +32,7 @@ class MapEventHandler(EnemySearchingHandler):
 
     def handle_map_get_items(self, interval=2, drop=None):
         if self.is_in_map():
+            reset_os_search_reward(self)
             return False
 
         if self.appear(GET_ITEMS_1, interval=interval):
@@ -70,7 +72,7 @@ class MapEventHandler(EnemySearchingHandler):
             self.device.click(CLICK_SAFE_AREA)
             return True
 
-        return False
+        return handle_os_search_reward(self)
 
     def handle_map_archives(self, drop=None):
         if self.appear(MAP_ARCHIVES, interval=5):
